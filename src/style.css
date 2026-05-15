@@ -1,0 +1,20 @@
+:root {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+main {
+  padding: 2rem;
+}
+
+code {
+  background: #2d2d2d;
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+}

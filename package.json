@@ -4,8 +4,9 @@
   "description": "A text-based level editor for simple 2D games (mazes and platformers) with live preview.",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "keywords": [
     "2d",
@@ -16,5 +17,8 @@
     "maze"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^7.1.0"
+  }
 }
