@@ -1,0 +1,20 @@
+{
+  "name": "2d-level-designer",
+  "version": "0.1.0",
+  "description": "A text-based level editor for simple 2D games (mazes and platformers) with live preview.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "2d",
+    "level-editor",
+    "level-designer",
+    "ascii",
+    "platformer",
+    "maze"
+  ],
+  "author": "",
+  "license": "MIT"
+}
