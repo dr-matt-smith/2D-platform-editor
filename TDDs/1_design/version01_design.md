@@ -13,24 +13,23 @@ use — not a feature-complete editor.
 
 ### In scope for v1
 
-Per the prioritisation in the source ideas doc, v1 ships exactly these five
-features:
+Per the prioritisation in the source ideas doc, v1 ships these four features
+(rectangle fill is deferred — see below):
 
 1. **Monospace editor + grid guides** — fixed-width text area with column/row
    rulers, faint guide lines every 5 cells, and a live `(x, y)` cursor readout.
 2. **Live preview** — split pane; ASCII source on the left, tile-rendered canvas
    on the right, re-rendered on edit (debounced).
-3. **Rectangle fill** — drag a rectangle in the preview (or enter coordinates)
-   and fill it with the active glyph.
-4. **Validation** — inline lint: exactly one player spawn, declared dimensions
+3. **Validation** — inline lint: exactly one player spawn, declared dimensions
    match actual, no undefined glyphs. Errors listed with line/column.
-5. **Fast play-test** — out of scope for *running a game* in v1; instead, a
+4. **Fast play-test** — out of scope for *running a game* in v1; instead, a
    "validate + preview at cursor" action standing in for the play-test loop
    until a runtime exists. (Flagged as a known gap — see §8.)
 
 ### Explicitly out of scope for v1
 
-Layers / multi-character cells, entity properties, flood fill, line tool,
+Rectangle fill (deferred from v1 — text-only editing for now), layers /
+multi-character cells, entity properties, flood fill, line tool,
 symmetry/stamps, undo history beyond the browser textarea default, minimap,
 jump-to-coordinate, templates/procedural generation, file persistence beyond
 localStorage, and an actual game runtime. These are tracked for later versions.
@@ -104,13 +103,16 @@ direction; the textarea is the single source of truth.
 
 ```
 +--------------------------+---------------------------+
-|  rulers + textarea       |  tileset palette          |
-|  (monospace, grid guides)|  canvas preview           |
-|                          |  cursor (x,y) readout     |
+|  rulers + textarea       |  canvas preview           |
+|  (monospace, grid guides)|  cursor (x,y) readout     |
+|                          |  glyph legend (reference) |
 +--------------------------+---------------------------+
 |  validation panel: line:col — message                |
 +------------------------------------------------------+
 ```
+
+Editing in v1 is text-only (type into the textarea); the legend is a
+read-only reference, not an interactive palette.
 
 Dark, monospace throughout (matches a text-first tool and the existing
 `src/style.css`).
@@ -124,7 +126,6 @@ Dark, monospace throughout (matches a text-first tool and the existing
 | 3 | Live textarea → debounce → re-render loop                |
 | 4 | Grid guides, rulers, `(x,y)` readout, localStorage       |
 | 5 | `validate.js` + inline error panel                       |
-| 6 | Rectangle fill via palette + drag                        |
 
 ## 8. Open questions / known gaps
 
@@ -135,9 +136,10 @@ Dark, monospace throughout (matches a text-first tool and the existing
   and the OpenGameArt source; needs visual confirmation against the PNG.
 - **Coordinate origin:** top-left `(0,0)`, x right, y down — confirm this
   matches whatever runtime consumes the levels later.
-- **Undo:** relying on the browser textarea undo for v1; a custom history
-  stack is deferred but will be needed once non-text edits (rectangle fill)
-  become common, since those bypass native undo.
+- **Undo:** v1 is text-only, so the browser textarea undo is sufficient. A
+  custom history stack becomes necessary once non-text edits (e.g. the
+  deferred rectangle fill) are added, since those bypass native undo — revisit
+  alongside whichever version reintroduces rectangle fill.
 
 ## 9. Acceptance criteria for v1
 
@@ -145,5 +147,4 @@ Dark, monospace throughout (matches a text-first tool and the existing
   ~one frame of the debounce.
 - A level with two `P`s, an undeclared glyph, or a size mismatch produces
   specific line/column errors.
-- Rectangle fill changes both the canvas and the textarea text consistently.
 - Reloading the page restores the last-edited level from localStorage.
