@@ -148,3 +148,26 @@ Dark, monospace throughout (matches a text-first tool and the existing
 - A level with two `P`s, an undeclared glyph, or a size mismatch produces
   specific line/column errors.
 - Reloading the page restores the last-edited level from localStorage.
+
+## 10. v2 candidates
+
+Not commitments — a ranked backlog to revisit once v1 ships, roughly highest
+leverage first:
+
+1. **Rectangle fill** (deferred from v1). Highest priority: v1 is
+   character-by-character typing only, which the source ideas doc calls
+   "miserable for anything larger than ~20×20." Pulls in a custom undo stack
+   (see §8) since non-text edits bypass native textarea undo.
+2. **A real play-test runtime** — closes the biggest gap from §8. Decide:
+   embed a tiny reference platformer vs. export to an external runner. This
+   is what makes the "fast play-test" feature real rather than a stand-in.
+3. **Flood fill + line tool** — natural companions to rectangle fill; share
+   the same selection/undo machinery, so cheap to add once (1) lands.
+4. **Jump-to-coordinate + minimap** — navigation for levels larger than the
+   viewport.
+5. **Templates / procedural seeds** — fight the blank-page problem (empty
+   bordered room, maze skeleton).
+
+Layers / multi-character cells and entity properties remain further out: they
+change the level format and the parser, so they warrant their own design pass
+rather than a v2 bullet.
