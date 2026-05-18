@@ -45,23 +45,50 @@ test('no-atlas path: entity glyphs use shape fallbacks', () => {
   assert.equal(ctx.calls.arc, 2); // P disc + o pip
 });
 
-test('autotileIndex picks the right 9-slice cell', () => {
+test('off-grid is solid: a fully-embedded block has no rim', () => {
+  // Every neighbour (incl. off-grid) is solid → all dirt_centre.
   const g = ['###', '###', '###'];
-  assert.equal(autotileIndex(g, 0, 0), 0); // top-left corner
-  assert.equal(autotileIndex(g, 0, 1), 1); // top edge
-  assert.equal(autotileIndex(g, 1, 0), 8); // left edge
-  assert.equal(autotileIndex(g, 1, 1), 9); // centre (all neighbours solid)
-  assert.equal(autotileIndex(g, 2, 2), 18); // bottom-right corner
+  for (let r = 0; r < 3; r++)
+    for (let c = 0; c < 3; c++) assert.equal(autotileIndex(g, r, c), 9);
 });
 
-test('atlas path: 3x3 block emits the full 9-slice set + sky fill', () => {
+test('boundary faces point at the play area (v4 rule)', () => {
+  // Left wall at the map edge, open to the right → rim faces right.
+  assert.equal(autotileIndex(['#..', '#..', '#..'], 1, 0), 10); // dirt_right
+  // Right wall, open to the left → rim faces left.
+  assert.equal(autotileIndex(['..#', '..#', '..#'], 1, 2), 8); // dirt_left
+  // Floor (bottom edge), open above → rim faces up (walk surface).
+  assert.equal(autotileIndex(['...', '###'], 1, 1), 1); // dirt_top
+  // Ceiling (top edge), open below → rim faces down.
+  assert.equal(autotileIndex(['###', '...'], 0, 1), 17); // dirt_bottom
+});
+
+test('free-standing block away from edges is unchanged', () => {
+  // 3x3 block inside open space: rims still face outward as before.
+  const g = ['.....', '.###.', '.###.', '.###.', '.....'];
+  assert.equal(autotileIndex(g, 1, 1), 0); // top-left corner
+  assert.equal(autotileIndex(g, 2, 1), 8); // left edge
+  assert.equal(autotileIndex(g, 2, 2), 9); // centre
+  assert.equal(autotileIndex(g, 3, 3), 18); // bottom-right corner
+});
+
+test('1-deep platform is dirt_top with corner end caps', () => {
+  const g = ['.....', '.###.', '.....'];
+  assert.equal(autotileIndex(g, 1, 1), 0); // left end → dirt_top_left
+  assert.equal(autotileIndex(g, 1, 2), 1); // span → dirt_top
+  assert.equal(autotileIndex(g, 1, 3), 2); // right end → dirt_top_right
+});
+
+test('atlas path: a bordered 3x3 block emits the full 9-slice set + sky fill', () => {
   const ctx = fakeCtx();
   const ts = fakeTileset();
-  draw(ctx, parse('###\n###\n###'), ts, 8);
-  const sky = ts.idx.filter((i) => i === 11).length;
-  assert.equal(sky, 9); // one sky tile per cell (background pass)
-  const dirt = ts.idx.filter((i) => i !== 11).sort((a, b) => a - b);
-  assert.deepEqual(dirt, [0, 1, 2, 8, 9, 10, 16, 17, 18]);
+  // Block surrounded by open so all nine faces appear (off-grid is solid, so
+  // an edge-touching block would be all centre — it must be inset).
+  draw(ctx, parse('.....\n.###.\n.###.\n.###.\n.....'), ts, 8);
+  assert.equal(ts.idx.filter((i) => i === 11).length, 25); // sky per cell
+  const nine = new Set([0, 1, 2, 8, 9, 10, 16, 17, 18]);
+  const got = new Set(ts.idx.filter((i) => nine.has(i)));
+  assert.equal(got.size, 9); // every 9-slice tile used
 });
 
 test('atlas path: grass overlays dirt that has open sky above', () => {

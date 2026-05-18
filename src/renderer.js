@@ -39,10 +39,14 @@ function hash(x, y) {
   return n;
 }
 
+// Off-grid counts as SOLID: the world is implicit dirt the level is carved
+// from, so boundary walls/floor present their rocky face to the play area
+// (the player), not off the edge of the map (v4 design §3).
 const solid = (grid, r, c) =>
-  r >= 0 && r < grid.length && c >= 0 && c < grid[r].length && grid[r][c] === '#';
+  r < 0 || r >= grid.length || c < 0 || c >= grid[r].length || grid[r][c] === '#';
 
-// 9-slice pick: off-grid counts as open so the map border gets edge tiles.
+// 9-slice pick (off-grid solid → see above): row/col select a corner/edge/
+// centre tile so the rim faces toward open space (the player side).
 export function autotileIndex(grid, r, c) {
   const up = solid(grid, r - 1, c);
   const down = solid(grid, r + 1, c);
