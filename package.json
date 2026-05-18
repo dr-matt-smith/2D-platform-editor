@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "gen:levels": "node scripts/gen-levels-manifest.mjs",
-    "predev": "npm run gen:levels",
+    "gen:tilesets": "node scripts/gen-tilesets-manifest.mjs",
+    "gen": "npm run gen:levels && npm run gen:tilesets",
+    "predev": "npm run gen",
     "dev": "vite",
-    "prebuild": "npm run gen:levels",
+    "prebuild": "npm run gen",
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test"
