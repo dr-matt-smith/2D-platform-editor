@@ -1,4 +1,5 @@
 # name: below_ground
+# order: 2
 # theme: cave
 # size: 40x16
 ########################################
