@@ -44,24 +44,24 @@ Bit order (clockwise NESW): `mask = N·1 + E·2 + S·4 + W·8`, where a directio
 bit is **1 if that neighbour is solid**. Off-grid counts as solid (v4 §3,
 unchanged) — it only affects how the mask is computed at borders.
 
-| mask | solid neighbours | role label | Dirt tile (v6 index / name) |
-|----:|------------------|------------|------------------------------|
-| 0  | —          | `single`    | 27 `platform_single` |
-| 1  | N          | `cap-bottom`| 20 `platform_bottom` |
-| 2  | E          | `cap-left`  | 24 `platform_left`   |
-| 3  | N E        | `corner-bl` | 16 `dirt_bottom_left`|
-| 4  | S          | `cap-top`   | 4 `platform_top`     |
-| 5  | N S        | `mid-v`     | 12 `platform_mid`    |
-| 6  | E S        | `corner-tl` | 0 `dirt_top_left`    |
-| 7  | N E S      | `edge-left` | 8 `dirt_left`        |
-| 8  | W          | `cap-right` | 26 `platform_right`  |
-| 9  | N W        | `corner-br` | 18 `dirt_bottom_right`|
-| 10 | E W        | `mid-h`     | 25 `platform_mid_h`  |
-| 11 | N E W      | `edge-bottom`| 17 `dirt_bottom`    |
-| 12 | S W        | `corner-tr` | 2 `dirt_top_right`   |
-| 13 | N S W      | `edge-right`| 10 `dirt_right`      |
-| 14 | E S W      | `edge-top`  | 1 `dirt_top`         |
-| 15 | N E S W    | `center`    | 9 `dirt_center`      |
+| mask | bin (WSEN) | solid neighbours | role label | Dirt tile (v6 index / name) |
+|----:|:----------:|------------------|------------|------------------------------|
+| 0  | `0000` | —          | `single`    | 27 `platform_single` |
+| 1  | `0001` | N          | `cap-bottom`| 20 `platform_bottom` |
+| 2  | `0010` | E          | `cap-left`  | 24 `platform_left`   |
+| 3  | `0011` | N E        | `corner-bl` | 16 `dirt_bottom_left`|
+| 4  | `0100` | S          | `cap-top`   | 4 `platform_top`     |
+| 5  | `0101` | N S        | `mid-v`     | 12 `platform_mid`    |
+| 6  | `0110` | E S        | `corner-tl` | 0 `dirt_top_left`    |
+| 7  | `0111` | N E S      | `edge-left` | 8 `dirt_left`        |
+| 8  | `1000` | W          | `cap-right` | 26 `platform_right`  |
+| 9  | `1001` | N W        | `corner-br` | 18 `dirt_bottom_right`|
+| 10 | `1010` | E W        | `mid-h`     | 25 `platform_mid_h`  |
+| 11 | `1011` | N E W      | `edge-bottom`| 17 `dirt_bottom`    |
+| 12 | `1100` | S W        | `corner-tr` | 2 `dirt_top_right`   |
+| 13 | `1101` | N S W      | `edge-right`| 10 `dirt_right`      |
+| 14 | `1110` | E S W      | `edge-top`  | 1 `dirt_top`         |
+| 15 | `1111` | N E S W    | `center`    | 9 `dirt_center`      |
 
 Naming follows the *decorated/open* side (consistent with the existing
 `dirt_left` etc.): a cell solid on all but its left presents its face left →
