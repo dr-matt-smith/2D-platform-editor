@@ -1,9 +1,24 @@
 # Version 8 — Implementation Plan
 
-Status: Planned (design Draft) · Date: 2026-05-18 · Design:
+Status: Delivered (M1–M6) · Date: 2026-05-18 · Design:
 [../1_design/version08_design.md](../1_design/version08_design.md)
 
-A forward plan: v8 is not yet built. **Consumer-side only — zero engine
+Delivered, one path-scoped commit per milestone (design+plan: `b7cb54e`,
+`0953938`, `82e2c18`):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `57251e3` | `meta.tileset` parse/serialize; `DEFAULT_LEGEND`/`buildLegend`/`LEGEND` alias (pure, tested) |
+| 2 | `4b859d2` | `validate(parsed, legend = DEFAULT_LEGEND)` — tileset-aware glyph set |
+| 3 | `0258044` | complete `tile_lookup` glyphs (Wall→Filled) + `loadTileset(id)` + `palette.js` + drift test |
+| 4 | `c0cd75f` | per-level cached tileset load + thumbnail legend + unknown-tileset notice |
+| 5 | `2dd5ddc` | `levels.tilesets()` + new-level/tileset chooser |
+| 6 | _this commit_ | docs + v08 transcript; plan Delivered; design §10 ticked |
+
+Outcome: tests 48 → 55 (additions only; the back-compat default param meant
+zero churn to the existing suite), `npm run build` clean. Engine untouched.
+
+**Consumer-side only — zero engine
 risk** (the v7 mask renderer is untouched). One milestone per commit;
 **stage path-scoped, then read `git status --short` as its own step** before
 committing (the user is still authoring `above_ground2.txt` / regenerating

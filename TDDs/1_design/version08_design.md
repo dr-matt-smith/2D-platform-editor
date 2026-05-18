@@ -1,7 +1,10 @@
 # 2D Level Designer — Version 8 Design Document
 
-Status: Draft · Date: 2026-05-18 · Builds on:
-[version07_design.md](version07_design.md) (v8 scope recorded there §13)
+Status: Delivered · Date: 2026-05-18 · Builds on:
+[version07_design.md](version07_design.md) (v8 scope recorded there §13) ·
+Built: [../2_implementation/version08_implementation.md](../2_implementation/version08_implementation.md)
+(M1–M6, all §10 milestones delivered) ·
+[../3_transcripts/version08_build.md](../3_transcripts/version08_build.md)
 
 ## 1. Purpose
 
@@ -135,16 +138,19 @@ order this correctly (today `loadTileset` runs once at startup).
   (engine untouched; legend is cosmetic).
 - `tiles.json` retained; `tile_lookup.json` `glyphs` extended additively.
 
-## 10. Milestones
+## 10. Milestones — all delivered ✓
 
-| # | Deliverable |
-|---|-------------|
-| 1 | `level.js`: `meta.tileset` parse/serialize; `buildLegend`+`DEFAULT_LEGEND` + tests |
-| 2 | `validate(parsed, legend?)` signature; tests (Dirt default unchanged) |
-| 3 | `tile_lookup.json` complete `glyphs` (filled, color, Wall→Filled); `loadTileset(id)` |
-| 4 | `main.js`: per-level tileset load → derived legend → thumbnails → validate; unknown-tileset notice |
-| 5 | "New level" + tileset chooser (loaderDialog/levels/main) |
-| 6 | Docs + v08 transcript; mark plan delivered |
+(commit hashes in the
+[implementation plan](../2_implementation/version08_implementation.md))
+
+| # | ✓ | Deliverable |
+|---|---|-------------|
+| 1 | ✓ | `level.js`: `meta.tileset` parse/serialize; `buildLegend`+`DEFAULT_LEGEND` + tests |
+| 2 | ✓ | `validate(parsed, legend?)` signature; tests (Dirt default unchanged) |
+| 3 | ✓ | `tile_lookup.json` complete `glyphs` (filled, color, Wall→Filled); `loadTileset(id)` |
+| 4 | ✓ | `main.js`: per-level tileset load → derived legend → thumbnails → validate; unknown-tileset notice |
+| 5 | ✓ | "New level" + tileset chooser (loaderDialog/levels/main) |
+| 6 | ✓ | Docs + v08 transcript; mark plan delivered |
 
 ## 11. Open questions — RESOLVED
 
