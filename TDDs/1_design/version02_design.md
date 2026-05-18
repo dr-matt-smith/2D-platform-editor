@@ -27,8 +27,9 @@ into addressable assets. It also sets scope for the remaining v1 §10 backlog.
    unknown → `sky`. Selects background + decor only; no gameplay/validation
    impact. Round-trips through serialize.
 5. **Two example levels** — `levels/above_ground.txt` (sky) and
-   `levels/below_ground.txt` (cave), authored from the tileset screenshots and
-   passing the v1 validator with zero errors.
+   `levels/below_ground.txt` (cave) *(moved to `public/data/levels/…` in v3)*,
+   authored from the tileset screenshots and passing the v1 validator with
+   zero errors.
 
 ### Planned for v2 (remaining backlog, ranked)
 

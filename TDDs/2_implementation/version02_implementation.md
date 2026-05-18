@@ -23,7 +23,8 @@ v1 §10 backlog carried into v2.
 
 ### A2 — Example levels (`f63d7cf`, theme added in `2b49c48`)
 
-- `levels/above_ground.txt` (sky) and `levels/below_ground.txt` (cave),
+- `levels/above_ground.txt` (sky) and `levels/below_ground.txt` (cave)
+  *(moved to `public/data/levels/…` in v3)*,
   generated programmatically to guarantee exact width and validated with the
   project's own `parse`+`validate` (0 errors). A walled-off exit in the cave
   was caught by inspection and corrected (no reachability lint exists).

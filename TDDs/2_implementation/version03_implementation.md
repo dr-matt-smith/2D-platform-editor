@@ -1,11 +1,16 @@
 # Version 3 — Implementation Plan
 
-Status: Planned (design is Draft) · Date: 2026-05-18 · Design:
+Status: Delivered (M1–M6) · Date: 2026-05-18 · Design:
 [../1_design/version03_design.md](../1_design/version03_design.md)
 
-A forward plan: v3 is not yet built. One milestone per commit, prefixed
-`v3 …`, design/docs updated in the same commit, `npm test` green and
-`npm run build` clean before each.
+This started as a forward plan and is now a record: all six milestones are
+built, one commit each (`9a95e2d`, `d2e21c4`, `ed50f8b`, `f51a0cd`,
+`1021001`, + this docs sweep), `npm test` green (20 → 29) and `npm run build`
+clean throughout. The per-milestone steps below were followed as written; the
+notable deltas: a baseline-safe `levels.peek` was added in M5 for the dialog's
+per-row download, and during M6 a `git add -A` regression that deleted the
+transcripts was found and recovered from history (see
+[../3_transcripts/version03_build.md](../3_transcripts/version03_build.md)).
 
 ## Constraints & approach
 

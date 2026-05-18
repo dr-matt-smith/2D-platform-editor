@@ -41,6 +41,7 @@ localStorage, and an actual game runtime. These are tracked for later versions.
   DOM-light; a framework would be premature.
 - **Rendering:** `<canvas>` 2D context for the tile preview.
 - **Assets:** `public/assets/tilesets/Dirt_Platformer_Tiles/platformertiles.png`
+  *(moved to `public/data/tilesets/…` in v3 — see version03_design.md)*
   (256×96, RGBA). **Confirmed** 32×32 tiles → an 8×3 grid (24 tiles): a
   9-slice dirt block plus sky, moon and transparent decor overlays. Tile size
   and atlas layout are declared in a tileset config object, not hard-coded at
