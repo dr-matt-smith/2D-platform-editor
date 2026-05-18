@@ -1,9 +1,11 @@
 // Edit-time lint. Pure: parsed level in, array of issues out (design §2, §5).
 // Each issue: { line, col, severity: 'error'|'warn', message }.
 // line/col are 1-based; line is the original file line (from parsed.rows).
-import { LEGEND } from './level.js';
+import { DEFAULT_LEGEND } from './level.js';
 
-export function validate(parsed) {
+// `legend` is the active tileset's char-keyed legend (v8). Defaults to the
+// Dirt set so existing callers/tests are unchanged.
+export function validate(parsed, legend = DEFAULT_LEGEND) {
   const { grid, rows, meta } = parsed;
   const issues = [];
   const at = (r) => (rows[r] ? rows[r].line : 1);
@@ -12,7 +14,7 @@ export function validate(parsed) {
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       const g = grid[r][c];
-      if (!(g in LEGEND)) {
+      if (!(g in legend)) {
         issues.push({
           line: at(r),
           col: c + 1,

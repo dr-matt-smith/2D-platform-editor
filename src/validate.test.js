@@ -40,3 +40,17 @@ test('missing exit is a warning, not an error', () => {
   const e = find(issues, /no exit/);
   assert.equal(e.severity, 'warn');
 });
+
+test('valid-glyph set comes from the passed legend (tileset-aware)', () => {
+  // Default (Dirt) legend: `o` is valid.
+  assert.equal(find(validate(parse('PoE')), /undefined glyph 'o'/), undefined);
+  // A custom legend without `o`: same level now flags `o`.
+  const legend = {
+    '.': { role: 'background' },
+    P: { role: 'entity' },
+    E: { role: 'entity' },
+  };
+  const bad = find(validate(parse('PoE'), legend), /undefined glyph 'o'/);
+  assert.ok(bad);
+  assert.equal(bad.col, 2);
+});
