@@ -6,7 +6,7 @@ Status: Draft · Date: 2026-05-18 · Builds on:
 ## 1. Purpose
 
 Offer **three** named levels in the loader dialog — `tutorial`,
-`underground`, `above_ground` — with `tutorial` as the default on first run.
+`below_ground`, `above_ground` — with `tutorial` as the default on first run.
 
 ## 2. Current state (so the gap is precise)
 
@@ -28,17 +28,17 @@ The request maps to current artifacts as follows. **This mapping is the one
 open decision — see §8; the rest of the doc assumes it.**
 
 | Requested | Becomes | Action |
-|-----------|---------|--------|
+|----------|---------|--------|
 | `tutorial` (the runtime default) | new `tutorial.txt` | promote the `SAMPLE` content to a real level; make it the default |
-| `underground` | existing `below_ground.txt` | relabel only (display name → "Underground"); **keep filename/id `below_ground`** |
 | `above_ground` | existing `above_ground.txt` | unchanged; already loadable, just no longer the default |
 
-Rationale for "relabel, don't rename": in v3 the **id = filename stem** and
-ids key `localStorage` (`ld:v3:draft:<id>`, `ld:v3:lastOpen`). Renaming
-`below_ground` → `underground` orphans any saved draft and breaks a stored
-`lastOpen`. Changing only the `# name:` directive gives the requested label
-with **zero id churn and no migration**. The dialog already shows `# name:`
-as the label and the id separately, so "Underground" displays correctly.
+(`below_ground` - no change needed)
+
+Rationale for leaving `below_ground` untouched: in v3 the **id = filename
+stem** and ids key `localStorage` (`ld:v3:draft:<id>`, `ld:v3:lastOpen`). Any
+rename/relabel churns ids or display; the brief does not need it, so
+`below_ground` is left exactly as-is — **zero id churn, no migration, no
+relabel**. It already appears in the loader (its `# name:` is the label).
 
 ## 4. Scope
 
@@ -46,10 +46,9 @@ as the label and the id separately, so "Underground" displays correctly.
 
 - Add `public/data/levels/tutorial.txt` (content = the current `tutorial-01`
   sample, `# name: tutorial`).
-- Change `below_ground.txt`'s `# name:` to `Underground` (id stays
-  `below_ground`).
-- Deterministic load order so `tutorial` is first/default, then
-  `underground`, then `above_ground`.
+- `below_ground.txt` unchanged (no rename, no relabel).
+- Deterministic load order so `tutorial` is first/default; the existing two
+  follow.
 - `SAMPLE` in `main.js` stays as the offline fallback (now redundant with a
   real tutorial, but still the only safety net if `/data` is unreachable).
 
@@ -108,12 +107,9 @@ consumes the manifest array order).
 
 ## 8. Open questions
 
-- **Mapping confirmation (blocking).** §3 assumes: tutorial = promoted
-  sample (new file, default); underground = below_ground relabelled (id
-  unchanged); above_ground = unchanged. If instead you meant *rename*
-  below_ground's id to `underground`, or that the `tutorial` should be
-  different content, that changes §3/§5/§7 (rename ⇒ migration). Confirm
-  before milestone 1.
+- **Mapping — RESOLVED.** Confirmed by the user: `tutorial` = promoted sample
+  (new file, default); `below_ground` and `above_ground` both unchanged (no
+  relabel, no rename). No `localStorage` migration.
 - **Keep the `SAMPLE` constant?** Recommended yes (offline safety net); it
   could later be loaded *from* `tutorial.txt` at build time to avoid the
   duplicated text, but that adds a build step for little gain — defer.
@@ -125,14 +121,14 @@ consumes the manifest array order).
 
 | # | Deliverable |
 |---|-------------|
-| 1 | Add `tutorial.txt`; relabel `below_ground` `# name:`; add `# order:` to the three |
+| 1 | Add `tutorial.txt` (from `SAMPLE`, `# name: tutorial`); add `# order:` to the three levels |
 | 2 | `gen-levels-manifest.mjs` honours `# order:`; regenerate + commit `manifest.json`; dev-smoke the 3-entry loader + default |
 | 3 | Docs: `data/levels/README.md` (three levels) + v06 transcript; mark plan delivered |
 
 ## 10. Acceptance criteria
 
-- The loader dialog lists exactly three: **Tutorial**, **Underground**,
-  **Above Ground** (labels), in that order.
+- The loader dialog lists exactly three — `tutorial`, `below_ground`,
+  `above_ground` (their `# name:` labels) — with `tutorial` first/default.
 - A fresh profile (no `lastOpen`) opens on `tutorial`.
 - A returning user's `lastOpen` (incl. `below_ground`) still resolves and
   loads — no lost drafts, no migration.
