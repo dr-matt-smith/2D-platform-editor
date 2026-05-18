@@ -1,217 +1,223 @@
 # 2D Level Designer — Version 7 Design Document
 
 Status: Draft · Date: 2026-05-18 · Builds on:
-[version06_design.md](version06_design.md)
+[version06_design.md](version06_design.md) · Supersedes earlier v7 draft
+(ad-hoc `filled-*` names → mask model; UX/format split to v8)
 
 > Numbered **v7**: v6 ("three loadable levels") is delivered. The request
-> said "level 6"; this is the next version.
+> said "level 6"; this is the next version. The original v7 brief is split:
+> **v7 = data + tile-selection engine** (this doc); **v8 = UX/format**
+> (legend thumbnails, Wall→Filled, `# tileset:`, new-level + chooser — §13).
 
 ## 1. Purpose
 
-Make tilesets data-driven and swappable, and surface tiles visually in the
-editor:
+Make tile selection a **standard 4-neighbour bitmask autotile** backed by a
+per-tileset **`tile_lookup.json`**, replacing the bespoke
+`pickTile`/`autotileIndex`/`PLATFORM`/`platform_single` code with one
+16-entry table. v7 is **data + engine only, zero behaviour change**: the
+example levels must render byte-identical to v6. Everything user-facing
+(legend thumbnails, the Wall→Filled rename, the `# tileset:` directive, the
+new-empty-level flow) moves to **v8** (§13).
 
-- a per-tileset **`tile_lookup.json`** that maps roles → { name, char,
-  image } so the glyph alphabet and the render tiles are data, not hardcoded;
-- the right-hand **legend shows a thumbnail** of each tile beside its glyph
-  and name; rename **"Wall" → "Filled"** (empty / filled = the two basics);
-- a generated **tilesets manifest**; a per-level **`# tileset:`** directive;
-- a **"New empty level"** flow that picks a tileset.
+## 2. Why the split
 
-## 2. Current state (what is hardcoded today)
+The original brief bundled four independent risk types: a core renderer
+re-type, a format change (`# tileset:`), UI (thumbnails, new-level), and
+build tooling. The renderer change is the biggest since v1 and needs its own
+regression gate; bundling it with UX/format means any failure blocks
+everything. v7 isolates the engine refactor (provable, no visible change);
+v8 builds UX on the now-data-driven engine.
 
-- `level.js` `LEGEND` — 6 fixed glyphs (`.` empty, `#` **wall**, `P`, `^`,
-  `o`, `E`). Drives the legend UI and `validate.js`'s undefined-glyph rule.
-- `renderer.js` — `T.dirt` 9-slice indices, `PLATFORM` set
-  `{4,12,20,24,25,26,27}`, `pickTile` returns a **numeric Dirt-atlas index**.
-- `tileset.js` — `GLYPH_TILE {'#':9}`, hardcoded atlas + 4 standalone
-  Dirt paths.
-- One tileset dir; `tiles.json` exists (28 sliced tiles: index/name/role/
-  file). **No** `tile_lookup.json`, no tilesets manifest, no `# tileset:`
-  directive, no new-level flow (the loader only opens existing levels).
+## 3. Current state — we already hand-rolled a 16-tile autotile
 
-Everything above is Dirt-specific. v7 introduces a role layer so a different
-tileset is a data drop-in.
+`renderer.js` uses `T.dirt` (9-slice indices), a `PLATFORM` set, and
+`pickTile` (isolated/thin special cases) delegating to `autotileIndex`
+(off-grid solid, v4). Enumerated, the 4 cardinal neighbours give **16
+masks**, and every one already maps to exactly one current tile (corners +
+edges + center + the v5 platform caps/mids + single). We reinvented 4-bit
+("Wang"/Godot *3×3 minimal*/RPG-Maker-autotile) selection with bespoke names
+and special cases. v7 adopts the standard.
 
-## 3. Two concepts the request conflates (must be separated)
+## 4. The mask model (this table IS the spec and the regression gate)
 
-The brief lists one flat set of "tiles", but there are really two layers:
+Bit order (clockwise NESW): `mask = N·1 + E·2 + S·4 + W·8`, where a direction
+bit is **1 if that neighbour is solid**. Off-grid counts as solid (v4 §3,
+unchanged) — it only affects how the mask is computed at borders.
 
-1. **Glyph alphabet** — what the user types/draws and what the level text
-   stores: `empty`, `filled`, `player`, `exit`, `hazard<n>`, `pickup<n>`.
-   Each has a **distinct char** and drives the legend + validation.
-2. **Render roles** — auto-selected *sub-tiles of `filled`* chosen by
-   `pickTile` from neighbours: `filled-top/bottom/left/right`,
-   `filled-center-horizontal/vertical`, the 9-slice **corners**, and
-   `filled-single`. These all share the char `#`; they differ only by image.
+| mask | solid neighbours | role label | Dirt tile (v6 index / name) |
+|----:|------------------|------------|------------------------------|
+| 0  | —          | `single`    | 27 `platform_single` |
+| 1  | N          | `cap-bottom`| 20 `platform_bottom` |
+| 2  | E          | `cap-left`  | 24 `platform_left`   |
+| 3  | N E        | `corner-bl` | 16 `dirt_bottom_left`|
+| 4  | S          | `cap-top`   | 4 `platform_top`     |
+| 5  | N S        | `mid-v`     | 12 `platform_mid`    |
+| 6  | E S        | `corner-tl` | 0 `dirt_top_left`    |
+| 7  | N E S      | `edge-left` | 8 `dirt_left`        |
+| 8  | W          | `cap-right` | 26 `platform_right`  |
+| 9  | N W        | `corner-br` | 18 `dirt_bottom_right`|
+| 10 | E W        | `mid-h`     | 25 `platform_mid_h`  |
+| 11 | N E W      | `edge-bottom`| 17 `dirt_bottom`    |
+| 12 | S W        | `corner-tr` | 2 `dirt_top_right`   |
+| 13 | N S W      | `edge-right`| 10 `dirt_right`      |
+| 14 | E S W      | `edge-top`  | 1 `dirt_top`         |
+| 15 | N E S W    | `center`    | 9 `dirt_center`      |
 
-`tile_lookup.json` holds **both** (one entry per role); the legend renders
-only layer 1; the renderer resolves layer 2. Keeping them in one file is
-fine, but the design must not pretend a render-role has its own editable
-char.
+Naming follows the *decorated/open* side (consistent with the existing
+`dirt_left` etc.): a cell solid on all but its left presents its face left →
+`edge-left`; a cell whose only neighbour is below connects downward only →
+it is the `cap-top` of a column. This 1:1 table is exactly today's output,
+so the refactor is mechanical and exactly verifiable.
 
-## 4. `tile_lookup.json` schema
+The `role label` column is human reference; the **canonical key is the mask
+integer 0–15** (the standard, language-neutral, self-checking key — Tiled
+/Godot store terrains this way internally).
+
+## 5. `tile_lookup.json` schema
 
 `public/data/tilesets/<set>/tile_lookup.json`:
 
 ```json
 {
-  "roles": {
-    "empty":   { "name": "Empty",  "char": ".", "image": null },
-    "filled":  { "name": "Filled", "char": "#", "image": "tiles/09_dirt_center.png" },
-
-    "filled-top":            { "name": "Filled (top)",    "char": "#", "image": "tiles/01_dirt_top.png" },
-    "filled-bottom":         { "name": "Filled (bottom)", "char": "#", "image": "tiles/17_dirt_bottom.png" },
-    "filled-left":           { "name": "Filled (left)",   "char": "#", "image": "tiles/08_dirt_left.png" },
-    "filled-right":          { "name": "Filled (right)",  "char": "#", "image": "tiles/10_dirt_right.png" },
-    "filled-top-left":       { "char": "#", "image": "tiles/00_dirt_top_left.png" },
-    "filled-top-right":      { "char": "#", "image": "tiles/02_dirt_top_right.png" },
-    "filled-bottom-left":    { "char": "#", "image": "tiles/16_dirt_bottom_left.png" },
-    "filled-bottom-right":   { "char": "#", "image": "tiles/18_dirt_bottom_right.png" },
-    "filled-center-vertical":   { "char": "#", "image": "tiles/12_platform_mid.png" },
-    "filled-center-horizontal": { "char": "#", "image": "tiles/25_platform_mid_h.png" },
-    "filled-single":         { "char": "#", "image": "tiles/27_platform_single.png" },
-
-    "empty-sky":   { "name": "Sky",  "image": "tiles/11_sky.png" },
-    "empty-cave":  { "name": "Cave", "image": "tiles/19_dirt_fill.png" },
-
+  "name": "Dirt Platformer Tiles",
+  "tile": 32,
+  "filled": {
+    "0":  { "role": "single",     "image": "tiles/27_platform_single.png" },
+    "1":  { "role": "cap-bottom", "image": "tiles/20_platform_bottom.png" },
+    "2":  { "role": "cap-left",   "image": "tiles/24_platform_left.png" },
+    "...": "…all 16 masks (see §4 table)…",
+    "15": { "role": "center",     "image": "tiles/09_dirt_center.png" }
+  },
+  "background": {
+    "sky":  { "image": "tiles/11_sky.png" },
+    "cave": { "image": "tiles/19_dirt_fill.png" }
+  },
+  "glyphs": {
+    "empty":  { "name": "Empty",        "char": "." },
     "player": { "name": "Player spawn", "char": "P", "image": null },
     "exit":   { "name": "Exit",         "char": "E", "image": null },
-    "hazard":  { "name": "Hazard",  "char": "^", "image": null },
-    "pickup":  { "name": "Pickup",  "char": "o", "image": null }
+    "hazard": { "name": "Hazard",       "char": "^", "image": null },
+    "pickup": { "name": "Pickup",       "char": "o", "image": null }
   }
 }
 ```
 
-Notes / decisions:
+- **`filled`** — the 16-mask table. Consumed by the v7 renderer.
+- **`background`** — `# theme:` selects `sky` vs `cave` (no format change;
+  reuses the v2 directive).
+- **`glyphs`** — the editable alphabet (the `#` "filled" glyph is implicit:
+  every `filled` mask shares char `#`). **Authored in v7** so the file is
+  complete, but **consumed in v8** (derived `LEGEND`, validation, thumbnails,
+  Wall→Filled, new-level). v7 does not change `level.js` `LEGEND`.
+- `image: null` ⇒ no sprite; renderer keeps its coloured-shape fallback (Dirt
+  has none for player/exit/hazard/pickup). `hazard1/2…`, `pickup1/2…` are
+  permitted extra keys; v7 ships defaults only.
+- A scaffold generator can seed `filled` from `tiles.json` using the §4
+  table; hand-checked thereafter.
 
-- **Corners are required.** The user's list omitted the four corners and
-  `filled-single`; the renderer needs them (full 9-slice + v5 platform set).
-  They are added with `filled-*` names. **Open question §11** confirms the
-  exact naming; the *count* is non-negotiable.
-- `char` is **optional** for render-only roles (all `filled-*` share `#`;
-  only `filled` carries the editable char). Legend = roles that have a
-  `char`. Renderer = the `filled-*` set.
-- `image: null` = no sprite (Dirt has none for player/exit/hazard/pickup);
-  the renderer keeps its existing coloured-shape fallback, and the legend
-  shows that shape as the thumbnail.
-- `hazard<n>` / `pickup<n>`: `hazard` is the default; `hazard1`, `hazard2`…
-  are optional extra variants (distinct chars, e.g. `^`, then author-chosen).
-  v7 ships only the defaults; the schema *allows* the numbered series.
-- `tiles.json` (raw slice manifest) stays; `tile_lookup.json` is the
-  semantic layer on top. A small generator can scaffold a lookup from
-  `tiles.json` by role-name match, hand-tuned thereafter.
+## 6. Engine refactor (v7 code)
 
-## 5. Renderer role layer (the load-bearing refactor)
+- **New `tileMask(grid, r, c) → 0..15`** (pure): the four `solid()` checks
+  (off-grid solid, unchanged) packed per §4 bit order. Replaces the
+  neighbour logic inside `autotileIndex`/`pickTile`.
+- **Resolver** in `tileset.js`: load the images named in
+  `tile_lookup.json.filled` keyed by mask; `drawFilled(ctx, mask, …)` blits
+  `filled[mask]`. Generic — no Dirt-specific paths, no atlas-index maths for
+  these (the standalone PNGs are already the source of 24–27; v7 makes *all*
+  16 lookup-driven; the 9-slice ones can stay atlas-backed via a small
+  `atlas:"r,c"` form or be pre-sliced — see §11).
+- **`renderer.js`**: terrain pass computes `tileMask` and draws via the
+  resolver. Decor suppression keeps today's behaviour: suppress grass/drip
+  when the mask is "thin" — `THIN = {0,1,2,4,5,8,10}` (single, the four caps,
+  `mid-v`, `mid-h`) — exactly the old `PLATFORM` set, re-expressed.
+- `autotileIndex`/`pickTile`/`PLATFORM` are **removed**; their tests are
+  rewritten as a `tileMask` table test (all 16) + a Dirt-lookup mapping test
+  (mask → the v6 index in §4) — these two together *prove* byte-identical
+  output without rendering.
+- `level.js`/`validate.js`/`main.js`/`loaderDialog.js` — **unchanged in v7**.
 
-`pickTile` currently returns a Dirt-atlas integer. v7: it returns a **role
-key string** (`'filled-top'`, `'filled-single'`, `'filled'`, …). A
-tileset-bound resolver maps role → image (from `tile_lookup.json`) and blits
-it; `tileset.js` becomes generic (loads the images named in the lookup, keyed
-by role). The neighbour logic of `autotileIndex`/`pickTile` is unchanged —
-only its *return type* changes (index → role). A Dirt `tile_lookup.json`
-that reproduces today's exact index→role mapping is the regression guard
-(rendered output must be byte-identical to v6 for the example levels).
+## 7. Tilesets manifest (v7, build tooling)
 
-`level.js` `LEGEND` is **derived** from the active tileset's lookup (roles
-with a `char`), not hardcoded. `validate.js`'s valid-glyph set likewise comes
-from the lookup → validation becomes tileset-aware.
+`scripts/gen-tilesets-manifest.mjs` scans
+`public/data/tilesets/*/tile_lookup.json` → `public/data/tilesets/
+manifest.json` (`[{ id, name }]`), wired into `predev`/`prebuild` exactly
+like `gen-levels-manifest`. It has **no consumer until v8**; included in v7
+because it is zero-risk data tooling that completes the "tilesets are
+discoverable data" layer. (Alternative: defer to v8 with its consumer — §11.)
 
-## 6. Per-level tileset + manifest
-
-- **`# tileset:`** — additive header directive (like `theme`/`order`);
-  default `Dirt_Platformer_Tiles`. Existing levels (no directive) keep
-  rendering Dirt. The parser already consumes unknown directives, but the
-  app must *read* this one to pick the lookup.
-- **Tilesets manifest** — `scripts/gen-tilesets-manifest.mjs` scans
-  `public/data/tilesets/*/tile_lookup.json` → `public/data/tilesets/
-  manifest.json` (`[{ id, name }]`), wired into `predev`/`prebuild` exactly
-  like `gen-levels-manifest`.
-
-## 7. Legend thumbnails + rename
-
-- Right-pane legend: each entry = small tile image + char + name. Image from
-  the role's `image` (scaled down); `null` → the renderer's shape swatch.
-- "Wall" → **"Filled"** (the `#` role name). `empty`/`filled` presented as
-  the two basic types. Cosmetic in the data (the char stays `#`); touches the
-  lookup, the legend render, and any doc copy.
-
-## 8. New empty level
-
-Loader dialog gains a **"New level"** action → choose a tileset (tilesets
-manifest) → choose size → buffer = a grid of the tileset's `empty` char with
-`# name:`, `# size:`, `# tileset:` headers. It is *not* auto-saved (no id
-until the user downloads/keeps it); validation will warn "no player spawn"
-until they place one — expected.
-
-## 9. Architecture / impact (large — phased)
+## 8. Architecture / impact (v7 only)
 
 | Area | Change |
 |------|--------|
-| `tile_lookup.json` (Dirt) | new; reproduces current mapping exactly |
-| `renderer.js` | `pickTile`/`autotileIndex` return role keys; resolver blits via lookup |
-| `tileset.js` | generic loader keyed by lookup roles (not hardcoded paths) |
-| `level.js` | `LEGEND` derived from active lookup; `# tileset:` parsed to `meta.tileset` |
-| `validate.js` | valid-glyph set from the active lookup |
-| `main.js` | legend thumbnails; pass active tileset to renderer; new-level flow |
-| `loaderDialog.js` | "New level" + tileset chooser |
-| `scripts/` | `gen-tilesets-manifest.mjs`; predev/prebuild wiring |
+| `tile_lookup.json` (Dirt) | new; `filled` reproduces §4 exactly |
+| `renderer.js` | `tileMask` + resolver; remove `pickTile`/`autotileIndex`/`PLATFORM`; decor uses `THIN` |
+| `tileset.js` | generic mask→image loader from the lookup |
+| `renderer.test.js` | rewritten: 16-mask table test + Dirt mapping test |
+| `scripts/` | `gen-tilesets-manifest.mjs` + predev/prebuild |
+| `level.js`/`validate.js`/`main.js`/`loaderDialog.js` | **unchanged** |
 
-This is the biggest refactor since v1 — it re-types the renderer's core
-return value and makes three modules tileset-aware. **Recommended phasing**
-(could span v7→v8 if preferred; one coherent design, sequenced):
+## 9. Migration / back-compat
 
-1. Add Dirt `tile_lookup.json` + `gen-tilesets-manifest`; **no behaviour
-   change** (data only, regression-guarded).
-2. Renderer role-key refactor behind the Dirt lookup; prove byte-identical
-   render of the example levels (the hard regression gate).
-3. `LEGEND`/`validate` derived from the lookup; rename Wall→Filled.
-4. Legend thumbnails.
-5. `# tileset:` directive + reading it; tileset chooser; new-level flow.
+- No glyph, format, `LEGEND`, or localStorage change in v7 → existing levels,
+  drafts, `lastOpen` unaffected.
+- The regression gate is exact (the §4 table); example levels render
+  byte-identical to v6 (verified by the render harness + the two unit
+  tests).
+- `tiles.json` retained; `tile_lookup.json` and the tilesets manifest are
+  additive.
 
-## 10. Migration / back-compat
+## 10. Milestones (v7)
 
-- Levels with no `# tileset:` → default `Dirt_Platformer_Tiles`; render
-  unchanged.
-- Glyph chars are unchanged (`.`/`#`/`P`/`E`/`^`/`o`) so existing level text,
-  drafts, and `localStorage` are unaffected — no migration.
-- `tiles.json` retained; `tile_lookup.json` is additive.
+| # | Deliverable |
+|---|-------------|
+| 1 | `tileMask` (pure, 0–15) + 16-case table test; remove old fns; renderer/tests still green & render-identical |
+| 2 | Dirt `tile_lookup.json` (§4/§5) + `tileset.js` mask→image resolver; renderer draws via lookup; harness byte-compare vs v6 |
+| 3 | `gen-tilesets-manifest.mjs` + predev/prebuild; `manifest.json` committed |
+| 4 | Docs + v07 transcript; mark plan delivered |
 
 ## 11. Open questions
 
-- **Role naming (blocking phase 2).** Confirm names for the four corners and
-  the single (`filled-top-left` … `filled-single`?), and whether
-  `filled-center-horizontal/vertical` mean the v5 platform mids (assumed
-  yes). The renderer needs *some* name for all 9-slice + platform cases; the
-  request's 7-name set is insufficient — this doc proposes a 13-role
-  `filled-*` set (§4).
-- **Scope/phasing.** This is ~2 versions of work. Ship all of v7, or land
-  phases 1–2 as v7 and 3–5 as v8? Recommend deciding before phase 1.
-- **`empty` variants vs `# theme:`.** Today sky/cave bg is chosen by
-  `# theme:`. The lookup has `empty-sky`/`empty-cave`. Keep `# theme:`
-  selecting which `empty-*` image (recommended, no format churn) rather than
-  a new mechanism.
-- **Hazard/pickup numbering in the editor.** v7 ships defaults only; how the
-  user picks `hazard2` vs `hazard` in the editor (distinct chars? a palette
-  sub-menu?) is deferred — schema allows it, UI is v8.
-- **Tileset image-less roles.** Dirt has no player/exit/hazard/pickup
-  sprites; confirm keeping coloured-shape fallback (recommended) vs.
-  requiring every tileset to supply them.
+- **9-slice tiles: keep atlas-backed or pre-slice all 16?** 24–27 are
+  standalone PNGs; 0–18 live in the atlas. Cleanest is one mechanism: either
+  `tile_lookup` entries allow `{ "atlas": "row,col" }` *or* the slicer emits
+  all 16 as PNGs (it already emits per-tile PNGs in `tiles/`). Recommend the
+  latter (uniform, simplest resolver). Decide before milestone 2.
+- **Tilesets manifest in v7 or v8?** §7 puts it in v7 (zero-risk data). It
+  has no consumer until v8 — acceptable, or defer. Recommend v7.
+- **Bit order.** NESW clockwise, `N=1…W=8` (§4) — documented convention; any
+  consistent order works, but it must be fixed now since it keys the file.
+- **`glyphs` section authored in v7?** Yes (file completeness), consumed v8.
+  Confirm we are happy shipping authored-but-unconsumed data.
+- **Future: 8-neighbour / 47-blob.** This is the 4-bit/16 subset (no diagonal
+  info → no inner corners), consistent with today. A future tileset wanting
+  true inner corners would need the 47-tile "blob" superset; the schema can
+  extend (`filled` keyed by an 8-bit mask) without breaking 16-key sets.
+  Out of scope; noted so the schema choice is deliberate.
 
-## 12. Acceptance criteria
+## 12. Acceptance criteria (v7)
 
-- `public/data/tilesets/Dirt_Platformer_Tiles/tile_lookup.json` exists and a
-  generated `public/data/tilesets/manifest.json` lists it (via the hook).
-- With the Dirt lookup, the example levels render **byte-identical to v6**
-  (regression gate for the role-key refactor).
-- Legend shows a thumbnail + char + name per glyph; `#` reads **"Filled"**.
-- A level with `# tileset: Dirt_Platformer_Tiles` (or none) is unchanged; the
-  app reads the directive to select the lookup.
-- "New level" produces an empty, correctly-headed buffer for a chosen
-  tileset; `npm test` green, `npm run build` clean.
+- `tileMask` returns the §4 mask for all 16 neighbour combinations (unit
+  test); off-grid still counts as solid.
+- Dirt `tile_lookup.json.filled[mask].image` equals the v6 tile for every
+  mask (mapping test) ⇒ example levels render **byte-identical to v6** (the
+  scratch + `above_ground`/`below_ground` harness shots).
+- `pickTile`/`autotileIndex`/`PLATFORM` are gone; nothing imports them.
+- Generated `public/data/tilesets/manifest.json` lists
+  `Dirt_Platformer_Tiles` via the hook (not hand-edited).
+- `npm test` green, `npm run build` clean.
 
-## 13. v8 candidates
+## 13. v8 scope (recorded so the split is unambiguous)
 
-Hazard/pickup variant picker UI; a second real tileset (proving the
-abstraction); per-tile variant randomisation; flood/line tool; reachability
-lint; play-test runtime; level create/rename/delete.
+Consumes the v7 data layer; no engine risk:
+
+- `level.js` `LEGEND` **derived** from the active tileset's `glyphs`;
+  `validate.js` valid-glyph set from the lookup.
+- **Wall → Filled** (the `#`/filled glyph label); empty/filled as the two
+  basics.
+- **Legend thumbnails** — small tile image (from the lookup) + char + name.
+- **`# tileset:`** additive header directive (default `Dirt_Platformer_Tiles`,
+  no migration); app reads it to choose the lookup.
+- **New empty level** + tileset chooser (uses the v7 tilesets manifest).
+- Deferred further: hazard/pickup variant picker UI; a second real tileset
+  (proves the abstraction); 47-blob; flood/line tool; reachability lint;
+  play-test runtime.
