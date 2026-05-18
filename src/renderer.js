@@ -63,13 +63,6 @@ export function tileMask(grid, r, c) {
 // platform tiles alone.
 export const THIN = new Set([0, 1, 2, 4, 5, 8, 10]);
 
-// Interim mask→Dirt-index map (v7 design §4 table). M1 keeps rendering via
-// the existing index path so output is byte-identical and the suite stays
-// green; M2 replaces this with the tile_lookup.json resolver.
-const MASK_INDEX = [
-  27, 20, 24, 16, 4, 12, 0, 8, 26, 18, 25, 17, 2, 10, 1, 9,
-];
-
 function drawFallback(ctx, glyph, x, y, t) {
   const f = FALLBACK[glyph];
   if (!f) return; // unknown glyph: leave as background (validator flags it)
@@ -122,9 +115,9 @@ export function draw(ctx, parsed, tileset, tile = 24) {
       for (let c = 0; c < grid[r].length; c++) blit(bg, c, r);
   }
 
-  // Pass 2: terrain. tileMask (v7) picks the autotile; THIN masks (single /
-  // caps / mids) are recorded so the decor pass leaves their finished art
-  // alone. MASK_INDEX keeps the v6 pixels (M1); M2 swaps to the lookup.
+  // Pass 2: terrain. tileMask (v7) picks the autotile; the tileset resolves
+  // the mask to its tile_lookup.json image. THIN masks (single / caps /
+  // mids) are recorded so the decor pass leaves their finished art alone.
   const thinCells = new Set();
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
@@ -132,7 +125,7 @@ export function draw(ctx, parsed, tileset, tile = 24) {
       if (ready) {
         const m = tileMask(grid, r, c);
         if (THIN.has(m)) thinCells.add(r * meta.width + c);
-        blit(MASK_INDEX[m], c, r);
+        tileset.drawFilled(ctx, m, px(c), py(r), tile);
       } else {
         drawFallback(ctx, '#', px(c), py(r), tile);
       }

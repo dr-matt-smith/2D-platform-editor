@@ -1,0 +1,33 @@
+{
+  "name": "Dirt Platformer Tiles",
+  "tile": 32,
+  "filled": {
+    "0":  { "role": "single",      "image": "tiles/27_platform_single.png" },
+    "1":  { "role": "cap-bottom",  "image": "tiles/20_platform_bottom.png" },
+    "2":  { "role": "cap-left",    "image": "tiles/24_platform_left.png" },
+    "3":  { "role": "corner-bl",   "image": "tiles/16_dirt_bottom_left.png" },
+    "4":  { "role": "cap-top",     "image": "tiles/04_platform_top.png" },
+    "5":  { "role": "mid-v",       "image": "tiles/12_platform_mid.png" },
+    "6":  { "role": "corner-tl",   "image": "tiles/00_dirt_top_left.png" },
+    "7":  { "role": "edge-left",   "image": "tiles/08_dirt_left.png" },
+    "8":  { "role": "cap-right",   "image": "tiles/26_platform_right.png" },
+    "9":  { "role": "corner-br",   "image": "tiles/18_dirt_bottom_right.png" },
+    "10": { "role": "mid-h",       "image": "tiles/25_platform_mid_h.png" },
+    "11": { "role": "edge-bottom", "image": "tiles/17_dirt_bottom.png" },
+    "12": { "role": "corner-tr",   "image": "tiles/02_dirt_top_right.png" },
+    "13": { "role": "edge-right",  "image": "tiles/10_dirt_right.png" },
+    "14": { "role": "edge-top",    "image": "tiles/01_dirt_top.png" },
+    "15": { "role": "center",      "image": "tiles/09_dirt_center.png" }
+  },
+  "background": {
+    "sky":  { "image": "tiles/11_sky.png" },
+    "cave": { "image": "tiles/19_dirt_fill.png" }
+  },
+  "glyphs": {
+    "empty":  { "name": "Empty",        "char": ".", "image": null },
+    "player": { "name": "Player spawn", "char": "P", "image": null },
+    "exit":   { "name": "Exit",         "char": "E", "image": null },
+    "hazard": { "name": "Hazard",       "char": "^", "image": null },
+    "pickup": { "name": "Pickup",       "char": "o", "image": null }
+  }
+}
