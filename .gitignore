@@ -22,3 +22,6 @@ npm-debug.log*
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Local v4 render previews (not committed)
+v4_preview/
