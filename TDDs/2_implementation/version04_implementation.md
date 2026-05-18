@@ -1,12 +1,25 @@
 # Version 4 — Implementation Plan
 
-Status: Planned (design Draft; below-ground question resolved) · Date:
-2026-05-18 · Design: [../1_design/version04_design.md](../1_design/version04_design.md)
+Status: Delivered (M1–M5) · Date: 2026-05-18 · Design:
+[../1_design/version04_design.md](../1_design/version04_design.md)
 
-A forward plan: v4 is not yet built. One milestone per commit, prefixed
-`v4 …`, **path-scoped `git add`** (never `-A`) with a `git status` glance
-before committing, design/docs updated in the same commit, `npm test` green
-and `npm run build` clean before each.
+Record of the build. One milestone per commit, prefixed `v4 …`, **path-scoped
+`git add`** (never `-A`) with a `git status` glance before each, `npm test`
+green and `npm run build` clean throughout (suite 26 → 47).
+
+| Milestone | Commit |
+|-----------|--------|
+| M1 off-grid-solid autotile rule + tests | `7162b57` |
+| M2 pure fillRect/outlineRect helpers | `e7a48b2` |
+| M3 capped undo/redo stack + key bindings | `9a1a8f6` |
+| M4 rectangle draw tool (drag + glyph picker) | `597dede` |
+| M5 docs + v04 transcript | this commit |
+
+Notable deltas from the plan: M1's old 9-slice test asserted the *previous*
+off-grid-open behaviour and was rewritten (not just extended); the M4
+buffer↔grid splice was additionally verified out-of-app against a level with
+a `//` comment interspersed in the grid (header + comment preserved). The
+plan's per-milestone steps below were otherwise followed as written.
 
 ## Constraints & approach
 

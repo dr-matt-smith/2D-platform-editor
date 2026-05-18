@@ -15,7 +15,16 @@ not gameplay glyphs — the renderer adds them based on the `# theme:` header
 (`sky` default vs. `cave`). `below_ground.txt` sets `# theme: cave` for a dark
 dirt background with no celestial decor; `above_ground.txt` uses the default
 night sky. The renderer autotiles `#` from the 9-slice block, so edges and
-corners are picked automatically.
+corners are picked automatically. Off-grid counts as solid (the world is
+implicit dirt), so boundary walls/floor face the play area, not the map edge.
+
+**Authoring tip — platform depth.** A horizontal platform **≥ 2 tiles deep**
+shows outward dirt on every face (`dirt_top` walk surface, `dirt_bottom`
+underside, left/right ends, solid centre) and looks best. A **1-tile-deep**
+platform is fine too — it renders `dirt_top` across with corner end caps; it
+just has no underside to show. Draw rectangles with the in-editor tool: click
+a glyph in the legend, drag on the preview to fill, hold **Shift** for a
+hollow outline (rooms).
 
 Both pass the project validator (`one P`, declared size, no undefined glyphs)
 with zero errors. v1 has no reachability lint and no runtime, so traversability

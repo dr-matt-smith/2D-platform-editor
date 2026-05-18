@@ -130,13 +130,17 @@ free. Scope:
 
 ## 9. Milestones
 
-| # | Deliverable |
-|---|-------------|
-| 1 | off-grid-solid rule + tests; re-verify both example levels render correctly (screenshot-faithful) |
-| 2 | Pure `fillRect` / `outlineRect` in `level.js` + unit tests |
-| 3 | Undo/redo stack (whole-buffer snapshots) + key bindings |
-| 4 | Preview drag-selection + glyph picker → fill/outline, buffer mirrored |
-| 5 | Docs + v04 transcript; platform-depth guidance into `data/levels/README.md` |
+All milestones delivered — see
+[../2_implementation/version04_implementation.md](../2_implementation/version04_implementation.md)
+for commit hashes.
+
+| # | Deliverable | Status |
+|---|-------------|--------|
+| 1 | off-grid-solid rule + tests; re-verify both example levels render correctly (screenshot-faithful) | done |
+| 2 | Pure `fillRect` / `outlineRect` in `level.js` + unit tests | done |
+| 3 | Undo/redo stack (whole-buffer snapshots) + key bindings | done |
+| 4 | Preview drag-selection + glyph picker → fill/outline, buffer mirrored | done |
+| 5 | Docs + v04 transcript; platform-depth guidance into `data/levels/README.md` | done |
 
 ## 10. Acceptance criteria
 
