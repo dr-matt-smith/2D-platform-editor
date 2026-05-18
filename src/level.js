@@ -77,6 +77,52 @@ export function parse(text) {
   return { meta, grid, rows: rawRows };
 }
 
+// Normalise corners and clamp to the grid; returns null if there is no grid.
+function rectBounds(grid, x0, y0, x1, y1) {
+  const h = grid.length;
+  const w = h ? grid[0].length : 0;
+  if (!h || !w) return null;
+  const clamp = (v, max) => Math.max(0, Math.min(max, v));
+  return {
+    x0: clamp(Math.min(x0, x1), w - 1),
+    x1: clamp(Math.max(x0, x1), w - 1),
+    y0: clamp(Math.min(y0, y1), h - 1),
+    y1: clamp(Math.max(y0, y1), h - 1),
+  };
+}
+
+// Apply `fn(col,row) -> bool` over the clamped rectangle, writing `glyph`
+// where it returns true. Pure: rows are rebuilt, the input grid is untouched.
+function paintRect(grid, x0, y0, x1, y1, glyph, fn) {
+  const b = rectBounds(grid, x0, y0, x1, y1);
+  if (!b) return grid.slice();
+  const g = glyph[0];
+  return grid.map((row, r) => {
+    if (r < b.y0 || r > b.y1) return row;
+    const cells = row.split('');
+    for (let c = b.x0; c <= b.x1; c++) if (fn(c, r, b)) cells[c] = g;
+    return cells.join('');
+  });
+}
+
+/** Fill a rectangle (corners in any order, clamped) with `glyph`. */
+export function fillRect(grid, x0, y0, x1, y1, glyph) {
+  return paintRect(grid, x0, y0, x1, y1, glyph, () => true);
+}
+
+/** Draw only the border of a rectangle with `glyph` (hollow interior). */
+export function outlineRect(grid, x0, y0, x1, y1, glyph) {
+  return paintRect(
+    grid,
+    x0,
+    y0,
+    x1,
+    y1,
+    glyph,
+    (c, r, b) => r === b.y0 || r === b.y1 || c === b.x0 || c === b.x1,
+  );
+}
+
 /** Serialize back to canonical text that re-parses to an equivalent level. */
 export function serialize({ meta, grid }) {
   const header = [];
