@@ -130,12 +130,20 @@ export function draw(ctx, parsed, tileset, tile = 24) {
       for (let c = 0; c < grid[r].length; c++) blit(bg, c, r);
   }
 
-  // Pass 2: terrain. Autotiled dirt with the atlas, flat blocks without.
+  // Pass 2: terrain. pickTile autotiles thick walls and routes 1-cell-thick
+  // runs to the platform tiles (v5). Cells that resolve to a platform tile
+  // are recorded so the decor pass leaves their finished art alone.
+  const platformCells = new Set();
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       if (grid[r][c] !== '#') continue;
-      if (ready) blit(autotileIndex(grid, r, c), c, r);
-      else drawFallback(ctx, '#', px(c), py(r), tile);
+      if (ready) {
+        const idx = pickTile(grid, r, c);
+        if (PLATFORM.has(idx)) platformCells.add(r * meta.width + c);
+        blit(idx, c, r);
+      } else {
+        drawFallback(ctx, '#', px(c), py(r), tile);
+      }
     }
   }
 
@@ -148,6 +156,7 @@ export function draw(ctx, parsed, tileset, tile = 24) {
       for (let c = 0; c < grid[r].length; c++) {
         const g = grid[r][c];
         if (g === '#') {
+          if (platformCells.has(r * meta.width + c)) continue; // finished art
           if (!cave && !solid(grid, r - 1, c) && r - 1 >= 0)
             blit(T.grass[hash(c, r) & 1], c, r - 1);
           if (!solid(grid, r + 1, c) && r + 1 < rows)
