@@ -1,0 +1,200 @@
+{
+  "image": "platformertiles.png",
+  "tile": 32,
+  "cols": 8,
+  "rows": 3,
+  "tiles": [
+    {
+      "index": 0,
+      "row": 0,
+      "col": 0,
+      "name": "dirt_top_left",
+      "role": "terrain",
+      "file": "tiles/00_dirt_top_left.png"
+    },
+    {
+      "index": 1,
+      "row": 0,
+      "col": 1,
+      "name": "dirt_top",
+      "role": "terrain",
+      "file": "tiles/01_dirt_top.png"
+    },
+    {
+      "index": 2,
+      "row": 0,
+      "col": 2,
+      "name": "dirt_top_right",
+      "role": "terrain",
+      "file": "tiles/02_dirt_top_right.png"
+    },
+    {
+      "index": 3,
+      "row": 0,
+      "col": 3,
+      "name": "moon",
+      "role": "decor",
+      "file": "tiles/03_moon.png"
+    },
+    {
+      "index": 4,
+      "row": 0,
+      "col": 4,
+      "name": "platform_top",
+      "role": "terrain",
+      "file": "tiles/04_platform_top.png"
+    },
+    {
+      "index": 5,
+      "row": 0,
+      "col": 5,
+      "name": "dirt_dark_a",
+      "role": "terrain",
+      "file": "tiles/05_dirt_dark_a.png"
+    },
+    {
+      "index": 6,
+      "row": 0,
+      "col": 6,
+      "name": "dirt_dark_b",
+      "role": "terrain",
+      "file": "tiles/06_dirt_dark_b.png"
+    },
+    {
+      "index": 7,
+      "row": 0,
+      "col": 7,
+      "name": "dirt_dark_c",
+      "role": "terrain",
+      "file": "tiles/07_dirt_dark_c.png"
+    },
+    {
+      "index": 8,
+      "row": 1,
+      "col": 0,
+      "name": "dirt_left",
+      "role": "terrain",
+      "file": "tiles/08_dirt_left.png"
+    },
+    {
+      "index": 9,
+      "row": 1,
+      "col": 1,
+      "name": "dirt_center",
+      "role": "terrain",
+      "file": "tiles/09_dirt_center.png"
+    },
+    {
+      "index": 10,
+      "row": 1,
+      "col": 2,
+      "name": "dirt_right",
+      "role": "terrain",
+      "file": "tiles/10_dirt_right.png"
+    },
+    {
+      "index": 11,
+      "row": 1,
+      "col": 3,
+      "name": "sky",
+      "role": "background",
+      "file": "tiles/11_sky.png"
+    },
+    {
+      "index": 12,
+      "row": 1,
+      "col": 4,
+      "name": "platform_mid",
+      "role": "terrain",
+      "file": "tiles/12_platform_mid.png"
+    },
+    {
+      "index": 13,
+      "row": 1,
+      "col": 5,
+      "name": "stars_a",
+      "role": "decor",
+      "file": "tiles/13_stars_a.png"
+    },
+    {
+      "index": 14,
+      "row": 1,
+      "col": 6,
+      "name": "stars_b",
+      "role": "decor",
+      "file": "tiles/14_stars_b.png"
+    },
+    {
+      "index": 15,
+      "row": 1,
+      "col": 7,
+      "name": "stalactite",
+      "role": "decor",
+      "file": "tiles/15_stalactite.png"
+    },
+    {
+      "index": 16,
+      "row": 2,
+      "col": 0,
+      "name": "dirt_bottom_left",
+      "role": "terrain",
+      "file": "tiles/16_dirt_bottom_left.png"
+    },
+    {
+      "index": 17,
+      "row": 2,
+      "col": 1,
+      "name": "dirt_bottom",
+      "role": "terrain",
+      "file": "tiles/17_dirt_bottom.png"
+    },
+    {
+      "index": 18,
+      "row": 2,
+      "col": 2,
+      "name": "dirt_bottom_right",
+      "role": "terrain",
+      "file": "tiles/18_dirt_bottom_right.png"
+    },
+    {
+      "index": 19,
+      "row": 2,
+      "col": 3,
+      "name": "dirt_fill",
+      "role": "terrain",
+      "file": "tiles/19_dirt_fill.png"
+    },
+    {
+      "index": 20,
+      "row": 2,
+      "col": 4,
+      "name": "platform_bottom",
+      "role": "terrain",
+      "file": "tiles/20_platform_bottom.png"
+    },
+    {
+      "index": 21,
+      "row": 2,
+      "col": 5,
+      "name": "grass_a",
+      "role": "decor",
+      "file": "tiles/21_grass_a.png"
+    },
+    {
+      "index": 22,
+      "row": 2,
+      "col": 6,
+      "name": "grass_b",
+      "role": "decor",
+      "file": "tiles/22_grass_b.png"
+    },
+    {
+      "index": 23,
+      "row": 2,
+      "col": 7,
+      "name": "drip",
+      "role": "decor",
+      "file": "tiles/23_drip.png"
+    }
+  ]
+}
