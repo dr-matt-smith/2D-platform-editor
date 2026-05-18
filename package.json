@@ -4,7 +4,10 @@
   "description": "A text-based level editor for simple 2D games (mazes and platformers) with live preview.",
   "type": "module",
   "scripts": {
+    "gen:levels": "node scripts/gen-levels-manifest.mjs",
+    "predev": "npm run gen:levels",
     "dev": "vite",
+    "prebuild": "npm run gen:levels",
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test"

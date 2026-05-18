@@ -3,7 +3,7 @@
 // / 16,17,18) plus sky (11), moon (3) and transparent decor overlays. Full
 // per-tile names are in public/.../Dirt_Platformer_Tiles/tiles.json.
 export const ATLAS = {
-  src: '/assets/tilesets/Dirt_Platformer_Tiles/platformertiles.png',
+  src: '/data/tilesets/Dirt_Platformer_Tiles/platformertiles.png',
   tile: 32,
   cols: 8,
   rows: 3,
