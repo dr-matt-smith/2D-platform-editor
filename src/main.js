@@ -4,7 +4,7 @@ import { validate } from './validate.js';
 import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
-import { openLevelDialog } from './loaderDialog.js';
+import { openLevelDialog, openConfirm } from './loaderDialog.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
@@ -36,6 +36,7 @@ document.querySelector('#app').innerHTML = `
       <div class="status">
         <button id="levelsBtn" title="Open level (Ctrl/Cmd+O)">Levels</button>
         <span id="cursor">cursor —</span>
+        <span id="dirty"></span>
       </div>
       <div class="canvas-wrap"><canvas id="preview"></canvas></div>
       <div class="legend" id="legend"></div>
@@ -48,6 +49,7 @@ const src = document.querySelector('#src');
 const gutter = document.querySelector('#gutter span');
 const rulerCol = document.querySelector('#rulerCol span');
 const cursorEl = document.querySelector('#cursor');
+const dirtyEl = document.querySelector('#dirty');
 const legendEl = document.querySelector('#legend');
 const problemsEl = document.querySelector('#problems');
 const ctx = document.querySelector('#preview').getContext('2d');
@@ -145,9 +147,16 @@ function updateCursor() {
     : `cursor — (header)  ·  line ${line}`;
 }
 
+function refreshDirty() {
+  const dirty = levels.isDirty(src.value);
+  dirtyEl.textContent = dirty ? '● unsaved' : '';
+  return dirty;
+}
+
 let timer;
 src.addEventListener('input', () => {
   updateCursor();
+  refreshDirty();
   clearTimeout(timer);
   timer = setTimeout(run, DEBOUNCE_MS);
 });
@@ -193,11 +202,10 @@ function setBuffer(text, id) {
   if (id) levels.setLastOpen(id);
   run();
   updateCursor();
+  refreshDirty();
 }
 
-// M3: clean-buffer switch only. The dirty-guard popup arrives in M4.
-async function switchTo(id) {
-  if (id === currentId) return;
+async function loadInto(id) {
   try {
     setBuffer(await levels.load(id), id);
   } catch {
@@ -205,9 +213,39 @@ async function switchTo(id) {
   }
 }
 
+// Switch levels, guarding unsaved edits in the current buffer.
+async function switchTo(id) {
+  if (id === currentId) return;
+
+  if (currentId && refreshDirty()) {
+    openConfirm({
+      message: `“${currentId}” has unsaved changes.`,
+      actions: [
+        { label: 'Save draft & switch', value: 'save', primary: true },
+        { label: 'Discard & switch', value: 'discard' },
+        { label: 'Cancel', value: 'cancel' },
+      ],
+      onChoice: (choice) => {
+        if (choice === 'cancel') return openDialog(); // back to the list
+        if (choice === 'save') levels.save(currentId, src.value);
+        loadInto(id);
+      },
+    });
+    return;
+  }
+  loadInto(id);
+}
+
 function openDialog() {
   openLevelDialog({ levels, currentId, onSelect: switchTo });
 }
+
+window.addEventListener('beforeunload', (e) => {
+  if (currentId && levels.isDirty(src.value)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 document.querySelector('#levelsBtn').addEventListener('click', openDialog);
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'o') {

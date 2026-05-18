@@ -59,3 +59,48 @@ export function openLevelDialog({ levels, currentId, onSelect, onDownload }) {
 
   document.body.appendChild(backdrop);
 }
+
+/**
+ * Small confirm modal.
+ * @param message  prompt text
+ * @param actions  [{ label, value, primary? }] — rendered left→right
+ * @param onChoice (value) => void; Esc/backdrop resolves the last action
+ *                 (treated as Cancel by callers)
+ */
+export function openConfirm({ message, actions, onChoice }) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal confirm" role="dialog" aria-modal="true">
+      <p class="cf-msg">${message}</p>
+      <div class="cf-actions">
+        ${actions
+          .map(
+            (a, i) =>
+              `<button class="cf-btn${a.primary ? ' primary' : ''}" data-i="${i}">${a.label}</button>`,
+          )
+          .join('')}
+      </div>
+    </div>`;
+
+  function close() {
+    document.removeEventListener('keydown', onKey);
+    backdrop.remove();
+  }
+  function choose(value) {
+    close();
+    onChoice(value);
+  }
+  const cancelValue = actions[actions.length - 1].value;
+  function onKey(e) {
+    if (e.key === 'Escape') choose(cancelValue);
+  }
+
+  backdrop.addEventListener('click', (e) => {
+    const btn = e.target.closest('.cf-btn');
+    if (btn) choose(actions[Number(btn.dataset.i)].value);
+    else if (e.target === backdrop) choose(cancelValue);
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(backdrop);
+}

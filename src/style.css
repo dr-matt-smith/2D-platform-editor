@@ -92,6 +92,7 @@ body {
   cursor: pointer;
 }
 #levelsBtn:hover { background: #3d3d40; }
+#dirty { color: var(--warn); margin-left: auto; }
 .canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; }
 #preview {
   image-rendering: pixelated;
@@ -201,3 +202,19 @@ body {
   cursor: pointer;
 }
 .lv-dl:hover { background: #3d3d40; }
+
+.modal.confirm { min-width: 320px; max-width: 420px; padding: 16px; }
+.cf-msg { margin: 0 0 14px; color: var(--fg); }
+.cf-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.cf-btn {
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.cf-btn:hover { background: #3d3d40; }
+.cf-btn.primary { background: #2d5a88; border-color: #3a6ea5; }
+.cf-btn.primary:hover { background: #356aa0; }
