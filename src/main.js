@@ -3,11 +3,13 @@ import { parse, LEGEND } from './level.js';
 import { validate } from './validate.js';
 import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
+import { createLevels } from './levels.js';
+import { openLevelDialog } from './loaderDialog.js';
 
-const STORAGE_KEY = 'leveldesigner:v1';
 const TILE = 24;
 const DEBOUNCE_MS = 120;
 
+// Fallback only if the manifest/level fetch fails (offline, bad deploy).
 const SAMPLE = `# name: tutorial-01
 # size: 24x10
 ########################
@@ -31,7 +33,10 @@ document.querySelector('#app').innerHTML = `
       </div>
     </div>
     <div class="pane right">
-      <div class="status" id="status">cursor —</div>
+      <div class="status">
+        <button id="levelsBtn" title="Open level (Ctrl/Cmd+O)">Levels</button>
+        <span id="cursor">cursor —</span>
+      </div>
       <div class="canvas-wrap"><canvas id="preview"></canvas></div>
       <div class="legend" id="legend"></div>
     </div>
@@ -42,7 +47,7 @@ document.querySelector('#app').innerHTML = `
 const src = document.querySelector('#src');
 const gutter = document.querySelector('#gutter span');
 const rulerCol = document.querySelector('#rulerCol span');
-const statusEl = document.querySelector('#status');
+const cursorEl = document.querySelector('#cursor');
 const legendEl = document.querySelector('#legend');
 const problemsEl = document.querySelector('#problems');
 const ctx = document.querySelector('#preview').getContext('2d');
@@ -59,8 +64,7 @@ function charWidth() {
   c.font = `${f.fontSize} ${f.fontFamily}`;
   return c.measureText('0').width;
 }
-const CW = charWidth();
-document.documentElement.style.setProperty('--cw', `${CW}px`);
+document.documentElement.style.setProperty('--cw', `${charWidth()}px`);
 
 let tileset = null;
 loadTileset().then((t) => {
@@ -130,19 +134,13 @@ function run() {
   const lines = text.split('\n');
   renderGutter(lines.length);
   renderRuler(Math.max(40, ...lines.map((l) => l.length + 1)));
-
-  try {
-    localStorage.setItem(STORAGE_KEY, text);
-  } catch {
-    /* storage unavailable: editing still works, just not persisted */
-  }
 }
 
 function updateCursor() {
   const { line, col } = caretLineCol(src.value, src.selectionStart);
   const gy = line - firstGridLine;
   const inGrid = gy >= 0 && line >= firstGridLine;
-  statusEl.textContent = inGrid
+  cursorEl.textContent = inGrid
     ? `cursor (x ${col}, y ${gy})  ·  line ${line}`
     : `cursor — (header)  ·  line ${line}`;
 }
@@ -166,12 +164,72 @@ src.addEventListener('scroll', () => {
   rulerCol.style.transform = `translateX(${-src.scrollLeft}px)`;
 });
 
-src.value = (() => {
+// --- Level library wiring ----------------------------------------------
+
+// localStorage can throw (privacy mode); degrade to an in-memory shim so the
+// editor still works, just without persistence.
+const storage = (() => {
   try {
-    return localStorage.getItem(STORAGE_KEY) || SAMPLE;
+    const k = '__ld_probe__';
+    localStorage.setItem(k, '1');
+    localStorage.removeItem(k);
+    return localStorage;
   } catch {
-    return SAMPLE;
+    const m = new Map();
+    return {
+      getItem: (x) => (m.has(x) ? m.get(x) : null),
+      setItem: (x, v) => m.set(x, String(v)),
+      removeItem: (x) => m.delete(x),
+    };
   }
 })();
-run();
-updateCursor();
+
+const levels = createLevels({ fetch: (...a) => fetch(...a), storage });
+let currentId = null;
+
+function setBuffer(text, id) {
+  src.value = text;
+  currentId = id;
+  if (id) levels.setLastOpen(id);
+  run();
+  updateCursor();
+}
+
+// M3: clean-buffer switch only. The dirty-guard popup arrives in M4.
+async function switchTo(id) {
+  if (id === currentId) return;
+  try {
+    setBuffer(await levels.load(id), id);
+  } catch {
+    /* keep current buffer if the level fails to load */
+  }
+}
+
+function openDialog() {
+  openLevelDialog({ levels, currentId, onSelect: switchTo });
+}
+document.querySelector('#levelsBtn').addEventListener('click', openDialog);
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'o') {
+    e.preventDefault();
+    openDialog();
+  }
+});
+
+(async function start() {
+  try {
+    await levels.init();
+    const list = levels.list();
+    const startId =
+      (levels.lastOpen() && list.some((l) => l.id === levels.lastOpen())
+        ? levels.lastOpen()
+        : null) || list[0]?.id;
+    if (startId) {
+      setBuffer(await levels.load(startId), startId);
+      return;
+    }
+  } catch {
+    /* fall through to the offline sample */
+  }
+  setBuffer(SAMPLE, null);
+})();
