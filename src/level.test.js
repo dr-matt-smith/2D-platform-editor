@@ -19,6 +19,12 @@ test('parse reads header directives', () => {
   assert.equal(meta.height, 6);
 });
 
+test('theme directive: defaults to sky, parses cave, rejects unknown', () => {
+  assert.equal(parse('###').meta.theme, 'sky');
+  assert.equal(parse('# theme: cave\n###').meta.theme, 'cave');
+  assert.equal(parse('# theme: lava\n###').meta.theme, 'sky');
+});
+
 test('grid rows are padded to the declared width', () => {
   const { grid } = parse('# size: 5x1\n##');
   assert.deepEqual(grid, ['##...']);
@@ -41,4 +47,11 @@ test('parse -> serialize -> parse round-trips', () => {
   const b = parse(serialize(a));
   assert.deepEqual(b.meta, a.meta);
   assert.deepEqual(b.grid, a.grid);
+});
+
+test('round-trip preserves a non-default theme', () => {
+  const a = parse('# name: cave1\n# theme: cave\n# size: 3x1\n#P#');
+  const text = serialize(a);
+  assert.match(text, /# theme: cave/);
+  assert.equal(parse(text).meta.theme, 'cave');
 });

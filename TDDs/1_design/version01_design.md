@@ -66,8 +66,10 @@ Plain UTF-8 text. A level is an optional header block followed by the grid.
 ```
 
 - Lines beginning with `#` *in the header region only* (before the first grid
-  row) are directives: `name`, `size` (`WxH`). A `//` line anywhere is a
-  comment, stripped at parse time.
+  row) are directives: `name`, `size` (`WxH`), and `theme` (`sky` | `cave`,
+  default `sky`). A `//` line anywhere is a comment, stripped at parse time.
+- `theme` selects renderer styling only (background + decor); it does not
+  affect gameplay glyphs or validation. Unknown values fall back to `sky`.
 - After the header, every line is a grid row. Rows are right-padded with `.`
   to the declared width on parse; ragged input is allowed while editing and
   flagged by validation if `size` is declared and mismatched.
@@ -137,9 +139,9 @@ Dark, monospace throughout (matches a text-first tool and the existing
   v2 embeds a tiny reference platformer or exports to an external runner.
 - **Tile metadata:** ~~assumed~~ **RESOLVED** — confirmed by pixel inspection
   as a 32×32 8×3 atlas (9-slice dirt block + sky/moon/decor); sliced and named
-  in `tiles.json`. Remaining nuance: faithfully reproducing the screenshots
-  needs autotiling (corner/edge selection) and a decor layer, which is a v2
-  concern — v1 still renders one tile per `#`.
+  in `tiles.json`. Autotiling + a themed decor layer were subsequently built
+  (pulled forward from v2 #6), so the example levels render close to their
+  source screenshots.
 - **Coordinate origin:** top-left `(0,0)`, x right, y down — confirm this
   matches whatever runtime consumes the levels later.
 - **Undo:** v1 is text-only, so the browser textarea undo is sufficient. A
@@ -173,10 +175,11 @@ leverage first:
    viewport.
 5. **Templates / procedural seeds** — fight the blank-page problem (empty
    bordered room, maze skeleton).
-6. **Autotiling + decor layer** — v1 draws one tile per `#`; the example
-   levels can't visually match their source screenshots without corner/edge
-   tile selection from the 9-slice block and a separate decoration pass
-   (moon, stars, grass). The sliced `tiles.json` already provides the inputs.
+6. ~~**Autotiling + decor layer**~~ **DONE** (pulled forward) — 9-slice
+   autotiling + a `theme`-driven decor pass (sky/moon/stars/grass vs.
+   cave/drips) now render the example levels close to their screenshots.
+   Possible follow-ups: per-tile variant randomisation, parallax decor,
+   more themes.
 
 Layers / multi-character cells and entity properties remain further out: they
 change the level format and the parser, so they warrant their own design pass

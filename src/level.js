@@ -14,6 +14,10 @@ export const LEGEND = {
 
 export const BACKGROUND_GLYPH = '.';
 
+// Visual themes: 'sky' = night background + moon/stars + grass; 'cave' = dark
+// dirt background, no celestial decor. Default 'sky'.
+export const THEMES = new Set(['sky', 'cave']);
+
 const DIRECTIVE = /^#\s*(\w+)\s*:\s*(.+?)\s*$/;
 const SIZE = /^(\d+)\s*x\s*(\d+)$/i;
 
@@ -21,7 +25,7 @@ const isComment = (line) => line.trimStart().startsWith('//');
 
 /**
  * Parse level text into { meta, grid, rows }.
- * - meta: { name, width, height, declared: {w,h} | null }
+ * - meta: { name, theme, width, height, declared: {w,h} | null }
  * - grid: array of equal-width rows, right-padded with the background glyph
  * - rows: per grid row { text, line } where `line` is the original 1-based
  *   file line number — used by the validator for line/col reporting.
@@ -29,7 +33,7 @@ const isComment = (line) => line.trimStart().startsWith('//');
 export function parse(text) {
   const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
 
-  const meta = { name: null, width: 0, height: 0, declared: null };
+  const meta = { name: null, theme: 'sky', width: 0, height: 0, declared: null };
   const rawRows = []; // { text, line }
   let inGrid = false;
 
@@ -45,7 +49,9 @@ export function parse(text) {
         const key = m[1].toLowerCase();
         const value = m[2];
         if (key === 'name') meta.name = value;
-        else if (key === 'size') {
+        else if (key === 'theme') {
+          meta.theme = THEMES.has(value.toLowerCase()) ? value.toLowerCase() : 'sky';
+        } else if (key === 'size') {
           const s = value.match(SIZE);
           if (s) meta.declared = { w: Number(s[1]), h: Number(s[2]) };
         }
@@ -75,6 +81,7 @@ export function parse(text) {
 export function serialize({ meta, grid }) {
   const header = [];
   if (meta?.name) header.push(`# name: ${meta.name}`);
+  if (meta?.theme && meta.theme !== 'sky') header.push(`# theme: ${meta.theme}`);
   if (meta?.declared) header.push(`# size: ${meta.declared.w}x${meta.declared.h}`);
   return [...header, ...grid].join('\n');
 }

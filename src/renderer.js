@@ -1,11 +1,28 @@
 // Pure renderer: parsed level + tileset in, pixels out. No DOM reads, so it
 // is trivially testable and reusable (design §5).
+//
+// When the atlas is loaded it draws a 9-slice autotiled dirt block plus a
+// deterministic decor pass (sky/moon/stars/grass/drips) so authored levels
+// resemble the source screenshots (design §10 #6). When the atlas is missing
+// it degrades to flat colour + shapes. Entities (P, o, E) and the hazard `^`
+// have no sprite in a dirt tileset, so they are always drawn as shapes.
 import { BACKGROUND_GLYPH } from './level.js';
 
 const SKY = '#1b2a3a';
 
-// Fallback shapes for glyphs not backed by an atlas tile (or when the atlas
-// failed to load). Keyed by glyph; `shape` picks the draw routine.
+// Atlas tile indices (confirmed layout — see tileset.js / tiles.json).
+const T = {
+  // 9-slice dirt block, row-major (row 0 / 1 / 2):
+  dirt: [0, 1, 2, 8, 9, 10, 16, 17, 18],
+  sky: 11,
+  caveBg: 19, // dirt_fill — dark textured background for cave theme
+  moon: 3,
+  stars: [13, 14],
+  grass: [21, 22],
+  drip: [15, 23],
+};
+
+// Fallback shapes for the no-atlas path and for sprite-less glyphs.
 const FALLBACK = {
   '#': { color: '#6b4a2f', shape: 'block' },
   '^': { color: '#c0392b', shape: 'spike' },
@@ -14,9 +31,31 @@ const FALLBACK = {
   E: { color: '#2ecc71', shape: 'block' },
 };
 
+// Stable position hash so decor never flickers between renders (keeps draw
+// deterministic — same input, same pixels).
+function hash(x, y) {
+  let n = (x * 73856093) ^ (y * 19349663);
+  n = (n ^ (n >>> 13)) >>> 0;
+  return n;
+}
+
+const solid = (grid, r, c) =>
+  r >= 0 && r < grid.length && c >= 0 && c < grid[r].length && grid[r][c] === '#';
+
+// 9-slice pick: off-grid counts as open so the map border gets edge tiles.
+export function autotileIndex(grid, r, c) {
+  const up = solid(grid, r - 1, c);
+  const down = solid(grid, r + 1, c);
+  const left = solid(grid, r, c - 1);
+  const right = solid(grid, r, c + 1);
+  const row = !up ? 0 : !down ? 2 : 1;
+  const col = !left ? 0 : !right ? 2 : 1;
+  return T.dirt[row * 3 + col];
+}
+
 function drawFallback(ctx, glyph, x, y, t) {
   const f = FALLBACK[glyph];
-  if (!f) return; // unknown glyph: leave as sky (validator will flag it)
+  if (!f) return; // unknown glyph: leave as background (validator flags it)
   ctx.fillStyle = f.color;
   if (f.shape === 'block') {
     ctx.fillRect(x, y, t, t);
@@ -27,7 +66,7 @@ function drawFallback(ctx, glyph, x, y, t) {
     ctx.lineTo(x + t, y + t);
     ctx.closePath();
     ctx.fill();
-  } else if (f.shape === 'disc' || f.shape === 'pip') {
+  } else {
     const r = f.shape === 'disc' ? t * 0.4 : t * 0.18;
     ctx.beginPath();
     ctx.arc(x + t / 2, y + t / 2, r, 0, Math.PI * 2);
@@ -39,7 +78,7 @@ function drawFallback(ctx, glyph, x, y, t) {
  * Draw a parsed level to a 2D canvas context.
  * @param ctx CanvasRenderingContext2D
  * @param parsed result of level.parse()
- * @param tileset result of loadTileset() (may be ready:false)
+ * @param tileset result of loadTileset() (may be null / ready:false)
  * @param tile pixel size per cell
  */
 export function draw(ctx, parsed, tileset, tile = 24) {
@@ -49,21 +88,63 @@ export function draw(ctx, parsed, tileset, tile = 24) {
   if (ctx.canvas.width !== w) ctx.canvas.width = w;
   if (ctx.canvas.height !== h) ctx.canvas.height = h;
 
+  const ready = !!tileset?.ready;
+  const cave = meta.theme === 'cave';
+  const px = (c) => c * tile;
+  const py = (r) => r * tile;
+  const blit = (idx, c, r) => tileset.drawTile(ctx, idx, px(c), py(r), tile);
+
   ctx.fillStyle = SKY;
   ctx.fillRect(0, 0, w || 1, h || 1);
 
-  for (let row = 0; row < grid.length; row++) {
-    for (let col = 0; col < grid[row].length; col++) {
-      const glyph = grid[row][col];
-      if (glyph === BACKGROUND_GLYPH) continue;
-      const px = col * tile;
-      const py = row * tile;
-      const tileIndex = tileset?.ready ? tileset.tileFor(glyph) : undefined;
-      if (tileIndex !== undefined) {
-        tileset.drawTile(ctx, tileIndex, px, py, tile);
-      } else {
-        drawFallback(ctx, glyph, px, py, tile);
+  // Pass 1: background. With an atlas, fill every cell with the sky tile so
+  // the palette matches; without one the flat SKY rect above is enough.
+  if (ready) {
+    const bg = cave ? T.caveBg : T.sky;
+    for (let r = 0; r < grid.length; r++)
+      for (let c = 0; c < grid[r].length; c++) blit(bg, c, r);
+  }
+
+  // Pass 2: terrain. Autotiled dirt with the atlas, flat blocks without.
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      if (grid[r][c] !== '#') continue;
+      if (ready) blit(autotileIndex(grid, r, c), c, r);
+      else drawFallback(ctx, '#', px(c), py(r), tile);
+    }
+  }
+
+  // Pass 3: decor (atlas only). Drips hang under any dirt with open space
+  // below (both themes). Grass + moon + stars are sky-theme only.
+  if (ready) {
+    const rows = grid.length;
+    let mooned = false;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        const g = grid[r][c];
+        if (g === '#') {
+          if (!cave && !solid(grid, r - 1, c) && r - 1 >= 0)
+            blit(T.grass[hash(c, r) & 1], c, r - 1);
+          if (!solid(grid, r + 1, c) && r + 1 < rows)
+            blit(T.drip[hash(c, r) % 7 === 0 ? 1 : 0], c, r + 1);
+        } else if (!cave && g === BACKGROUND_GLYPH) {
+          if (!mooned && r <= 2 && c >= grid[r].length - 5) {
+            blit(T.moon, c, r);
+            mooned = true;
+          } else if (r < rows * 0.55 && hash(c, r) % 11 === 0) {
+            blit(T.stars[hash(c, r) & 1], c, r);
+          }
+        }
       }
+    }
+  }
+
+  // Pass 4: entities + hazard, always shapes (no sprites in a dirt tileset).
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const g = grid[r][c];
+      if (g === BACKGROUND_GLYPH || g === '#') continue;
+      drawFallback(ctx, g, px(c), py(r), tile);
     }
   }
 }
