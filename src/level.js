@@ -1,18 +1,41 @@
 // Level format: optional `# key: value` header directives, then an ASCII grid.
 // `//` lines are comments stripped at parse time. See TDDs/1_design/version01_design.md §4.
 
-// Single source of truth for valid glyphs, shared by the renderer and validator
-// so the two cannot disagree (design §4).
-export const LEGEND = {
-  '.': { name: 'empty', role: 'background' },
-  '#': { name: 'wall', role: 'terrain' },
-  P: { name: 'player spawn', role: 'entity' },
-  '^': { name: 'hazard', role: 'terrain' },
-  o: { name: 'collectible', role: 'entity' },
-  E: { name: 'exit', role: 'entity' },
+// Default (Dirt) glyph legend, char-keyed: the offline fallback and
+// `validate`'s default. The active tileset's legend is derived from its
+// tile_lookup.json via `buildLegend` (v8). Colours mirror src/palette.js
+// (image-less swatches); `image` is tileset-relative or null. `LEGEND` is a
+// deprecated alias kept so existing importers/tests keep working.
+export const DEFAULT_LEGEND = {
+  '.': { name: 'Empty', role: 'background', image: null, color: '#1b2a3a' },
+  '#': { name: 'Filled', role: 'terrain', image: 'tiles/01_dirt_top.png', color: null },
+  P: { name: 'Player spawn', role: 'entity', image: null, color: '#3498db' },
+  '^': { name: 'Hazard', role: 'terrain', image: null, color: '#c0392b' },
+  o: { name: 'Pickup', role: 'entity', image: null, color: '#f1c40f' },
+  E: { name: 'Exit', role: 'entity', image: null, color: '#2ecc71' },
 };
+export const LEGEND = DEFAULT_LEGEND;
+
+// Build a char-keyed legend from a tileset's tile_lookup.json `glyphs`
+// section. Falls back to the Dirt default if absent. Pure.
+export function buildLegend(lookup) {
+  const glyphs = lookup?.glyphs;
+  if (!glyphs) return DEFAULT_LEGEND;
+  const legend = {};
+  for (const g of Object.values(glyphs)) {
+    if (!g?.char) continue;
+    legend[g.char] = {
+      name: g.name ?? g.char,
+      role: g.role ?? 'terrain',
+      image: g.image ?? null,
+      color: g.color ?? null,
+    };
+  }
+  return legend;
+}
 
 export const BACKGROUND_GLYPH = '.';
+export const DEFAULT_TILESET = 'Dirt_Platformer_Tiles';
 
 // Visual themes: 'sky' = night background + moon/stars + grass; 'cave' = dark
 // dirt background, no celestial decor. Default 'sky'.
@@ -25,7 +48,7 @@ const isComment = (line) => line.trimStart().startsWith('//');
 
 /**
  * Parse level text into { meta, grid, rows }.
- * - meta: { name, theme, width, height, declared: {w,h} | null }
+ * - meta: { name, theme, tileset, width, height, declared: {w,h} | null }
  * - grid: array of equal-width rows, right-padded with the background glyph
  * - rows: per grid row { text, line } where `line` is the original 1-based
  *   file line number — used by the validator for line/col reporting.
@@ -33,7 +56,14 @@ const isComment = (line) => line.trimStart().startsWith('//');
 export function parse(text) {
   const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
 
-  const meta = { name: null, theme: 'sky', width: 0, height: 0, declared: null };
+  const meta = {
+    name: null,
+    theme: 'sky',
+    tileset: DEFAULT_TILESET,
+    width: 0,
+    height: 0,
+    declared: null,
+  };
   const rawRows = []; // { text, line }
   let inGrid = false;
 
@@ -49,6 +79,7 @@ export function parse(text) {
         const key = m[1].toLowerCase();
         const value = m[2];
         if (key === 'name') meta.name = value;
+        else if (key === 'tileset') meta.tileset = value;
         else if (key === 'theme') {
           meta.theme = THEMES.has(value.toLowerCase()) ? value.toLowerCase() : 'sky';
         } else if (key === 'size') {
@@ -127,6 +158,8 @@ export function outlineRect(grid, x0, y0, x1, y1, glyph) {
 export function serialize({ meta, grid }) {
   const header = [];
   if (meta?.name) header.push(`# name: ${meta.name}`);
+  if (meta?.tileset && meta.tileset !== DEFAULT_TILESET)
+    header.push(`# tileset: ${meta.tileset}`);
   if (meta?.theme && meta.theme !== 'sky') header.push(`# theme: ${meta.theme}`);
   if (meta?.declared) header.push(`# size: ${meta.declared.w}x${meta.declared.h}`);
   return [...header, ...grid].join('\n');
