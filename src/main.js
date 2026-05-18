@@ -1,5 +1,12 @@
 import './style.css';
-import { parse, LEGEND, fillRect, outlineRect } from './level.js';
+import {
+  parse,
+  fillRect,
+  outlineRect,
+  buildLegend,
+  DEFAULT_LEGEND,
+  DEFAULT_TILESET,
+} from './level.js';
 import { validate } from './validate.js';
 import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
@@ -65,14 +72,26 @@ const overlay = document.querySelector('#overlay');
 const ctx = previewCanvas.getContext('2d');
 const octx = overlay.getContext('2d');
 
+// The active char-keyed legend + the tileset base for thumbnail URLs. Both
+// start on the Dirt default so the first paint (before any async tileset
+// load) is identical to v7; `syncTileset` swaps them per level (v8 M4).
+let legend = DEFAULT_LEGEND;
+let legendBase = '/data/tilesets/' + DEFAULT_TILESET + '/';
+
 let activeGlyph = '#';
 function renderLegend() {
-  legendEl.innerHTML = Object.entries(LEGEND)
-    .map(
-      ([g, { name }]) =>
+  legendEl.innerHTML = Object.entries(legend)
+    .map(([g, e]) => {
+      const thumb = e.image
+        ? `<img class="thumb" src="${legendBase}${e.image}" alt="" ` +
+          `onerror="this.replaceWith(Object.assign(document.createElement('span'),` +
+          `{className:'thumb'}))">`
+        : `<span class="thumb" style="background:${e.color || 'transparent'}"></span>`;
+      return (
         `<button class="glyph${g === activeGlyph ? ' active' : ''}" data-glyph="${g}">` +
-        `<b>${g === ' ' ? '·' : g}</b> ${name}</button>`,
-    )
+        `${thumb}<b>${g === ' ' ? '·' : g}</b> ${e.name}</button>`
+      );
+    })
     .join('');
 }
 renderLegend();
@@ -93,11 +112,58 @@ function charWidth() {
 }
 document.documentElement.style.setProperty('--cw', `${charWidth()}px`);
 
+// Per-level tileset, loaded lazily and cached by id so switching back to a
+// set never refetches (the common path: every shipped level is Dirt → one
+// load). `tilesetWarn` is a synthetic problem appended when a level names a
+// tileset that could not be loaded (it falls back to Dirt, never crashes).
 let tileset = null;
-loadTileset().then((t) => {
-  tileset = t;
+let activeTilesetId = null;
+let tilesetWarn = null;
+const tilesetCache = new Map(); // id -> Promise<{ tileset, legend, base, ok }>
+
+function ensureTileset(id) {
+  let p = tilesetCache.get(id);
+  if (!p) {
+    p = loadTileset(id).then((t) => {
+      const ok = !!t.lookup;
+      return {
+        tileset: t,
+        legend: ok ? buildLegend(t.lookup) : DEFAULT_LEGEND,
+        // An unknown/failed lookup falls back to the Dirt-relative
+        // DEFAULT_LEGEND, so its thumbnails must resolve against Dirt.
+        base: '/data/tilesets/' + (ok ? id : DEFAULT_TILESET) + '/',
+        ok,
+      };
+    });
+    tilesetCache.set(id, p);
+  }
+  return p;
+}
+
+// Make the active tileset/legend match `id`. No-op (no await) when unchanged,
+// so the per-edit reflow stays cheap unless the `# tileset:` line changed.
+async function syncTileset(id) {
+  if (id === activeTilesetId) return;
+  const r = await ensureTileset(id);
+  activeTilesetId = id;
+  tileset = r.tileset;
+  legend = r.legend;
+  legendBase = r.base;
+  // Only nag when a level explicitly named a set we couldn't load; a failed
+  // *default* (offline Dirt) is the pre-existing degrade-to-shapes path.
+  tilesetWarn =
+    !r.ok && id !== DEFAULT_TILESET
+      ? { line: 1, col: 1, severity: 'warn', message: `unknown tileset '${id}', using default` }
+      : null;
+  renderLegend();
+}
+
+// Sync the tileset for the current buffer, then repaint. Used wherever the
+// buffer's `# tileset:` may have changed (load/switch, debounced edit, undo).
+async function reflow() {
+  await syncTileset(parse(src.value).meta.tileset);
   run();
-});
+}
 
 const caretLineCol = (value, pos) => {
   const before = value.slice(0, pos).split('\n');
@@ -155,7 +221,9 @@ function run() {
   const parsed = parse(text);
   firstGridLine = parsed.rows[0]?.line ?? 1;
 
-  renderProblems(validate(parsed));
+  const issues = validate(parsed, legend);
+  if (tilesetWarn) issues.push(tilesetWarn);
+  renderProblems(issues);
   draw(ctx, parsed, tileset, TILE);
 
   // Keep the selection overlay congruent with the (re-sized) preview.
@@ -189,7 +257,7 @@ src.addEventListener('input', () => {
   refreshDirty();
   clearTimeout(timer);
   timer = setTimeout(() => {
-    run();
+    reflow(); // re-syncs the tileset only if the `# tileset:` line changed
     history.push(src.value); // commit a snapshot once typing settles
   }, DEBOUNCE_MS);
 });
@@ -235,7 +303,8 @@ function setBuffer(text, id) {
   currentId = id;
   if (id) levels.setLastOpen(id);
   history.reset(text); // each loaded level gets a fresh undo timeline
-  run();
+  run(); // immediate paint with the current legend …
+  reflow(); // … then swap to this level's tileset/legend when it loads
   updateCursor();
   refreshDirty();
 }
@@ -244,7 +313,7 @@ function setBuffer(text, id) {
 function applyHistory(text) {
   if (text == null) return;
   src.value = text;
-  run();
+  reflow(); // an undone/redone state may name a different tileset
   updateCursor();
   refreshDirty();
 }
