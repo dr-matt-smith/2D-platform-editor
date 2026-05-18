@@ -168,12 +168,16 @@ discoverable data" layer. (Alternative: defer to v8 with its consumer — §11.)
 
 ## 10. Milestones (v7)
 
-| # | Deliverable |
-|---|-------------|
-| 1 | `tileMask` (pure, 0–15) + 16-case table test; remove old fns; renderer/tests still green & render-identical |
-| 2 | Dirt `tile_lookup.json` (§4/§5) + `tileset.js` mask→image resolver; renderer draws via lookup; harness byte-compare vs v6 |
-| 3 | `gen-tilesets-manifest.mjs` + predev/prebuild; `manifest.json` committed |
-| 4 | Docs + v07 transcript; mark plan delivered |
+All milestones delivered — see
+[../2_implementation/version07_implementation.md](../2_implementation/version07_implementation.md)
+for commit hashes.
+
+| # | Deliverable | Status |
+|---|-------------|--------|
+| 1 | `tileMask` (pure, 0–15) + 16-case table test; remove old fns; renderer/tests still green & render-identical | done |
+| 2 | Dirt `tile_lookup.json` (§4/§5) + `tileset.js` mask→image resolver; renderer draws via lookup; harness byte-compare vs v6 | done |
+| 3 | `gen-tilesets-manifest.mjs` + predev/prebuild; `manifest.json` committed | done |
+| 4 | Docs + v07 transcript; mark plan delivered | done |
 
 ## 11. Open questions
 

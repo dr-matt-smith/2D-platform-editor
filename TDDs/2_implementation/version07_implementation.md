@@ -1,14 +1,28 @@
 # Version 7 — Implementation Plan
 
-Status: Planned (design Draft) · Date: 2026-05-18 · Design:
+Status: Delivered (M1–M4) · Date: 2026-05-18 · Design:
 [../1_design/version07_design.md](../1_design/version07_design.md)
 
-A forward plan: v7 is not yet built. **v7 = data + engine only, zero
-behaviour change** (UX/format is v8, design §13). One milestone per commit,
-prefixed `v7 …`; **stage path-scoped, then run `git status --short` as its
-own step and read it** before committing (a chained `add && status &&
-commit` fires before the status is seen — and the user's tooling sometimes
-pre-stages files); `npm test` green and `npm run build` clean before each.
+Record of the build. **v7 = data + engine only, zero behaviour change**
+(UX/format is v8, design §13). One milestone per commit; staged path-scoped
+with `git status` read as its own step before each; `npm test` green and
+`npm run build` clean throughout (suite 52 → 48 by consolidating the old
+selector tests into the mask table + behavioural tests).
+
+| Milestone | Commit |
+|-----------|--------|
+| M1 `tileMask` + remove pickTile/autotileIndex/PLATFORM | `b175d55` |
+| M2 Dirt `tile_lookup.json` + mask→image resolver | `a27f90f` |
+| M3 `gen-tilesets-manifest` + predev/prebuild | `8e4e1dc` |
+| M4 docs + v07 transcript | this commit |
+
+Outcome vs plan: followed as written. The pixel-identity proof landed as
+two unit tests (`tileMask` 16-case + Dirt-mapping) rather than a render
+diff — stronger, and immune to the user's mid-stream `below_ground` edit.
+`tiles.json` (raw slices) is retained as-is; `tile_lookup.json` is the
+semantic mask layer on top of it (design §5). A separate
+`8da1c14` carried the user's `below_ground` cave rewrite + `# order:`
+restore (not a v7 milestone; committed alongside at the user's request).
 
 ## Constraints & approach
 
