@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from './level.js';
-import { draw, autotileIndex } from './renderer.js';
+import { draw, autotileIndex, pickTile, PLATFORM } from './renderer.js';
 
 function fakeCtx() {
   const calls = { fillRect: 0, arc: 0 };
@@ -108,4 +108,40 @@ test('cave theme: dark bg, no grass/moon/stars, drips kept', () => {
   assert.equal(ts.idx.filter((i) => i === 11).length, 0); // no sky tile
   assert.equal(ts.idx.filter((i) => i === 21 || i === 22).length, 0); // no grass
   assert.equal(ts.idx.filter((i) => i === 3).length, 0); // no moon
+});
+
+test('pickTile: isolated 1x1 cell → platform_single (27)', () => {
+  const t = pickTile(['...', '.#.', '...'], 1, 1);
+  assert.equal(t, 27);
+  assert.ok(PLATFORM.has(t));
+});
+
+test('pickTile: 1-wide vertical pillar → top/mid/bottom (4/12/20)', () => {
+  const g = ['.....', '..#..', '..#..', '..#..', '.....'];
+  assert.equal(pickTile(g, 1, 2), 4); // open above → top cap
+  assert.equal(pickTile(g, 2, 2), 12); // enclosed → mid
+  assert.equal(pickTile(g, 3, 2), 20); // open below → bottom cap
+});
+
+test('pickTile: 1-tall horizontal ledge → left/mid_h/right (24/25/26)', () => {
+  const g = ['.....', '.###.', '.....'];
+  assert.equal(pickTile(g, 1, 1), 24); // open left → left cap
+  assert.equal(pickTile(g, 1, 2), 25); // enclosed → mid_h
+  assert.equal(pickTile(g, 1, 3), 26); // open right → right cap
+});
+
+test('pickTile: edge-flush 1-wide column is NOT thin (off-grid solid)', () => {
+  const g = ['#..', '#..', '#..']; // column at the left map edge
+  const t = pickTile(g, 1, 0);
+  assert.equal(t, autotileIndex(g, 1, 0)); // delegates to v4 9-slice
+  assert.equal(t, 10); // dirt_right (boundary wall)
+  assert.ok(!PLATFORM.has(t));
+});
+
+test('pickTile: thick walls delegate unchanged to autotileIndex', () => {
+  const g = ['.....', '.###.', '.###.', '.###.', '.....'];
+  for (let r = 1; r <= 3; r++)
+    for (let c = 1; c <= 3; c++)
+      assert.equal(pickTile(g, r, c), autotileIndex(g, r, c));
+  assert.ok(!PLATFORM.has(pickTile(g, 2, 2))); // centre, not a platform
 });

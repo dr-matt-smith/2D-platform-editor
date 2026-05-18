@@ -57,6 +57,27 @@ export function autotileIndex(grid, r, c) {
   return T.dirt[row * 3 + col];
 }
 
+// Platform tile indices (v5). 4/12/20 are the atlas vertical set; 24–27 are
+// generated standalone images (3 rotated + 1 composed single). Used for
+// 1-cell-thick runs so a thin ledge/pillar/nub reads as a finished platform
+// instead of a lopsided 9-slice slice.
+export const PLATFORM = new Set([4, 12, 20, 24, 25, 26, 27]);
+
+// Tile pick including thin-run handling (v5 design §4). Pure; returns a plain
+// index. First match wins; the non-thin path delegates to autotileIndex so
+// thick/boundary walls are byte-for-byte unchanged from v4.
+export function pickTile(grid, r, c) {
+  const up = solid(grid, r - 1, c);
+  const down = solid(grid, r + 1, c);
+  const left = solid(grid, r, c - 1);
+  const right = solid(grid, r, c + 1);
+
+  if (!up && !down && !left && !right) return 27; // isolated 1×1
+  if (!left && !right) return !up ? 4 : !down ? 20 : 12; // 1-wide column
+  if (!up && !down) return !left ? 24 : !right ? 26 : 25; // 1-tall row
+  return autotileIndex(grid, r, c); // thick / boundary → v4 9-slice
+}
+
 function drawFallback(ctx, glyph, x, y, t) {
   const f = FALLBACK[glyph];
   if (!f) return; // unknown glyph: leave as background (validator flags it)
