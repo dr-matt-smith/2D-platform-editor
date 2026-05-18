@@ -5,6 +5,7 @@ import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm } from './loaderDialog.js';
+import { downloadText } from './download.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
@@ -35,6 +36,7 @@ document.querySelector('#app').innerHTML = `
     <div class="pane right">
       <div class="status">
         <button id="levelsBtn" title="Open level (Ctrl/Cmd+O)">Levels</button>
+        <button id="dlBtn" title="Download current level as .txt">Download</button>
         <span id="cursor">cursor —</span>
         <span id="dirty"></span>
       </div>
@@ -236,8 +238,20 @@ async function switchTo(id) {
   loadInto(id);
 }
 
+async function downloadLevel(id) {
+  // Current buffer for the open level (may be unsaved); peek others without
+  // disturbing the dirty baseline.
+  const text = id && id !== currentId ? await levels.peek(id) : src.value;
+  downloadText(id || currentId, text);
+}
+
 function openDialog() {
-  openLevelDialog({ levels, currentId, onSelect: switchTo });
+  openLevelDialog({
+    levels,
+    currentId,
+    onSelect: switchTo,
+    onDownload: downloadLevel,
+  });
 }
 
 window.addEventListener('beforeunload', (e) => {
@@ -247,6 +261,7 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 document.querySelector('#levelsBtn').addEventListener('click', openDialog);
+document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'o') {
     e.preventDefault();

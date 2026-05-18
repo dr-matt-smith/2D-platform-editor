@@ -84,6 +84,13 @@ test('legacy v1 key migrates once into the first level draft', async () => {
   assert.equal(storage.has('leveldesigner:v1'), true); // left untouched
 });
 
+test('peek returns text without moving the dirty baseline', async () => {
+  const { levels } = await setup();
+  await levels.load('above_ground'); // baseline = 'ABOVE'
+  assert.equal(await levels.peek('below_ground'), 'BELOW');
+  assert.equal(levels.isDirty('ABOVE'), false); // baseline untouched by peek
+});
+
 test('lastOpen round-trips', async () => {
   const { levels } = await setup();
   assert.equal(levels.lastOpen(), null);

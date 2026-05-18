@@ -63,6 +63,13 @@ export function createLevels({ fetch, storage }) {
     return text;
   }
 
+  // Read a level's text WITHOUT touching the dirty baseline (used by the
+  // dialog's per-row download).
+  async function peek(id) {
+    const draft = storage.getItem(KEY.draft(id));
+    return draft != null ? draft : fetchOriginal(id);
+  }
+
   function save(id, text) {
     storage.setItem(KEY.draft(id), text);
     baseline = text;
@@ -83,6 +90,7 @@ export function createLevels({ fetch, storage }) {
     init,
     list,
     load,
+    peek,
     save,
     revert,
     isDirty,
