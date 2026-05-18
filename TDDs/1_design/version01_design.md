@@ -41,9 +41,12 @@ localStorage, and an actual game runtime. These are tracked for later versions.
   DOM-light; a framework would be premature.
 - **Rendering:** `<canvas>` 2D context for the tile preview.
 - **Assets:** `public/assets/tilesets/Dirt_Platformer_Tiles/platformertiles.png`
-  (256×96, RGBA). Assumed 32×32 tiles → an 8×3 grid (24 tiles). Tile size and
-  atlas layout are declared in a tileset config object, not hard-coded at call
-  sites, so a different atlas can be swapped in.
+  (256×96, RGBA). **Confirmed** 32×32 tiles → an 8×3 grid (24 tiles): a
+  9-slice dirt block plus sky, moon and transparent decor overlays. Tile size
+  and atlas layout are declared in a tileset config object, not hard-coded at
+  call sites, so a different atlas can be swapped in. Per-tile names and roles
+  are sliced to `public/.../Dirt_Platformer_Tiles/tiles/` with a `tiles.json`
+  manifest.
 - **Persistence:** the current level text is mirrored to `localStorage` so a
   refresh does not lose work. No backend.
 
@@ -132,8 +135,11 @@ Dark, monospace throughout (matches a text-first tool and the existing
 - **Play-test loop:** v1 has no game runtime, so the highest-leverage feature
   from the ideas doc (fast play-test) is only partially served. Decide whether
   v2 embeds a tiny reference platformer or exports to an external runner.
-- **Tile metadata:** 32×32 / 8×3 atlas layout is assumed from the image size
-  and the OpenGameArt source; needs visual confirmation against the PNG.
+- **Tile metadata:** ~~assumed~~ **RESOLVED** — confirmed by pixel inspection
+  as a 32×32 8×3 atlas (9-slice dirt block + sky/moon/decor); sliced and named
+  in `tiles.json`. Remaining nuance: faithfully reproducing the screenshots
+  needs autotiling (corner/edge selection) and a decor layer, which is a v2
+  concern — v1 still renders one tile per `#`.
 - **Coordinate origin:** top-left `(0,0)`, x right, y down — confirm this
   matches whatever runtime consumes the levels later.
 - **Undo:** v1 is text-only, so the browser textarea undo is sufficient. A
@@ -167,6 +173,10 @@ leverage first:
    viewport.
 5. **Templates / procedural seeds** — fight the blank-page problem (empty
    bordered room, maze skeleton).
+6. **Autotiling + decor layer** — v1 draws one tile per `#`; the example
+   levels can't visually match their source screenshots without corner/edge
+   tile selection from the 9-slice block and a separate decoration pass
+   (moon, stars, grass). The sliced `tiles.json` already provides the inputs.
 
 Layers / multi-character cells and entity properties remain further out: they
 change the level format and the parser, so they warrant their own design pass

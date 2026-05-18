@@ -1,8 +1,7 @@
-// Atlas metadata. The image is 256x96; 32px tiles give an 8x3 grid (24 tiles).
-// NOTE: the per-glyph tile indices below are ASSUMED from the image size and
-// the OpenGameArt source — not yet visually confirmed (design §8). They are
-// centralised here so a corrected mapping is a one-line change, and the
-// renderer falls back to coloured shapes for anything not mapped.
+// Atlas metadata. CONFIRMED by inspection (design §8 resolved): 256x96, 32px
+// tiles, 8x3 = 24 tiles. Layout is a 9-slice dirt block (indices 0,1,2 / 8,9,10
+// / 16,17,18) plus sky (11), moon (3) and transparent decor overlays. Full
+// per-tile names are in public/.../Dirt_Platformer_Tiles/tiles.json.
 export const ATLAS = {
   src: '/assets/tilesets/Dirt_Platformer_Tiles/platformertiles.png',
   tile: 32,
@@ -10,11 +9,12 @@ export const ATLAS = {
   rows: 3,
 };
 
-// glyph -> tile index (row-major) in the atlas. Only terrain is mapped;
-// entities (P, o, E) are drawn as shapes since a dirt tileset has no sprites.
+// glyph -> tile index (row-major). v1 draws one tile per glyph, so `#` uses
+// the solid dirt centre (9). `^` has no spike in this dirt set, so it is left
+// unmapped and the renderer draws its coloured-shape fallback. Entities
+// (P, o, E) likewise use shape fallbacks — a dirt tileset has no sprites.
 export const GLYPH_TILE = {
-  '#': 0,
-  '^': 1,
+  '#': 9,
 };
 
 /**
