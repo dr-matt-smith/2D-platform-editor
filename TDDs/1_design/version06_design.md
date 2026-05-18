@@ -119,11 +119,15 @@ consumes the manifest array order).
 
 ## 9. Milestones
 
-| # | Deliverable |
-|---|-------------|
-| 1 | Add `tutorial.txt` (from `SAMPLE`, `# name: tutorial`); add `# order:` to the three levels |
-| 2 | `gen-levels-manifest.mjs` honours `# order:`; regenerate + commit `manifest.json`; dev-smoke the 3-entry loader + default |
-| 3 | Docs: `data/levels/README.md` (three levels) + v06 transcript; mark plan delivered |
+All milestones delivered — see
+[../2_implementation/version06_implementation.md](../2_implementation/version06_implementation.md)
+for commit hashes.
+
+| # | Deliverable | Status |
+|---|-------------|--------|
+| 1 | Add `tutorial.txt` (from `SAMPLE`, `# name: tutorial`); add `# order:` to the three levels | done |
+| 2 | `gen-levels-manifest.mjs` honours `# order:`; regenerate + commit `manifest.json`; dev-smoke the 3-entry loader + default | done |
+| 3 | Docs: `data/levels/README.md` (three levels) + v06 transcript; mark plan delivered | done |
 
 ## 10. Acceptance criteria
 

@@ -1,11 +1,22 @@
 # Version 6 — Implementation Plan
 
-Status: Planned (design Draft; mapping resolved) · Date: 2026-05-18 ·
-Design: [../1_design/version06_design.md](../1_design/version06_design.md)
+Status: Delivered (M1–M3) · Date: 2026-05-18 · Design:
+[../1_design/version06_design.md](../1_design/version06_design.md)
 
-A forward plan: v6 is not yet built. One milestone per commit, prefixed
-`v6 …`, **path-scoped `git add`** (never `-A`) with a `git status` glance
-before committing, `npm test` green and `npm run build` clean before each.
+Record of the build. One milestone per commit, prefixed `v6 …`, path-scoped
+`git add` with a `git status` glance before each, `npm test` green (52/52,
+unchanged) and `npm run build` clean throughout.
+
+| Milestone | Commit |
+|-----------|--------|
+| M1 add tutorial.txt + `# order:` directives | `9a39448` |
+| M2 generator honours `# order:` + regenerate | `77fe35f` |
+| M3 docs + v06 transcript | this commit |
+
+Delivered as planned with no deviations: zero app-code changes, additive
+`# order:` directive, no id churn / no migration. Verified by parser
+validation of the three levels (0 errors), manifest assertion, and dev smoke
+(order `tutorial → below_ground → above_ground`, `list[0]` = `tutorial`).
 
 ## Constraints & approach
 
