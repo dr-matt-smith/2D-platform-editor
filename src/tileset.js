@@ -17,28 +17,54 @@ export const GLYPH_TILE = {
   '#': 9,
 };
 
-/**
- * Load the atlas. Always resolves: on image error it resolves with
- * ready:false so the renderer degrades to coloured-shape fallback.
- */
-export function loadTileset(src = ATLAS.src) {
-  return new Promise((resolve) => {
-    const image = new Image();
-    const api = {
-      image,
-      ready: false,
-      tileFor: (glyph) => GLYPH_TILE[glyph],
-      drawTile(ctx, index, dx, dy, size) {
-        const sx = (index % ATLAS.cols) * ATLAS.tile;
-        const sy = Math.floor(index / ATLAS.cols) * ATLAS.tile;
-        ctx.drawImage(image, sx, sy, ATLAS.tile, ATLAS.tile, dx, dy, size, size);
-      },
-    };
-    image.onload = () => {
-      api.ready = true;
-      resolve(api);
-    };
-    image.onerror = () => resolve(api);
-    image.src = src;
+// Generated standalone platform tiles (v5): not in the atlas (8x3 has no
+// spare slot), addressed by synthetic indices 24-27.
+const EXTRA_BASE = '/data/tilesets/Dirt_Platformer_Tiles/tiles/';
+const EXTRA = {
+  24: EXTRA_BASE + '24_platform_left.png',
+  25: EXTRA_BASE + '25_platform_mid_h.png',
+  26: EXTRA_BASE + '26_platform_right.png',
+  27: EXTRA_BASE + '27_platform_single.png',
+};
+
+const loadImage = (src) =>
+  new Promise((res) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => res(null);
+    im.src = src;
   });
+
+/**
+ * Load the atlas plus the standalone platform tiles. Always resolves; if the
+ * atlas fails, `ready:false` so the renderer uses its coloured-shape fallback
+ * (and never calls drawTile). A missing standalone tile falls back to the
+ * atlas dirt centre so a render is still produced.
+ */
+export async function loadTileset(src = ATLAS.src) {
+  const image = await loadImage(src);
+  const extra = {};
+  await Promise.all(
+    Object.entries(EXTRA).map(async ([i, url]) => {
+      extra[i] = await loadImage(url);
+    }),
+  );
+  return {
+    image,
+    ready: !!image,
+    tileFor: (glyph) => GLYPH_TILE[glyph],
+    drawTile(ctx, index, dx, dy, size) {
+      if (index >= 24) {
+        const im = extra[index];
+        if (im) {
+          ctx.drawImage(im, 0, 0, im.width, im.height, dx, dy, size, size);
+          return;
+        }
+        index = 9; // standalone asset missing → sensible dirt fallback
+      }
+      const sx = (index % ATLAS.cols) * ATLAS.tile;
+      const sy = Math.floor(index / ATLAS.cols) * ATLAS.tile;
+      ctx.drawImage(image, sx, sy, ATLAS.tile, ATLAS.tile, dx, dy, size, size);
+    },
+  };
 }

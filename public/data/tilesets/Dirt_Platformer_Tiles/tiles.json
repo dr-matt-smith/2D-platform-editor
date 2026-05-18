@@ -195,6 +195,38 @@
       "name": "drip",
       "role": "decor",
       "file": "tiles/23_drip.png"
+    },
+    {
+      "index": 24,
+      "row": null,
+      "col": null,
+      "name": "platform_left",
+      "role": "terrain",
+      "file": "tiles/24_platform_left.png"
+    },
+    {
+      "index": 25,
+      "row": null,
+      "col": null,
+      "name": "platform_mid_h",
+      "role": "terrain",
+      "file": "tiles/25_platform_mid_h.png"
+    },
+    {
+      "index": 26,
+      "row": null,
+      "col": null,
+      "name": "platform_right",
+      "role": "terrain",
+      "file": "tiles/26_platform_right.png"
+    },
+    {
+      "index": 27,
+      "row": null,
+      "col": null,
+      "name": "platform_single",
+      "role": "terrain",
+      "file": "tiles/27_platform_single.png"
     }
   ]
 }
