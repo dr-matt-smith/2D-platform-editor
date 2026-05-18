@@ -156,12 +156,16 @@ simplification from choosing pre-baked tiles over draw-time rotation.
 
 ## 6. Milestones
 
-| # | Deliverable |
-|---|-------------|
-| 1 | `pickTile` (plain index) + thin-run rules + unit tests; `autotileIndex` delegates (no behaviour change for thick walls) |
-| 2 | Slicing pipeline emits the 3 rotated PNGs + composed `27_platform_single.png` + `tiles.json` entries; `tileset.js` loads/sources indices 24–27 |
-| 3 | `renderer.js` uses `pickTile`, suppresses decor on thin/single cells; re-verify both example levels via the render harness |
-| 4 | Docs + v05 transcript; update v4 §4 reference (superseded); platform note in `data/levels/README.md` |
+All milestones delivered — see
+[../2_implementation/version05_implementation.md](../2_implementation/version05_implementation.md)
+for commit hashes.
+
+| # | Deliverable | Status |
+|---|-------------|--------|
+| 1 | `pickTile` (plain index) + thin-run rules + unit tests; `autotileIndex` delegates (no behaviour change for thick walls) | done |
+| 2 | Slicing pipeline emits the 3 rotated PNGs + composed `27_platform_single.png` + `tiles.json` entries; `tileset.js` loads/sources indices 24–27 | done |
+| 3 | `renderer.js` uses `pickTile`, suppresses decor on thin/single cells; re-verify both example levels via the render harness | done |
+| 4 | Docs + v05 transcript; update v4 §4 reference (superseded); platform note in `data/levels/README.md` | done |
 
 ## 7. Open questions
 

@@ -1,11 +1,24 @@
 # Version 5 — Implementation Plan
 
-Status: Planned (design Draft) · Date: 2026-05-18 · Design:
+Status: Delivered (M1–M4) · Date: 2026-05-18 · Design:
 [../1_design/version05_design.md](../1_design/version05_design.md)
 
-A forward plan: v5 is not yet built. One milestone per commit, prefixed
-`v5 …`, **path-scoped `git add`** (never `-A`) with a `git status` glance
-before committing, `npm test` green and `npm run build` clean before each.
+Record of the build. One milestone per commit, prefixed `v5 …`, path-scoped
+`git add` with a `git status` glance before each, `npm test` green and
+`npm run build` clean throughout (suite 47 → 52).
+
+| Milestone | Commit |
+|-----------|--------|
+| M1 `pickTile` selector + tests | `86eabba` |
+| M2 generate tiles 24–27 + tileset sourcing | `a089b58` |
+| M3 renderer uses `pickTile` + decor skip | `cd0a890` |
+| M4 docs + v05 transcript | this commit |
+
+Followed the plan as written. The two flagged risks both closed cleanly:
+`tiles.json` 0–23 byte-identical after extension (md5-verified), and the
+`platform_single` seam acceptable with the `mid_h` patch (no fallback
+needed). Example levels render byte-identical to v4 (regression evidence);
+the new tiles are proven by a git-ignored scratch render.
 
 ## Constraints & approach
 

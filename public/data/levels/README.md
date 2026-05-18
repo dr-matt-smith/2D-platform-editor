@@ -18,13 +18,16 @@ night sky. The renderer autotiles `#` from the 9-slice block, so edges and
 corners are picked automatically. Off-grid counts as solid (the world is
 implicit dirt), so boundary walls/floor face the play area, not the map edge.
 
-**Authoring tip — platform depth.** A horizontal platform **≥ 2 tiles deep**
-shows outward dirt on every face (`dirt_top` walk surface, `dirt_bottom`
-underside, left/right ends, solid centre) and looks best. A **1-tile-deep**
-platform is fine too — it renders `dirt_top` across with corner end caps; it
-just has no underside to show. Draw rectangles with the in-editor tool: click
-a glyph in the legend, drag on the preview to fill, hold **Shift** for a
-hollow outline (rooms).
+**Authoring tip — platform depth.** A wall **≥ 2 tiles thick** uses the
+9-slice dirt block (outward faces all round). A **1-tile-thick** run gets
+purpose-built platform tiles: a 1-wide column → capped pillar
+(`platform_top`/`mid`/`bottom`), a 1-tall ledge → capped bar
+(`platform_left`/`mid_h`/`right`), and a lone cell open on all sides →
+`platform_single`. These read as finished platforms, so grass/drips are not
+added to them. (Boundary walls flush with the map edge stay 9-slice — off-grid
+counts as solid.) Draw rectangles with the in-editor tool: click a glyph in
+the legend, drag on the preview to fill, hold **Shift** for a hollow outline
+(rooms).
 
 Both pass the project validator (`one P`, declared size, no undefined glyphs)
 with zero errors. v1 has no reachability lint and no runtime, so traversability

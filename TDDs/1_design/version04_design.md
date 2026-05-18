@@ -65,6 +65,12 @@ neighbour is *off the grid*.
 
 ## 4. Platform depth principle (documented, not enforced)
 
+> **Superseded by v5.** The 1-deep `dirt_top`+caps treatment below is replaced
+> by purpose-built platform tiles (a 1-thick run renders the
+> `platform_*` set, an isolated cell `platform_single`). See
+> [version05_design.md](version05_design.md). The depth *authoring guidance*
+> still holds; only the rendered tiles changed.
+
 - A horizontal platform **≥ 2 tiles deep** can show outward dirt on every
   face: `dirt_top` on the walked surface, `dirt_bottom` underneath,
   `dirt_left`/`dirt_right` ends, `dirt_center` inside. This looks best.
