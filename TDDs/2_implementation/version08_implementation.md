@@ -35,7 +35,8 @@ committing (the user is still authoring `above_ground2.txt` / regenerating
 | `main.js` | per-level async tileset load → `buildLegend` → thumbnail legend → `validate(parsed, legend)`; unknown-tileset `warn` |
 | `levels.js` | `tilesets()` → fetch tilesets manifest |
 | `loaderDialog.js` | "New level" affordance → tileset + size chooser |
-| `renderer.js` | **logic unchanged**; only `export const FALLBACK` added (read-only, for the 2a drift-guard test) |
+| `palette.js` | **new** — shared entity/sky colour constants (single source for renderer + the 2a drift test) |
+| `renderer.js` | **logic unchanged**; `FALLBACK`/`SKY` moved to `palette.js` and imported back (mechanical; existing renderer suite proves no behaviour change) |
 
 ## Milestone 1 — `meta.tileset` + legend builder (pure)
 
@@ -75,11 +76,11 @@ Commit: `v8 m2: validate(parsed, legend?) — tileset-aware glyph set`.
 2. `tileset.js`: `loadTileset(id = 'Dirt_Platformer_Tiles')`; derive
    `base = '/data/tilesets/' + id + '/'`; lookup + atlas + filled images
    from `base`. Behaviour for Dirt is identical (default arg).
-3. **Drift-guard test (decision 2a):** a unit test asserting every shared
-   glyph's `tile_lookup.json` `color` equals `renderer.js`'s `FALLBACK`
-   colour (export `FALLBACK` read-only or assert via a tiny shared
-   constant). Catches the duplicated palette diverging until v9's 2c
-   unification retires it.
+3. Extract `FALLBACK`/`SKY` from `renderer.js` into new `src/palette.js`;
+   `renderer.js` imports them (mechanical, no logic change — the existing
+   renderer suite is the proof). **Drift-guard test (2a):** assert every
+   shared glyph's `tile_lookup.json` `color` equals `palette`; catches the
+   duplication diverging until v9's 2c retires palette+test.
 
 Commit: `v8 m3: complete tile_lookup glyphs (Wall→Filled) + loadTileset(id)`.
 

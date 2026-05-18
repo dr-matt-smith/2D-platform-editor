@@ -67,12 +67,13 @@ single source of the editable alphabet:
   ground tile), not the flat-dark `center` — the renderer never reads
   `glyphs.filled.image` (it uses the mask table), so this is purely the
   legend thumbnail and is chosen for legibility at small size.
-- `color` mirrors the renderer's existing `FALLBACK` palette so the legend
-  can swatch image-less glyphs **without** coupling `main.js` to
-  `renderer.js` (decision **2a**). The duplication is made safe by a unit
-  test asserting `glyphs[*].color` equals `renderer.FALLBACK` for the shared
-  glyphs; unifying so the renderer reads colour *from* the lookup is
-  deferred to v9 (**2c**, §13) to keep v8 engine-risk-free.
+- `color` mirrors the entity/sky palette so the legend can swatch image-less
+  glyphs (decision **2a**). The single source is a new **`src/palette.js`**
+  constant; `renderer.js` imports it instead of its inline `FALLBACK`/`SKY`
+  (mechanical move, no logic change — the existing renderer suite proves
+  it), and a unit test asserts `glyphs[*].color` equals `palette` for the
+  shared glyphs. Unifying so the renderer reads colour *from the lookup*
+  (retiring palette+test) is deferred to v9 (**2c**, §13).
 
 ## 5. `# tileset:` directive
 
@@ -150,9 +151,10 @@ order this correctly (today `loadTileset` runs once at startup).
 - **`validate` signature** — optional `legend` param, default
   `DEFAULT_LEGEND`; pass the char-keyed legend object (future rules may want
   roles/names). Locked.
-- **Image-less swatches** — **2a**: `color` field in `glyphs` for v8, guarded
-  by a unit test that it matches `renderer.FALLBACK`. **2c** (renderer reads
-  colour from the lookup, single source) deferred to v9 (§13).
+- **Image-less swatches** — **2a**: `color` field in `glyphs`, single-sourced
+  via new `src/palette.js` (renderer imports it; mechanical, no logic
+  change), guarded by a unit test that `glyphs` colours match `palette`.
+  **2c** (renderer reads colour from the lookup) deferred to v9 (§13).
 - **`filled` thumbnail** — `tiles/01_dirt_top` (textured, legible), not the
   flat `center`; it is legend-only data (§4).
 - **Unknown `# tileset:`** — fall back to Dirt + non-blocking `warn`. Locked.
