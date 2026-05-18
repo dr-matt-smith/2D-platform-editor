@@ -6,6 +6,7 @@ import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm } from './loaderDialog.js';
 import { downloadText } from './download.js';
+import { createHistory } from './history.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
@@ -160,7 +161,10 @@ src.addEventListener('input', () => {
   updateCursor();
   refreshDirty();
   clearTimeout(timer);
-  timer = setTimeout(run, DEBOUNCE_MS);
+  timer = setTimeout(() => {
+    run();
+    history.push(src.value); // commit a snapshot once typing settles
+  }, DEBOUNCE_MS);
 });
 for (const ev of ['keyup', 'click', 'select']) {
   src.addEventListener(ev, updateCursor);
@@ -197,11 +201,22 @@ const storage = (() => {
 
 const levels = createLevels({ fetch: (...a) => fetch(...a), storage });
 let currentId = null;
+const history = createHistory({ limit: 100 });
 
 function setBuffer(text, id) {
   src.value = text;
   currentId = id;
   if (id) levels.setLastOpen(id);
+  history.reset(text); // each loaded level gets a fresh undo timeline
+  run();
+  updateCursor();
+  refreshDirty();
+}
+
+// Restore a buffer from the history stack (no reset — keeps the timeline).
+function applyHistory(text) {
+  if (text == null) return;
+  src.value = text;
   run();
   updateCursor();
   refreshDirty();
@@ -263,9 +278,18 @@ window.addEventListener('beforeunload', (e) => {
 document.querySelector('#levelsBtn').addEventListener('click', openDialog);
 document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
 document.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'o') {
+  const mod = e.metaKey || e.ctrlKey;
+  if (!mod) return;
+  const k = e.key.toLowerCase();
+  if (k === 'o') {
     e.preventDefault();
     openDialog();
+  } else if (k === 'z' && !e.shiftKey) {
+    e.preventDefault(); // own the undo so native textarea undo can't diverge
+    applyHistory(history.undo(src.value));
+  } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+    e.preventDefault();
+    applyHistory(history.redo());
   }
 });
 
