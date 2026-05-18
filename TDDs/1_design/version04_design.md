@@ -75,16 +75,18 @@ neighbour is *off the grid*.
 This is editor/authoring guidance surfaced in docs and (optionally) a
 soft validator hint; it is **not** a hard validation rule.
 
-## 5. below-ground interaction (the one real risk)
+## 5. below-ground interaction — RESOLVED
 
 below-ground's outer ring is 2-thick solid dirt. Under off-grid-solid, that
 ring becomes `dirt_center` (solid on all sides) instead of edge tiles — the
 *interior* tunnel faces the player sees are byte-for-byte unchanged, only the
-never-played outermost rim loses its decoration. Expected to be neutral or a
-slight improvement, but it **must be visually verified** before shipping.
-Fallback if it regresses: gate the off-grid value on `theme` (`sky` →
-solid, `cave` → open). Recommended: ship the single global rule, keep
-theme-gating as the escape hatch (open question §8).
+never-played outermost rim loses its decoration.
+
+**Decision (visually verified):** before/after renders confirmed the
+below-ground interior is identical and the outer-rim change is a slight
+improvement (drops a redundant off-screen frame). **Ship the single global
+off-grid-solid rule. No theme-gating.** The theme-gate fallback is dropped,
+not deferred.
 
 ## 6. Rectangle draw tool
 
@@ -118,8 +120,7 @@ free. Scope:
 
 ## 8. Open questions
 
-- **below-ground** — confirm the off-grid-solid render is acceptable, or
-  theme-gate (§5). Needs a visual check on the real level.
+- ~~below-ground / theme-gate~~ — **resolved**, single global rule (§5).
 - **Undo granularity** — per-edit snapshots (simple, more memory) vs. diffs.
   Recommend whole-buffer snapshots with a cap; revisit if large levels strain.
 - **Tool affordance** — keyboard/drag only, or a small toolbar? A toolbar is
@@ -141,8 +142,8 @@ free. Scope:
 
 - above-ground: left wall `dirt_right`, right wall `dirt_left`, floor
   `dirt_top`, ceiling `dirt_bottom`; pillars/platforms unchanged.
-- below-ground interior unchanged; outer-ring change reviewed and accepted (or
-  theme-gated).
+- below-ground interior unchanged; outer-ring change accepted (single global
+  rule, no theme-gate — §5).
 - A 1-deep platform renders `dirt_top` (+ correct end caps); a ≥2-deep one
   shows outward faces on all four sides.
 - Dragging a rectangle fills `#`; its edges autotile to outward/inward faces
