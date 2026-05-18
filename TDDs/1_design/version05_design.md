@@ -15,7 +15,9 @@ pillar with a rocky rim on top/sides, sides-only, bottom/sides. v5:
 - **(a)** add the matching **horizontal** 1-tile platform tiles by rotating
   the vertical set 90°.
 - **(b)** change tile selection so a wall that is 1 cell thick (open space on
-  both opposing sides) uses these platform tiles instead of the 9-slice.
+  both opposing sides) uses these platform tiles instead of the 9-slice, and
+  a lone wall cell open on all four sides uses a dedicated `platform_single`
+  tile composed in the same style.
 
 This **supersedes** the v4 §4 "1-deep platform = `dirt_top` + end caps"
 treatment with a purpose-built look.
@@ -28,12 +30,13 @@ treatment with a purpose-built look.
   `platform_right`) derived from the vertical set by 90° rotation.
 - A "thin run" pass in tile selection: vertical 1-wide and horizontal 1-tall
   runs map to the platform sets; everything else keeps the v4 9-slice rule.
+- A **dedicated 1×1 isolated tile** (`platform_single`) in the same style,
+  composed from the two horizontal end caps, used when a single wall cell is
+  surrounded by empty on all four sides.
 - Tests for the selection logic; re-verify the example levels render well.
 
 ### Out of scope
 
-- A dedicated 1×1 isolated-cell tile (the atlas has no double-cap tile) —
-  handled by a documented fallback (§5), revisited in v6.
 - New authored levels; flood/line tools; reachability; runtime (still v6+).
 
 ## 3. (a) Horizontal platform tiles
@@ -60,16 +63,33 @@ return a plain number, the renderer's hot path and its tests are untouched,
 and there is no `{index, quarter}` descriptor rippling through the code. The
 rotation cost collapses to one deterministic, inspectable offline step.
 
-The atlas is exactly 8×3 = 24 tiles with **no spare slot**, so the three new
+### `platform_single` (27) — the 1×1 isolated tile
+
+A fourth generated tile, in the same dirt style, for a lone wall cell open on
+all four sides. Composed (not rotated): the **left 16 px of `platform_left`
+(24)** + the **right 16 px of `platform_right` (26)**, giving left- and
+right-end caps in one 32-px tile (both already carry the top+bottom rim, so
+the result is rimmed on all four sides). The pipeline writes
+`tiles/27_platform_single.png` and its `tiles.json` entry.
+
+The vertical seam at x = 16 may show a 1–2 px discontinuity in the rocky
+texture; the generation step blends/patches that column. Seam quality is a
+generation concern, **visually verified** when the pipeline emits it
+(milestone 2 / §7), not a runtime concern.
+
+The atlas is exactly 8×3 = 24 tiles with **no spare slot**, so the four new
 tiles are *not* packed into the source atlas (which would force a resize and
-re-slice). They are loaded as three standalone images and addressed by
-synthetic indices 24–26 (§5).
+re-slice). They are loaded as standalone images and addressed by synthetic
+indices 24–27 (§5).
 
 ## 4. (b) Thin-run tile selection
 
 Definitions for a solid cell (`solid()` already counts off-grid as solid,
 v4 §3). "Open" = the neighbour is not solid.
 
+Selection order (first match wins):
+
+- **isolated 1×1**: all four neighbours open → `platform_single` (27).
 - **vertical thin**: `left` open **and** `right` open → part of a 1-wide
   column. Pick by up/down:
   - up open → `platform_top` (4)
@@ -82,13 +102,14 @@ v4 §3). "Open" = the neighbour is not solid.
   - right open → `platform_right` (26)
 - **otherwise**: the existing v4 9-slice rule, unchanged.
 
-### Precedence & the 1×1 case
+### Precedence
 
-A lone cell open on all four sides satisfies *both* thin conditions and the
-atlas has no all-caps tile. Decision: **horizontal takes precedence**, and a
-length-1 isolated cell falls back to the v4 9-slice result (today: a corner
-tile) — rare, acceptable, and flagged for a dedicated v6 tile. Documented as a
-known limitation, not silently wrong.
+The isolated 1×1 check runs **first** because a lone cell satisfies both thin
+conditions; resolving it to `platform_single` removes the earlier ambiguity
+(the v4 9-slice fallback is no longer used for this case). Vertical is tried
+before horizontal for genuine runs; they are mutually exclusive for any run
+longer than one cell, so the order only matters for the 1×1 cell, which the
+first rule already claims.
 
 ### Interaction with boundaries (off-grid solid)
 
@@ -111,32 +132,35 @@ reads as a finished ledge). Open question if grass-on-top is still wanted
 Tile selection stays a **plain integer index** end to end — the key
 simplification from choosing pre-baked tiles over draw-time rotation.
 
-- **`pickTile(grid,r,c) → number`** — new pure selector: thin-vertical →
-  4/12/20, thin-horizontal → 24/25/26, otherwise the v4 9-slice index.
-  `autotileIndex` is retained and delegates (its existing tests and the
-  thick-wall behaviour are unchanged).
-- **slicing pipeline** — additionally rotates atlas tiles 20/12/4
-  (`PIL Image.rotate(-90, expand=True)`) to
-  `tiles/24_platform_left.png` … `26_platform_right.png` and appends the
-  three `tiles.json` entries. One-shot, deterministic, inspectable.
-- **`tileset.js`** — loads the three standalone PNGs alongside the atlas;
+- **`pickTile(grid,r,c) → number`** — new pure selector: isolated 1×1 → 27,
+  thin-vertical → 4/12/20, thin-horizontal → 24/25/26, otherwise the v4
+  9-slice index. `autotileIndex` is retained and delegates (its existing
+  tests and the thick-wall behaviour are unchanged).
+- **slicing pipeline** — additionally generates four tiles: rotate atlas
+  tiles 20/12/4 (`PIL Image.rotate(-90, expand=True)`) →
+  `tiles/24_platform_left.png` … `26_platform_right.png`; and **compose**
+  `27_platform_single.png` from the left half of 24 + the right half of 26
+  with a seam patch (§3). Appends the four `tiles.json` entries. One-shot,
+  deterministic, inspectable.
+- **`tileset.js`** — loads the four standalone PNGs alongside the atlas;
   `drawTile(ctx,index,…)` sources indices ≥ 24 from those images, < 24 from
   the atlas as today. No rotation code, no `quarter` argument.
 - **`renderer.js`** — call `pickTile` instead of `autotileIndex`; skip the
-  decor pass for cells selected as thin-platform tiles. Stays pure.
+  decor pass for cells selected as thin-platform/single tiles. Stays pure.
 - **`level.js` / `validate.js`** — untouched.
 - **Tests** — `pickTile` is pure and returns numbers: unit-test
   vertical/horizontal runs, caps vs. middle, the boundary non-trigger, and
-  the 1×1 fallback. Image loading/sourcing is dev-smoke + render-harness
-  verified (no automated canvas test, as since v2).
+  the isolated-1×1 → 27 case. Image loading/sourcing and seam quality are
+  dev-smoke + render-harness verified (no automated canvas test, as since
+  v2).
 
 ## 6. Milestones
 
 | # | Deliverable |
 |---|-------------|
 | 1 | `pickTile` (plain index) + thin-run rules + unit tests; `autotileIndex` delegates (no behaviour change for thick walls) |
-| 2 | Slicing pipeline emits the 3 rotated PNGs + `tiles.json` entries; `tileset.js` loads/sources indices 24–26 |
-| 3 | `renderer.js` uses `pickTile`, suppresses decor on thin cells; re-verify both example levels via the render harness |
+| 2 | Slicing pipeline emits the 3 rotated PNGs + composed `27_platform_single.png` + `tiles.json` entries; `tileset.js` loads/sources indices 24–27 |
+| 3 | `renderer.js` uses `pickTile`, suppresses decor on thin/single cells; re-verify both example levels via the render harness |
 | 4 | Docs + v05 transcript; update v4 §4 reference (superseded); platform note in `data/levels/README.md` |
 
 ## 7. Open questions
@@ -144,8 +168,10 @@ simplification from choosing pre-baked tiles over draw-time rotation.
 - **Grass on thin platforms** — fully suppress decor (recommended, cleaner),
   or still allow grass tufts on the top of a horizontal platform for the
   sky theme? Needs a visual check.
-- **1×1 isolated cell** — accept the 9-slice fallback for v5, or pull a
-  dedicated "nub" tile forward into v5? Recommend defer.
+- **`platform_single` seam** — does the left-half/right-half composite join
+  cleanly, or is a wider blend / a different composite (e.g. four corner
+  quadrants) needed? Visually verified when the pipeline emits it (M2). The
+  selection logic is unaffected either way.
 - **Rotation direction when generating** — `platform_left` must cap the left
   end and `platform_right` the right; confirm the PIL rotation sign against
   the actual pixels when the pipeline emits them (milestone 2). `mid_h`'s rim
@@ -159,15 +185,17 @@ simplification from choosing pre-baked tiles over draw-time rotation.
   `platform_mid` / `platform_bottom`.
 - A free-floating 1-tall horizontal ledge renders `platform_left` /
   `platform_mid_h` / `platform_right` (rotated set).
+- A lone wall cell open on all four sides renders `platform_single` (27),
+  not a 9-slice corner.
 - Thick walls and boundary walls are byte-for-byte unchanged from v4
   (`autotileIndex` delegation proven by the existing tests still passing).
-- The 3 horizontal platform PNGs are generated by the pipeline with matching
-  `tiles.json` entries; the renderer sources them with no rotation code and
-  `pickTile` returns plain integer indices throughout.
+- The 4 platform PNGs (3 rotated + 1 composed) are generated by the pipeline
+  with matching `tiles.json` entries; the renderer sources them with no
+  rotation code and `pickTile` returns plain integer indices throughout.
 - `pickTile` is pure and unit-tested; `npm test` green, `npm run build`
   clean; example levels re-verified.
 
 ## 9. v6 candidates
 
-Dedicated 1×1 platform/nub tile; per-tile variant randomisation; flood fill +
-line tool; reachability lint; play-test runtime (long-standing, v2 §6).
+Per-tile variant randomisation; flood fill + line tool; reachability lint;
+play-test runtime (long-standing, v2 §6).
