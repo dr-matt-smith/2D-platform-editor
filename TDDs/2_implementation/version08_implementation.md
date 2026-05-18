@@ -35,7 +35,7 @@ committing (the user is still authoring `above_ground2.txt` / regenerating
 | `main.js` | per-level async tileset load → `buildLegend` → thumbnail legend → `validate(parsed, legend)`; unknown-tileset `warn` |
 | `levels.js` | `tilesets()` → fetch tilesets manifest |
 | `loaderDialog.js` | "New level" affordance → tileset + size chooser |
-| `renderer.js` | **unchanged** |
+| `renderer.js` | **logic unchanged**; only `export const FALLBACK` added (read-only, for the 2a drift-guard test) |
 
 ## Milestone 1 — `meta.tileset` + legend builder (pure)
 
@@ -68,15 +68,18 @@ Commit: `v8 m2: validate(parsed, legend?) — tileset-aware glyph set`.
 
 ## Milestone 3 — `tile_lookup.json` glyphs + `loadTileset(id)`
 
-1. Complete `tile_lookup.json` `glyphs` per design §4 (add `filled` with
-   `image` = the `center`/mask-15 tile, `role`, and `color` on the
-   image-less entries; `name` "Empty"/"Filled" — the Wall→Filled change is
-   here, data-only).
+1. Complete `tile_lookup.json` `glyphs` per design §4: add `filled`
+   (`image: tiles/01_dirt_top.png` — textured/legible, legend-only),
+   `role`, and `color` on the image-less entries; `name` "Empty"/"Filled"
+   (the Wall→Filled change, data-only).
 2. `tileset.js`: `loadTileset(id = 'Dirt_Platformer_Tiles')`; derive
    `base = '/data/tilesets/' + id + '/'`; lookup + atlas + filled images
    from `base`. Behaviour for Dirt is identical (default arg).
-3. No new unit test (DOM/Image); covered by the M4 dev smoke + the existing
-   render harness still matching.
+3. **Drift-guard test (decision 2a):** a unit test asserting every shared
+   glyph's `tile_lookup.json` `color` equals `renderer.js`'s `FALLBACK`
+   colour (export `FALLBACK` read-only or assert via a tiny shared
+   constant). Catches the duplicated palette diverging until v9's 2c
+   unification retires it.
 
 Commit: `v8 m3: complete tile_lookup glyphs (Wall→Filled) + loadTileset(id)`.
 
@@ -106,7 +109,9 @@ Commit: `v8 m4: per-level tileset load + thumbnail legend + unknown notice`.
 1. `levels.js`: `tilesets()` → injected `fetch('/data/tilesets/manifest.json')`
    → `[{id,name}]`; unit-test with the fake fetch.
 2. `loaderDialog.js`: a **"New level"** row → step to pick a tileset
-   (manifest) and a size preset (24×14 / 40×16); emits `onNew({id,size})`.
+   (manifest) + **custom width/height number inputs** with preset
+   quick-fills (24×14 / 40×16); W/H clamped 4–200; emits
+   `onNew({ id, w, h })`.
 3. `main.js`: build the buffer — `# name: untitled`, `# size: WxH`,
    `# tileset: <id>` (omitted if default), then `H` rows of the tileset's
    empty char; `currentId = null` (unsaved, like the offline sample); run
@@ -142,6 +147,9 @@ Commit: `v8 m6: docs + v08 transcript`.
 
 ## Deferred (design §13 → v9)
 
-A real second tileset (end-to-end proof, incl. decor data); hazard/pickup
-variant picker UI; 47-blob 8-neighbour; flood/line tool; reachability lint;
+**2c**: renderer reads image-less glyph colour from the loaded lookup
+(single source; retires the v8 drift-guard test). Touches the engine, hence
+v9. Also: a real second tileset (end-to-end proof, incl. decor data);
+hazard/pickup variant picker UI; 47-blob 8-neighbour; flood/line tool;
+reachability lint;
 play-test runtime; level create/rename/delete.

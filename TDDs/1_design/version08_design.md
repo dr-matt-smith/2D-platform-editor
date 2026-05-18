@@ -53,7 +53,7 @@ single source of the editable alphabet:
 ```json
 "glyphs": {
   "empty":  { "name": "Empty",        "char": ".", "role": "background", "image": null,  "color": "#1b2a3a" },
-  "filled": { "name": "Filled",       "char": "#", "role": "terrain",    "image": "tiles/09_dirt_center.png" },
+  "filled": { "name": "Filled",       "char": "#", "role": "terrain",    "image": "tiles/01_dirt_top.png" },
   "player": { "name": "Player spawn", "char": "P", "role": "entity",     "image": null,  "color": "#3498db" },
   "exit":   { "name": "Exit",         "char": "E", "role": "entity",     "image": null,  "color": "#2ecc71" },
   "hazard": { "name": "Hazard",       "char": "^", "role": "terrain",    "image": null,  "color": "#c0392b" },
@@ -63,11 +63,16 @@ single source of the editable alphabet:
 
 - **Wall → Filled** is now just `glyphs.filled.name`. The grid char stays
   `#`; no level text, draft, or `localStorage` changes → **no migration**.
-- `filled`'s thumbnail is the `center` (mask 15) tile image — a faithful
-  representative of solid terrain.
+- `filled`'s thumbnail is **`tiles/01_dirt_top`** (a textured, recognisable
+  ground tile), not the flat-dark `center` — the renderer never reads
+  `glyphs.filled.image` (it uses the mask table), so this is purely the
+  legend thumbnail and is chosen for legibility at small size.
 - `color` mirrors the renderer's existing `FALLBACK` palette so the legend
   can swatch image-less glyphs **without** coupling `main.js` to
-  `renderer.js` internals (data-driven, per-tileset).
+  `renderer.js` (decision **2a**). The duplication is made safe by a unit
+  test asserting `glyphs[*].color` equals `renderer.FALLBACK` for the shared
+  glyphs; unifying so the renderer reads colour *from* the lookup is
+  deferred to v9 (**2c**, §13) to keep v8 engine-risk-free.
 
 ## 5. `# tileset:` directive
 
@@ -95,9 +100,11 @@ single source of the editable alphabet:
 
 - `levels.js` gains `tilesets()` → fetches `/data/tilesets/manifest.json`.
 - Loader dialog gets a **"New level"** action → pick tileset (manifest list)
-  + size (a couple of presets, e.g. 24×14 / 40×16) → `main.js` builds the
-  buffer: `# name: untitled`, `# size: WxH`, `# tileset: <id>` (omitted if
-  default), then `H` rows of the tileset's `empty` char.
+  + size: **custom width × height number inputs** (with a couple of presets,
+  e.g. 24×14 / 40×16, as quick-fill buttons) → `main.js` builds the buffer:
+  `# name: untitled`, `# size: WxH`, `# tileset: <id>` (omitted if default),
+  then `H` rows of the tileset's `empty` char. W/H clamped to sane bounds
+  (e.g. 4–200).
 - `currentId = null` (unsaved, like the offline sample). Validation will
   `error` "no player spawn" until the user adds one — expected and correct.
 
@@ -138,20 +145,22 @@ order this correctly (today `loadTileset` runs once at startup).
 | 5 | "New level" + tileset chooser (loaderDialog/levels/main) |
 | 6 | Docs + v08 transcript; mark plan delivered |
 
-## 11. Open questions
+## 11. Open questions — RESOLVED
 
-- **`validate` signature** — optional `legend` defaulting to Dirt
-  (recommended; back-compat, pure) vs. always-required. Recommend optional.
-- **Image-less swatches** — `color` field in `glyphs` (recommended,
-  data-driven) vs. importing `renderer.js` `FALLBACK`. Recommend the field.
-- **`filled` thumbnail** — the `center`/mask-15 image (recommended) vs. a
-  composite; center is the honest "solid terrain" representative.
-- **Unknown `# tileset:`** — fall back to Dirt + `warn` (recommended) vs.
-  hard error. Recommend graceful fallback.
-- **New-level size** — fixed presets vs. free input; presets are simpler for
-  v8, free input deferred.
-- **Tileset switch cost** — re-`loadTileset` on every level switch that
-  changes tileset; acceptable (small image set, already async at startup).
+- **`validate` signature** — optional `legend` param, default
+  `DEFAULT_LEGEND`; pass the char-keyed legend object (future rules may want
+  roles/names). Locked.
+- **Image-less swatches** — **2a**: `color` field in `glyphs` for v8, guarded
+  by a unit test that it matches `renderer.FALLBACK`. **2c** (renderer reads
+  colour from the lookup, single source) deferred to v9 (§13).
+- **`filled` thumbnail** — `tiles/01_dirt_top` (textured, legible), not the
+  flat `center`; it is legend-only data (§4).
+- **Unknown `# tileset:`** — fall back to Dirt + non-blocking `warn`. Locked.
+- **New-level size** — **custom W×H number inputs** plus preset quick-fills;
+  clamped (§7). Locked.
+- **Tileset switch cost** — cache by id, reload only when `meta.tileset`
+  changes. Locked. (Cached lookup won't hot-reload mid-session; Vite's full
+  reload covers it — not solving.)
 
 ## 12. Acceptance criteria
 
@@ -168,7 +177,13 @@ order this correctly (today `loadTileset` runs once at startup).
 
 ## 13. v9 candidates
 
-A real second tileset (proves the abstraction end-to-end); hazard/pickup
-variant picker UI; 47-blob (8-neighbour) for inner corners; flood fill +
-line tool; reachability lint; play-test runtime; level create/rename/delete
+**2c — unify entity colour**: `renderer.js` reads the image-less glyph
+colour *from the loaded lookup* instead of its hardcoded `FALLBACK`, making
+the lookup the single source (retires the v8 drift-guard test). Small but
+touches the engine, hence v9.
+
+Also: a real second tileset (proves the abstraction end-to-end, incl. decor
+data); hazard/pickup variant picker UI; 47-blob (8-neighbour) for inner
+corners; flood fill + line tool; reachability lint; play-test runtime; level
+create/rename/delete
 from the dialog.
