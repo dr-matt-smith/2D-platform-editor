@@ -4,6 +4,7 @@ import {
   fillRect,
   outlineRect,
   buildLegend,
+  BACKGROUND_GLYPH,
   DEFAULT_LEGEND,
   DEFAULT_TILESET,
 } from './level.js';
@@ -326,27 +327,45 @@ async function loadInto(id) {
   }
 }
 
-// Switch levels, guarding unsaved edits in the current buffer.
-async function switchTo(id) {
-  if (id === currentId) return;
-
+// Run `proceed` only after the current buffer's unsaved edits are dealt
+// with (shared by level-switch and new-level). A null currentId (offline
+// sample / freshly-created) has no draft to save, so it proceeds directly,
+// matching the pre-v8 switch behaviour.
+function guardUnsaved(proceed) {
   if (currentId && refreshDirty()) {
     openConfirm({
       message: `“${currentId}” has unsaved changes.`,
       actions: [
-        { label: 'Save draft & switch', value: 'save', primary: true },
-        { label: 'Discard & switch', value: 'discard' },
+        { label: 'Save draft & continue', value: 'save', primary: true },
+        { label: 'Discard & continue', value: 'discard' },
         { label: 'Cancel', value: 'cancel' },
       ],
       onChoice: (choice) => {
         if (choice === 'cancel') return openDialog(); // back to the list
         if (choice === 'save') levels.save(currentId, src.value);
-        loadInto(id);
+        proceed();
       },
     });
     return;
   }
-  loadInto(id);
+  proceed();
+}
+
+// Switch levels, guarding unsaved edits in the current buffer.
+async function switchTo(id) {
+  if (id === currentId) return;
+  guardUnsaved(() => loadInto(id));
+}
+
+// Build a blank level for the chosen tileset + size and load it unsaved
+// (currentId = null, like the offline sample) so it can't clobber a draft.
+function newLevel({ id, w, h }) {
+  guardUnsaved(() => {
+    const head = ['# name: untitled', `# size: ${w}x${h}`];
+    if (id && id !== DEFAULT_TILESET) head.push(`# tileset: ${id}`);
+    const row = BACKGROUND_GLYPH.repeat(w);
+    setBuffer([...head, ...Array.from({ length: h }, () => row)].join('\n'), null);
+  });
 }
 
 async function downloadLevel(id) {
@@ -362,6 +381,7 @@ function openDialog() {
     currentId,
     onSelect: switchTo,
     onDownload: downloadLevel,
+    onNew: newLevel,
   });
 }
 

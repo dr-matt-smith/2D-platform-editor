@@ -22,10 +22,17 @@ const ORIGINALS = {
   '/data/levels/below_ground.txt': 'BELOW',
 };
 
+const TILESETS = [
+  { id: 'Dirt_Platformer_Tiles', name: 'Dirt Platformer Tiles' },
+  { id: 'Neon_Set', name: 'Neon Set' },
+];
+
 function fakeFetch() {
   return async (url) => {
     if (url === '/data/levels/manifest.json')
       return { ok: true, json: async () => MANIFEST };
+    if (url === '/data/tilesets/manifest.json')
+      return { ok: true, json: async () => TILESETS };
     if (url in ORIGINALS)
       return { ok: true, text: async () => ORIGINALS[url] };
     return { ok: false };
@@ -89,6 +96,34 @@ test('peek returns text without moving the dirty baseline', async () => {
   await levels.load('above_ground'); // baseline = 'ABOVE'
   assert.equal(await levels.peek('below_ground'), 'BELOW');
   assert.equal(levels.isDirty('ABOVE'), false); // baseline untouched by peek
+});
+
+test('tilesets() returns the manifest and memoises (one fetch)', async () => {
+  let calls = 0;
+  const fetch = async (url) => {
+    if (url === '/data/tilesets/manifest.json') {
+      calls++;
+      return { ok: true, json: async () => TILESETS };
+    }
+    if (url === '/data/levels/manifest.json')
+      return { ok: true, json: async () => MANIFEST };
+    return { ok: false };
+  };
+  const levels = createLevels({ fetch, storage: fakeStorage() });
+  await levels.init();
+  assert.deepEqual(await levels.tilesets(), TILESETS);
+  await levels.tilesets(); // second call must not refetch
+  assert.equal(calls, 1);
+});
+
+test('tilesets() degrades to [] when the manifest is missing', async () => {
+  const fetch = async (url) =>
+    url === '/data/levels/manifest.json'
+      ? { ok: true, json: async () => MANIFEST }
+      : { ok: false };
+  const levels = createLevels({ fetch, storage: fakeStorage() });
+  await levels.init();
+  assert.deepEqual(await levels.tilesets(), []);
 });
 
 test('lastOpen round-trips', async () => {

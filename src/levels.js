@@ -3,6 +3,7 @@
 // storage) are injected so this is unit-tested headless (design v3 §7).
 
 const MANIFEST_URL = '/data/levels/manifest.json';
+const TILESETS_URL = '/data/tilesets/manifest.json';
 const levelUrl = (file) => `/data/levels/${file}`;
 
 const KEY = {
@@ -82,6 +83,21 @@ export function createLevels({ fetch, storage }) {
     return text;
   }
 
+  // Available tilesets for the "New level" chooser (build-generated manifest;
+  // public/ is not directory-listable). Memoised after the first hit; an
+  // offline/missing manifest degrades to [] so the dialog offers the default.
+  let tilesetList = null;
+  async function tilesets() {
+    if (tilesetList) return tilesetList;
+    try {
+      const res = await fetch(TILESETS_URL);
+      if (res.ok) tilesetList = await res.json();
+    } catch {
+      /* offline → [] (caller falls back to the default tileset) */
+    }
+    return (tilesetList ??= []);
+  }
+
   const isDirty = (text) => text !== baseline;
   const lastOpen = () => storage.getItem(KEY.lastOpen);
   const setLastOpen = (id) => storage.setItem(KEY.lastOpen, id);
@@ -89,6 +105,7 @@ export function createLevels({ fetch, storage }) {
   const api = {
     init,
     list,
+    tilesets,
     load,
     peek,
     save,
