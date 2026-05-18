@@ -45,38 +45,30 @@ function hash(x, y) {
 const solid = (grid, r, c) =>
   r < 0 || r >= grid.length || c < 0 || c >= grid[r].length || grid[r][c] === '#';
 
-// 9-slice pick (off-grid solid → see above): row/col select a corner/edge/
-// centre tile so the rim faces toward open space (the player side).
-export function autotileIndex(grid, r, c) {
-  const up = solid(grid, r - 1, c);
-  const down = solid(grid, r + 1, c);
-  const left = solid(grid, r, c - 1);
-  const right = solid(grid, r, c + 1);
-  const row = !up ? 0 : !down ? 2 : 1;
-  const col = !left ? 0 : !right ? 2 : 1;
-  return T.dirt[row * 3 + col];
+// 4-neighbour autotile mask (v7 design §4). Pure; returns 0–15.
+// Bit order (clockwise NESW): mask = N·1 + E·2 + S·4 + W·8, a bit set when
+// that neighbour is solid. Off-grid is solid (see `solid`, v4 §3). This one
+// table replaces the v4/v5 pickTile/autotileIndex/PLATFORM special cases.
+export function tileMask(grid, r, c) {
+  return (
+    (solid(grid, r - 1, c) ? 1 : 0) | // N
+    (solid(grid, r, c + 1) ? 2 : 0) | // E
+    (solid(grid, r + 1, c) ? 4 : 0) | // S
+    (solid(grid, r, c - 1) ? 8 : 0) //  W
+  );
 }
 
-// Platform tile indices (v5). 4/12/20 are the atlas vertical set; 24–27 are
-// generated standalone images (3 rotated + 1 composed single). Used for
-// 1-cell-thick runs so a thin ledge/pillar/nub reads as a finished platform
-// instead of a lopsided 9-slice slice.
-export const PLATFORM = new Set([4, 12, 20, 24, 25, 26, 27]);
+// "Thin" masks (single / four caps / mid-v / mid-h) — exactly the old v5
+// PLATFORM-cell set, re-expressed. The decor pass leaves these finished
+// platform tiles alone.
+export const THIN = new Set([0, 1, 2, 4, 5, 8, 10]);
 
-// Tile pick including thin-run handling (v5 design §4). Pure; returns a plain
-// index. First match wins; the non-thin path delegates to autotileIndex so
-// thick/boundary walls are byte-for-byte unchanged from v4.
-export function pickTile(grid, r, c) {
-  const up = solid(grid, r - 1, c);
-  const down = solid(grid, r + 1, c);
-  const left = solid(grid, r, c - 1);
-  const right = solid(grid, r, c + 1);
-
-  if (!up && !down && !left && !right) return 27; // isolated 1×1
-  if (!left && !right) return !up ? 4 : !down ? 20 : 12; // 1-wide column
-  if (!up && !down) return !left ? 24 : !right ? 26 : 25; // 1-tall row
-  return autotileIndex(grid, r, c); // thick / boundary → v4 9-slice
-}
+// Interim mask→Dirt-index map (v7 design §4 table). M1 keeps rendering via
+// the existing index path so output is byte-identical and the suite stays
+// green; M2 replaces this with the tile_lookup.json resolver.
+const MASK_INDEX = [
+  27, 20, 24, 16, 4, 12, 0, 8, 26, 18, 25, 17, 2, 10, 1, 9,
+];
 
 function drawFallback(ctx, glyph, x, y, t) {
   const f = FALLBACK[glyph];
@@ -130,17 +122,17 @@ export function draw(ctx, parsed, tileset, tile = 24) {
       for (let c = 0; c < grid[r].length; c++) blit(bg, c, r);
   }
 
-  // Pass 2: terrain. pickTile autotiles thick walls and routes 1-cell-thick
-  // runs to the platform tiles (v5). Cells that resolve to a platform tile
-  // are recorded so the decor pass leaves their finished art alone.
-  const platformCells = new Set();
+  // Pass 2: terrain. tileMask (v7) picks the autotile; THIN masks (single /
+  // caps / mids) are recorded so the decor pass leaves their finished art
+  // alone. MASK_INDEX keeps the v6 pixels (M1); M2 swaps to the lookup.
+  const thinCells = new Set();
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       if (grid[r][c] !== '#') continue;
       if (ready) {
-        const idx = pickTile(grid, r, c);
-        if (PLATFORM.has(idx)) platformCells.add(r * meta.width + c);
-        blit(idx, c, r);
+        const m = tileMask(grid, r, c);
+        if (THIN.has(m)) thinCells.add(r * meta.width + c);
+        blit(MASK_INDEX[m], c, r);
       } else {
         drawFallback(ctx, '#', px(c), py(r), tile);
       }
@@ -156,7 +148,7 @@ export function draw(ctx, parsed, tileset, tile = 24) {
       for (let c = 0; c < grid[r].length; c++) {
         const g = grid[r][c];
         if (g === '#') {
-          if (platformCells.has(r * meta.width + c)) continue; // finished art
+          if (thinCells.has(r * meta.width + c)) continue; // finished art
           if (!cave && !solid(grid, r - 1, c) && r - 1 >= 0)
             blit(T.grass[hash(c, r) & 1], c, r - 1);
           if (!solid(grid, r + 1, c) && r + 1 < rows)

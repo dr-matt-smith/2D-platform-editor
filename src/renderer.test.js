@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from './level.js';
-import { draw, autotileIndex, pickTile, PLATFORM } from './renderer.js';
+import { draw, tileMask, THIN } from './renderer.js';
 
 function fakeCtx() {
   const calls = { fillRect: 0, arc: 0 };
@@ -20,11 +20,42 @@ function fakeCtx() {
   };
 }
 
-// Records the atlas tile index passed to each drawTile call.
+// Records the tile index passed to each drawTile call.
 function fakeTileset() {
   const idx = [];
   return { ready: true, tileFor: () => undefined, drawTile: (_c, i) => idx.push(i), idx };
 }
+
+// 3x3 grid with the centre solid and chosen orthogonal neighbours solid.
+function around({ n, e, s, w }) {
+  const g = [
+    ['.', n ? '#' : '.', '.'],
+    [w ? '#' : '.', '#', e ? '#' : '.'],
+    ['.', s ? '#' : '.', '.'],
+  ];
+  return g.map((row) => row.join(''));
+}
+
+test('tileMask: all 16 neighbour combinations → N·1+E·2+S·4+W·8', () => {
+  for (let m = 0; m < 16; m++) {
+    const n = !!(m & 1);
+    const e = !!(m & 2);
+    const s = !!(m & 4);
+    const w = !!(m & 8);
+    assert.equal(tileMask(around({ n, e, s, w }), 1, 1), m);
+  }
+});
+
+test('tileMask: off-grid counts as solid (v4 rule)', () => {
+  assert.equal(tileMask(['#'], 0, 0), 15); // 1x1: all neighbours off-grid
+  assert.equal(tileMask(['...', '.#.', '...'], 1, 1), 0); // lone, all open
+  // left-edge column cell: W off-grid (solid) + N,S solid, E open → 1+4+8
+  assert.equal(tileMask(['#..', '#..', '#..'], 1, 0), 13);
+});
+
+test('THIN is exactly the v5 platform-cell mask set', () => {
+  assert.deepEqual([...THIN].sort((a, b) => a - b), [0, 1, 2, 4, 5, 8, 10]);
+});
 
 test('canvas is sized to grid * tile', () => {
   const ctx = fakeCtx();
@@ -45,59 +76,41 @@ test('no-atlas path: entity glyphs use shape fallbacks', () => {
   assert.equal(ctx.calls.arc, 2); // P disc + o pip
 });
 
-test('off-grid is solid: a fully-embedded block has no rim', () => {
-  // Every neighbour (incl. off-grid) is solid → all dirt_centre.
-  const g = ['###', '###', '###'];
-  for (let r = 0; r < 3; r++)
-    for (let c = 0; c < 3; c++) assert.equal(autotileIndex(g, r, c), 9);
-});
-
-test('boundary faces point at the play area (v4 rule)', () => {
-  // Left wall at the map edge, open to the right → rim faces right.
-  assert.equal(autotileIndex(['#..', '#..', '#..'], 1, 0), 10); // dirt_right
-  // Right wall, open to the left → rim faces left.
-  assert.equal(autotileIndex(['..#', '..#', '..#'], 1, 2), 8); // dirt_left
-  // Floor (bottom edge), open above → rim faces up (walk surface).
-  assert.equal(autotileIndex(['...', '###'], 1, 1), 1); // dirt_top
-  // Ceiling (top edge), open below → rim faces down.
-  assert.equal(autotileIndex(['###', '...'], 0, 1), 17); // dirt_bottom
-});
-
-test('free-standing block away from edges is unchanged', () => {
-  // 3x3 block inside open space: rims still face outward as before.
-  const g = ['.....', '.###.', '.###.', '.###.', '.....'];
-  assert.equal(autotileIndex(g, 1, 1), 0); // top-left corner
-  assert.equal(autotileIndex(g, 2, 1), 8); // left edge
-  assert.equal(autotileIndex(g, 2, 2), 9); // centre
-  assert.equal(autotileIndex(g, 3, 3), 18); // bottom-right corner
-});
-
-test('1-deep platform is dirt_top with corner end caps', () => {
-  const g = ['.....', '.###.', '.....'];
-  assert.equal(autotileIndex(g, 1, 1), 0); // left end → dirt_top_left
-  assert.equal(autotileIndex(g, 1, 2), 1); // span → dirt_top
-  assert.equal(autotileIndex(g, 1, 3), 2); // right end → dirt_top_right
-});
-
 test('atlas path: a bordered 3x3 block emits the full 9-slice set + sky fill', () => {
   const ctx = fakeCtx();
   const ts = fakeTileset();
-  // Block surrounded by open so all nine faces appear (off-grid is solid, so
-  // an edge-touching block would be all centre — it must be inset).
+  // Inset block → all nine thick faces appear (off-grid is solid).
   draw(ctx, parse('.....\n.###.\n.###.\n.###.\n.....'), ts, 8);
   assert.equal(ts.idx.filter((i) => i === 11).length, 25); // sky per cell
   const nine = new Set([0, 1, 2, 8, 9, 10, 16, 17, 18]);
-  const got = new Set(ts.idx.filter((i) => nine.has(i)));
-  assert.equal(got.size, 9); // every 9-slice tile used
+  assert.equal(new Set(ts.idx.filter((i) => nine.has(i))).size, 9);
+});
+
+test('atlas path: thin runs emit platform tiles + suppress decor', () => {
+  const ctx = fakeCtx();
+  const ts = fakeTileset();
+  // Floating 1-wide pillar (cols 2), a 1-tall ledge (row 5), a lone cell.
+  draw(
+    ctx,
+    parse(
+      ['........', '..#.....', '..#.....', '..#.....', '........',
+       '....###.', '........', '......#.', '........'].join('\n'),
+    ),
+    ts,
+    8,
+  );
+  // pillar caps/mid 4/20/12, ledge caps/mid 24/26/25, single 27.
+  for (const i of [4, 20, 12, 24, 26, 25, 27])
+    assert.ok(ts.idx.includes(i), `expected platform tile ${i}`);
+  // none of these are grass(21/22) or drip(15/23) — decor suppressed on them.
+  assert.equal(ts.idx.filter((i) => [21, 22, 23, 15].includes(i)).length, 0);
 });
 
 test('atlas path: grass overlays dirt that has open sky above', () => {
   const ctx = fakeCtx();
   const ts = fakeTileset();
-  // row 0 sky, row 1 dirt: each dirt cell gets a grass tile (21 or 22) above.
-  draw(ctx, parse('...\n###'), ts, 8);
-  const grass = ts.idx.filter((i) => i === 21 || i === 22).length;
-  assert.equal(grass, 3);
+  draw(ctx, parse('...\n###'), ts, 8); // row1 is a thick bottom edge, not thin
+  assert.equal(ts.idx.filter((i) => i === 21 || i === 22).length, 3);
 });
 
 test('cave theme: dark bg, no grass/moon/stars, drips kept', () => {
@@ -108,40 +121,4 @@ test('cave theme: dark bg, no grass/moon/stars, drips kept', () => {
   assert.equal(ts.idx.filter((i) => i === 11).length, 0); // no sky tile
   assert.equal(ts.idx.filter((i) => i === 21 || i === 22).length, 0); // no grass
   assert.equal(ts.idx.filter((i) => i === 3).length, 0); // no moon
-});
-
-test('pickTile: isolated 1x1 cell → platform_single (27)', () => {
-  const t = pickTile(['...', '.#.', '...'], 1, 1);
-  assert.equal(t, 27);
-  assert.ok(PLATFORM.has(t));
-});
-
-test('pickTile: 1-wide vertical pillar → top/mid/bottom (4/12/20)', () => {
-  const g = ['.....', '..#..', '..#..', '..#..', '.....'];
-  assert.equal(pickTile(g, 1, 2), 4); // open above → top cap
-  assert.equal(pickTile(g, 2, 2), 12); // enclosed → mid
-  assert.equal(pickTile(g, 3, 2), 20); // open below → bottom cap
-});
-
-test('pickTile: 1-tall horizontal ledge → left/mid_h/right (24/25/26)', () => {
-  const g = ['.....', '.###.', '.....'];
-  assert.equal(pickTile(g, 1, 1), 24); // open left → left cap
-  assert.equal(pickTile(g, 1, 2), 25); // enclosed → mid_h
-  assert.equal(pickTile(g, 1, 3), 26); // open right → right cap
-});
-
-test('pickTile: edge-flush 1-wide column is NOT thin (off-grid solid)', () => {
-  const g = ['#..', '#..', '#..']; // column at the left map edge
-  const t = pickTile(g, 1, 0);
-  assert.equal(t, autotileIndex(g, 1, 0)); // delegates to v4 9-slice
-  assert.equal(t, 10); // dirt_right (boundary wall)
-  assert.ok(!PLATFORM.has(t));
-});
-
-test('pickTile: thick walls delegate unchanged to autotileIndex', () => {
-  const g = ['.....', '.###.', '.###.', '.###.', '.....'];
-  for (let r = 1; r <= 3; r++)
-    for (let c = 1; c <= 3; c++)
-      assert.equal(pickTile(g, r, c), autotileIndex(g, r, c));
-  assert.ok(!PLATFORM.has(pickTile(g, 2, 2))); // centre, not a platform
 });
