@@ -96,10 +96,23 @@ body {
 #dlBtn:hover { background: #3d3d40; }
 #dirty { color: var(--warn); margin-left: auto; }
 .canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; }
-#preview {
+.stage {
+  position: relative;
+  display: inline-block;
+  border: 1px solid var(--line);
+  line-height: 0;
+}
+#preview,
+#overlay {
   image-rendering: pixelated;
   max-width: 100%;
-  border: 1px solid var(--line);
+}
+#preview { display: block; }
+#overlay {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  touch-action: none;
 }
 
 .legend {
@@ -107,10 +120,24 @@ body {
   padding: 8px 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: 6px;
   color: var(--dim);
 }
-.legend b { color: var(--fg); }
+.legend .glyph {
+  font: inherit;
+  color: var(--dim);
+  background: #2a2a2a;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.legend .glyph:hover { background: #333; }
+.legend .glyph.active {
+  border-color: var(--warn);
+  color: var(--fg);
+}
+.legend .glyph b { color: var(--fg); }
 
 .problems {
   height: 25vh;

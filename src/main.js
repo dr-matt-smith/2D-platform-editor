@@ -1,5 +1,5 @@
 import './style.css';
-import { parse, LEGEND } from './level.js';
+import { parse, LEGEND, fillRect, outlineRect } from './level.js';
 import { validate } from './validate.js';
 import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
@@ -41,8 +41,13 @@ document.querySelector('#app').innerHTML = `
         <span id="cursor">cursor —</span>
         <span id="dirty"></span>
       </div>
-      <div class="canvas-wrap"><canvas id="preview"></canvas></div>
-      <div class="legend" id="legend"></div>
+      <div class="canvas-wrap">
+        <div class="stage">
+          <canvas id="preview"></canvas>
+          <canvas id="overlay"></canvas>
+        </div>
+      </div>
+      <div class="legend" id="legend" title="Click a glyph to draw with it · drag on the preview to fill · hold Shift to draw an outline"></div>
     </div>
   </div>
   <div class="problems" id="problems"></div>
@@ -55,11 +60,28 @@ const cursorEl = document.querySelector('#cursor');
 const dirtyEl = document.querySelector('#dirty');
 const legendEl = document.querySelector('#legend');
 const problemsEl = document.querySelector('#problems');
-const ctx = document.querySelector('#preview').getContext('2d');
+const previewCanvas = document.querySelector('#preview');
+const overlay = document.querySelector('#overlay');
+const ctx = previewCanvas.getContext('2d');
+const octx = overlay.getContext('2d');
 
-legendEl.innerHTML = Object.entries(LEGEND)
-  .map(([g, { name }]) => `<span><b>${g}</b> ${name}</span>`)
-  .join('');
+let activeGlyph = '#';
+function renderLegend() {
+  legendEl.innerHTML = Object.entries(LEGEND)
+    .map(
+      ([g, { name }]) =>
+        `<button class="glyph${g === activeGlyph ? ' active' : ''}" data-glyph="${g}">` +
+        `<b>${g === ' ' ? '·' : g}</b> ${name}</button>`,
+    )
+    .join('');
+}
+renderLegend();
+legendEl.addEventListener('click', (e) => {
+  const g = e.target.closest('[data-glyph]')?.dataset.glyph;
+  if (g == null) return;
+  activeGlyph = g;
+  renderLegend();
+});
 
 // Measure the textarea's monospace character width so the column ruler and
 // the CSS guide gradients line up exactly with typed characters.
@@ -135,6 +157,11 @@ function run() {
 
   renderProblems(validate(parsed));
   draw(ctx, parsed, tileset, TILE);
+
+  // Keep the selection overlay congruent with the (re-sized) preview.
+  if (overlay.width !== ctx.canvas.width) overlay.width = ctx.canvas.width;
+  if (overlay.height !== ctx.canvas.height) overlay.height = ctx.canvas.height;
+  octx.clearRect(0, 0, overlay.width, overlay.height);
 
   const lines = text.split('\n');
   renderGutter(lines.length);
@@ -291,6 +318,87 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     applyHistory(history.redo());
   }
+});
+
+// --- Rectangle draw tool -----------------------------------------------
+
+// Commit a buffer change as one undoable step (distinct from applyHistory,
+// which restores without re-pushing).
+function applyEdit(text) {
+  src.value = text;
+  history.push(text);
+  run();
+  updateCursor();
+  refreshDirty();
+}
+
+// Pointer position → clamped grid cell. The overlay shares the preview's
+// intrinsic size (gridW*TILE) but is CSS-scaled, so divide by that ratio.
+function cellFromEvent(e) {
+  const r = overlay.getBoundingClientRect();
+  const gx = ((e.clientX - r.left) * (overlay.width / r.width)) / TILE;
+  const gy = ((e.clientY - r.top) * (overlay.height / r.height)) / TILE;
+  const W = Math.max(1, Math.round(overlay.width / TILE));
+  const H = Math.max(1, Math.round(overlay.height / TILE));
+  return {
+    cx: Math.max(0, Math.min(W - 1, Math.floor(gx))),
+    cy: Math.max(0, Math.min(H - 1, Math.floor(gy))),
+  };
+}
+
+function drawMarquee(a, b) {
+  const x0 = Math.min(a.cx, b.cx);
+  const x1 = Math.max(a.cx, b.cx);
+  const y0 = Math.min(a.cy, b.cy);
+  const y1 = Math.max(a.cy, b.cy);
+  octx.clearRect(0, 0, overlay.width, overlay.height);
+  octx.fillStyle = 'rgba(255,255,255,0.18)';
+  octx.fillRect(x0 * TILE, y0 * TILE, (x1 - x0 + 1) * TILE, (y1 - y0 + 1) * TILE);
+  octx.strokeStyle = 'rgba(255,255,255,0.9)';
+  octx.lineWidth = 2;
+  octx.strokeRect(
+    x0 * TILE + 1,
+    y0 * TILE + 1,
+    (x1 - x0 + 1) * TILE - 2,
+    (y1 - y0 + 1) * TILE - 2,
+  );
+}
+
+// The buffer↔grid splice: parse → edit the grid rows → write each changed
+// row back at its ORIGINAL file line (parsed.rows[i].line), so the header
+// and any interspersed `//` comments are preserved.
+function applyRect(a, b, outline) {
+  const parsed = parse(src.value);
+  if (!parsed.grid.length) return;
+  const edit = outline ? outlineRect : fillRect;
+  const grid = edit(parsed.grid, a.cx, a.cy, b.cx, b.cy, activeGlyph);
+  const lines = src.value.split('\n');
+  parsed.rows.forEach((row, i) => {
+    lines[row.line - 1] = grid[i];
+  });
+  applyEdit(lines.join('\n'));
+}
+
+let dragStart = null;
+overlay.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  dragStart = cellFromEvent(e);
+  overlay.setPointerCapture(e.pointerId);
+  drawMarquee(dragStart, dragStart);
+});
+overlay.addEventListener('pointermove', (e) => {
+  if (dragStart) drawMarquee(dragStart, cellFromEvent(e));
+});
+overlay.addEventListener('pointerup', (e) => {
+  if (!dragStart) return;
+  const start = dragStart;
+  dragStart = null;
+  octx.clearRect(0, 0, overlay.width, overlay.height);
+  applyRect(start, cellFromEvent(e), e.shiftKey);
+});
+overlay.addEventListener('pointercancel', () => {
+  dragStart = null;
+  octx.clearRect(0, 0, overlay.width, overlay.height);
 });
 
 (async function start() {
