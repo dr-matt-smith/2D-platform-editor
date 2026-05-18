@@ -18,25 +18,37 @@ const LEVELS_DIR = join(
 const DIRECTIVE = /^#\s*(\w+)\s*:\s*(.+?)\s*$/;
 const isComment = (l) => l.trimStart().startsWith('//');
 
-function readName(text) {
+// Read header directives until the grid starts. `order` controls load order
+// (lower first); absent → sorts after ordered levels, then by filename.
+function readHeader(text) {
+  const h = { name: null, order: null };
   for (const line of text.replace(/\r\n?/g, '\n').split('\n')) {
     if (isComment(line)) continue;
     const m = line.match(DIRECTIVE);
     if (!m) break; // first non-comment, non-directive line → grid started
-    if (m[1].toLowerCase() === 'name') return m[2];
+    const key = m[1].toLowerCase();
+    if (key === 'name') h.name = m[2];
+    else if (key === 'order' && /^\d+$/.test(m[2])) h.order = Number(m[2]);
   }
-  return null;
+  return h;
 }
 
-const files = readdirSync(LEVELS_DIR)
+const entries = readdirSync(LEVELS_DIR)
   .filter((f) => f.endsWith('.txt'))
-  .sort();
+  .map((file) => {
+    const { name, order } = readHeader(
+      readFileSync(join(LEVELS_DIR, file), 'utf8'),
+    );
+    return { id: file.replace(/\.txt$/, ''), name: name || file, file, order };
+  });
 
-const manifest = files.map((file) => {
-  const id = file.replace(/\.txt$/, '');
-  const name = readName(readFileSync(join(LEVELS_DIR, file), 'utf8')) || id;
-  return { id, name, file };
-});
+// Stable total order: (order ?? 999, filename). Manifest entry shape stays
+// { id, name, file } — `order` only influences array position.
+entries.sort(
+  (a, b) =>
+    (a.order ?? 999) - (b.order ?? 999) || a.file.localeCompare(b.file),
+);
+const manifest = entries.map(({ id, name, file }) => ({ id, name, file }));
 
 writeFileSync(
   join(LEVELS_DIR, 'manifest.json'),
