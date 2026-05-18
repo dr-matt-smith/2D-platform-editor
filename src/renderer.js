@@ -7,8 +7,7 @@
 // it degrades to flat colour + shapes. Entities (P, o, E) and the hazard `^`
 // have no sprite in a dirt tileset, so they are always drawn as shapes.
 import { BACKGROUND_GLYPH } from './level.js';
-
-const SKY = '#1b2a3a';
+import { SKY, FALLBACK } from './palette.js';
 
 // Atlas tile indices (confirmed layout — see tileset.js / tiles.json).
 const T = {
@@ -22,14 +21,8 @@ const T = {
   drip: [15, 23],
 };
 
-// Fallback shapes for the no-atlas path and for sprite-less glyphs.
-const FALLBACK = {
-  '#': { color: '#6b4a2f', shape: 'block' },
-  '^': { color: '#c0392b', shape: 'spike' },
-  P: { color: '#3498db', shape: 'disc' },
-  o: { color: '#f1c40f', shape: 'pip' },
-  E: { color: '#2ecc71', shape: 'block' },
-};
+// FALLBACK (sprite-less colours/shapes) + SKY now live in palette.js so the
+// tile_lookup.json glyph colours can be drift-guarded against them (§11 #2).
 
 // Stable position hash so decor never flickers between renders (keeps draw
 // deterministic — same input, same pixels).

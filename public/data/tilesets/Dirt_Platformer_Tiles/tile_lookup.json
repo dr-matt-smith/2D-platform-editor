@@ -24,10 +24,11 @@
     "cave": { "image": "tiles/19_dirt_fill.png" }
   },
   "glyphs": {
-    "empty":  { "name": "Empty",        "char": ".", "image": null },
-    "player": { "name": "Player spawn", "char": "P", "image": null },
-    "exit":   { "name": "Exit",         "char": "E", "image": null },
-    "hazard": { "name": "Hazard",       "char": "^", "image": null },
-    "pickup": { "name": "Pickup",       "char": "o", "image": null }
+    "empty":  { "name": "Empty",        "char": ".", "role": "background", "image": null,                  "color": "#1b2a3a" },
+    "filled": { "name": "Filled",       "char": "#", "role": "terrain",    "image": "tiles/01_dirt_top.png", "color": null },
+    "player": { "name": "Player spawn", "char": "P", "role": "entity",     "image": null,                  "color": "#3498db" },
+    "exit":   { "name": "Exit",         "char": "E", "role": "entity",     "image": null,                  "color": "#2ecc71" },
+    "hazard": { "name": "Hazard",       "char": "^", "role": "terrain",    "image": null,                  "color": "#c0392b" },
+    "pickup": { "name": "Pickup",       "char": "o", "role": "entity",     "image": null,                  "color": "#f1c40f" }
   }
 }

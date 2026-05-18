@@ -2,11 +2,13 @@
 // tile_lookup.json keyed by the 4-neighbour mask 0–15 (design §4/§5). The
 // atlas image is still used for the decor/background pass (sky, moon, stars,
 // grass, drips, cave fill) via drawTile(index).
-const TILESET_DIR = '/data/tilesets/Dirt_Platformer_Tiles/';
-const LOOKUP_URL = TILESET_DIR + 'tile_lookup.json';
+const DEFAULT_TILESET = 'Dirt_Platformer_Tiles';
+const baseFor = (id) => '/data/tilesets/' + id + '/';
 
+// Atlas geometry is shared across tilesets (decor/bg is still Dirt-atlas-bound
+// in v8 — see implementation plan risks); only the directory is per-id.
 export const ATLAS = {
-  src: TILESET_DIR + 'platformertiles.png',
+  src: baseFor(DEFAULT_TILESET) + 'platformertiles.png',
   tile: 32,
   cols: 8,
   rows: 3,
@@ -24,14 +26,17 @@ const loadImage = (src) =>
  * Load the atlas (decor/bg) plus the 16 filled-mask tiles named in
  * tile_lookup.json. Always resolves; if the atlas fails, `ready:false` so the
  * renderer uses its coloured-shape fallback (and never calls draw*). A
- * missing filled image falls back to the atlas dirt centre.
+ * missing filled image falls back to the atlas dirt centre. `id` selects the
+ * tileset directory under /data/tilesets/ (default: the Dirt set, so existing
+ * callers are unchanged).
  */
-export async function loadTileset() {
-  const image = await loadImage(ATLAS.src);
+export async function loadTileset(id = DEFAULT_TILESET) {
+  const base = baseFor(id);
+  const image = await loadImage(base + 'platformertiles.png');
 
   let lookup = null;
   try {
-    const res = await fetch(LOOKUP_URL);
+    const res = await fetch(base + 'tile_lookup.json');
     if (res.ok) lookup = await res.json();
   } catch {
     /* offline / missing lookup → filled stays empty, dirt-centre fallback */
@@ -41,7 +46,7 @@ export async function loadTileset() {
   if (lookup?.filled) {
     await Promise.all(
       Object.entries(lookup.filled).map(async ([mask, def]) => {
-        filled[mask] = await loadImage(TILESET_DIR + def.image);
+        filled[mask] = await loadImage(base + def.image);
       }),
     );
   }
