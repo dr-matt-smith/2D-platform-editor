@@ -1,7 +1,24 @@
 # Version 9 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-19 · Design:
-[../1_design/version09_design.md](../1_design/version09_design.md)
+Status: **Delivered (M1–M5)** · Date: 2026-05-19 · Design:
+[../1_design/version09_design.md](../1_design/version09_design.md) ·
+Transcript: [../3_transcripts/version09_build.md](../3_transcripts/version09_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`above_ground2.txt` / `manifest.json` never staged):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `25f543b` | vendor engine `@4c3b936` + `Goal`; 4 forks (logger/stop/dispose/clear); v9 TDDs |
+| 2 | `bf54be7` | pure `adapter.toWorld` + `playtestGate`; 11 tests (55 → 66) |
+| 3 | `cf31250` | `PlaytestScene` + gated modal launcher; scale-to-fit; teardown; main.js Play hook |
+| 4 | `6f4abb3` | CC BY 4.0 `player/coin/spike.png` + `sources.md`/`LICENSE`; stub fallback; synth sfx |
+| 5 | _this commit_ | levels README Playtest note; v09 transcript; plan + design Delivered |
+
+Outcome: tests 55 → 66 (additions only — `adapter`/`playtestGate` are
+pure; the editor pipeline is untouched so its suite is unchanged),
+`npm run build` clean at every milestone. Engine vendored byte-identical
+to upstream `@4c3b936` except the four audited §7 forks.
 
 Playtest mode: vendor the `simple-platformer-1` engine, drive it from the
 live edit buffer behind a gated modal overlay. **Additive and isolated** —

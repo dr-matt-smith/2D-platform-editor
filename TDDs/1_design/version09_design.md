@@ -1,9 +1,11 @@
 # 2D Level Designer — Version 9 Design Document
 
-Status: Proposed · Date: 2026-05-19 · Builds on:
+Status: **Delivered** · Date: 2026-05-19 · Builds on:
 [version08_design.md](version08_design.md) (v9 scope recorded there §13:
-"play-test runtime") · Implementation:
+"play-test runtime") · Built:
 [../2_implementation/version09_implementation.md](../2_implementation/version09_implementation.md)
+(M1–M5, all §12 acceptance met) ·
+[../3_transcripts/version09_build.md](../3_transcripts/version09_build.md)
 
 ## 1. Purpose
 

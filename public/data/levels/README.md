@@ -69,3 +69,19 @@ a tileset (from the manifest) + a custom width × height (presets 24×14 /
 40×16, clamped 4–200) and opens an unsaved blank buffer.
 
 To try one: `npm run dev` and pick it from the **Levels** dialog.
+
+## Playtest (v9)
+
+The **Play** button (or **Ctrl/Cmd+Enter**) plays the *current buffer*
+— unsaved edits included — with a real platformer mechanic vendored from
+[`simple-platformer-1`](https://github.com/dr-matt-smith/simple-platformer-1)
+(`@4c3b936`, CC BY 4.0; see `public/play-assets/{sources.md,LICENSE}`).
+Glyphs map as `#` solid · `P` spawn · `^` lethal · `o` coin · `E` exit.
+**Win:** collect every `o`, then touch an `E`. **Lose:** touch a `^` or
+fall off the world. `R` restarts, `Esc` exits back to the editor.
+
+Playtest needs **exactly one `P`** and **at least one `E`** — the missing
+exit a level may legitimately *warn* about in the editor is a hard
+**block** here (the win is otherwise unreachable), reported in the
+problems panel instead of opening the overlay. Levels are scale-to-fit
+(whole level visible, no camera). See `TDDs/1_design/version09_design.md`.
