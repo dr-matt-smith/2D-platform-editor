@@ -19,7 +19,9 @@ let open = false;
 // /play-assets/<key>.png (TDD v9 §8). These flat-colour tiles are the
 // offline / load-failure fallback so playtest still runs if a PNG is
 // missing (engine degrades, never crashes).
-const SPRITE_URL = (k) => `/play-assets/${k}.png`;
+// Vite's deploy base ('/' in dev, '/2D-platform-editor/' on GitHub Pages).
+const BASE = import.meta.env?.BASE_URL ?? '/';
+const SPRITE_URL = (k) => `${BASE}play-assets/${k}.png`;
 const STUB_COLOUR = { player: '#5cc8ff', coin: '#ffcc33', spike: '#e8533a' };
 function stubSprite(colour) {
   const cv = document.createElement('canvas');

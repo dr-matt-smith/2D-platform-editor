@@ -19,6 +19,8 @@ import { launchPlaytest } from './play/launcher.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
+// Vite's deploy base for absolute fetch paths (see src/levels.js).
+const BASE = import.meta.env?.BASE_URL ?? '/';
 
 // Fallback only if the manifest/level fetch fails (offline, bad deploy).
 const SAMPLE = `# name: tutorial-01
@@ -79,7 +81,7 @@ const octx = overlay.getContext('2d');
 // start on the Dirt default so the first paint (before any async tileset
 // load) is identical to v7; `syncTileset` swaps them per level (v8 M4).
 let legend = DEFAULT_LEGEND;
-let legendBase = '/data/tilesets/' + DEFAULT_TILESET + '/';
+let legendBase = `${BASE}data/tilesets/${DEFAULT_TILESET}/`;
 
 let activeGlyph = '#';
 function renderLegend() {
@@ -134,7 +136,7 @@ function ensureTileset(id) {
         legend: ok ? buildLegend(t.lookup) : DEFAULT_LEGEND,
         // An unknown/failed lookup falls back to the Dirt-relative
         // DEFAULT_LEGEND, so its thumbnails must resolve against Dirt.
-        base: '/data/tilesets/' + (ok ? id : DEFAULT_TILESET) + '/',
+        base: `${BASE}data/tilesets/${ok ? id : DEFAULT_TILESET}/`,
         ok,
       };
     });

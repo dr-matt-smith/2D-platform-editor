@@ -11,6 +11,7 @@
     "dev": "vite",
     "prebuild": "npm run gen",
     "build": "vite build",
+    "build:pages": "npm run gen && vite build --base=/2D-platform-editor/",
     "preview": "vite preview",
     "test": "node --test"
   },

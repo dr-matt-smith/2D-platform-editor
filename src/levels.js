@@ -2,9 +2,15 @@
 // manage per-level drafts / dirty state in storage. All side effects (fetch,
 // storage) are injected so this is unit-tested headless (design v3 §7).
 
-const MANIFEST_URL = '/data/levels/manifest.json';
-const TILESETS_URL = '/data/tilesets/manifest.json';
-const levelUrl = (file) => `/data/levels/${file}`;
+// `BASE` is the deploy base URL (Vite injects `import.meta.env.BASE_URL`
+// at build time — '/' in dev and on a root deploy, '/2D-platform-editor/'
+// on GitHub Pages). Under `node --test` `import.meta.env` is undefined,
+// so the `?? '/'` fallback keeps URLs byte-identical to the v1–v8 paths
+// and the existing fetch-URL assertions in levels.test.js still hold.
+const BASE = import.meta.env?.BASE_URL ?? '/';
+const MANIFEST_URL = `${BASE}data/levels/manifest.json`;
+const TILESETS_URL = `${BASE}data/tilesets/manifest.json`;
+const levelUrl = (file) => `${BASE}data/levels/${file}`;
 
 const KEY = {
   draft: (id) => `ld:v3:draft:${id}`,

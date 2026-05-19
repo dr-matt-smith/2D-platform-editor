@@ -3,7 +3,10 @@
 // atlas image is still used for the decor/background pass (sky, moon, stars,
 // grass, drips, cave fill) via drawTile(index).
 const DEFAULT_TILESET = 'Dirt_Platformer_Tiles';
-const baseFor = (id) => '/data/tilesets/' + id + '/';
+// Vite's deploy base ('/' in dev / root deploys, '/2D-platform-editor/'
+// on GitHub Pages). See src/levels.js for the rationale.
+const BASE = import.meta.env?.BASE_URL ?? '/';
+const baseFor = (id) => `${BASE}data/tilesets/${id}/`;
 
 // Atlas geometry is shared across tilesets (decor/bg is still Dirt-atlas-bound
 // in v8 — see implementation plan risks); only the directory is per-id.

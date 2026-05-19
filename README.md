@@ -1,5 +1,6 @@
 # 2D Platform Editor
 
+**Live:** https://dr-matt-smith.github.io/2D-platform-editor/ ·
 **GitHub:** https://github.com/dr-matt-smith/2D-platform-editor
 
 A text-based level editor for simple 2D platformer / maze games. Author
