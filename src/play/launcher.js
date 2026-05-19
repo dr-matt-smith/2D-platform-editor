@@ -22,7 +22,10 @@ let open = false;
 // Vite's deploy base ('/' in dev, '/2D-platform-editor/' on GitHub Pages).
 const BASE = import.meta.env?.BASE_URL ?? '/';
 const SPRITE_URL = (k) => `${BASE}play-assets/${k}.png`;
-const STUB_COLOUR = { player: '#5cc8ff', coin: '#ffcc33', spike: '#e8533a' };
+// Stub palette is intentionally close to each real PNG so the pre-load
+// frame doesn't flash a clashing colour: player body (green, recoloured
+// by scripts/gen-player-sprite.mjs), coin (warm yellow), spike (red).
+const STUB_COLOUR = { player: '#6ecd5a', coin: '#ffcc33', spike: '#e8533a' };
 function stubSprite(colour) {
   const cv = document.createElement('canvas');
   cv.width = cv.height = 16;

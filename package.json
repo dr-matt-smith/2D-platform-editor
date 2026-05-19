@@ -7,6 +7,7 @@
     "gen:levels": "node scripts/gen-levels-manifest.mjs",
     "gen:tilesets": "node scripts/gen-tilesets-manifest.mjs",
     "gen": "npm run gen:levels && npm run gen:tilesets",
+    "gen:player-sprite": "node scripts/gen-player-sprite.mjs",
     "predev": "npm run gen",
     "dev": "vite",
     "prebuild": "npm run gen",
