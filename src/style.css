@@ -83,7 +83,8 @@ body {
   border-bottom: 1px solid var(--line);
 }
 #levelsBtn,
-#dlBtn {
+#dlBtn,
+#playBtn {
   font: inherit;
   color: var(--fg);
   background: #333;
@@ -93,7 +94,28 @@ body {
   cursor: pointer;
 }
 #levelsBtn:hover,
-#dlBtn:hover { background: #3d3d40; }
+#dlBtn:hover,
+#playBtn:hover { background: #3d3d40; }
+
+/* Tileset picker (v9+): label + native <select> styled to match buttons. */
+.tileset-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--dim);
+}
+.tileset-pick > span { font-size: 12px; }
+#tilesetSel {
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 6px;
+  max-width: 220px;
+  cursor: pointer;
+}
+#tilesetSel:hover { background: #3d3d40; }
 #dirty { color: var(--warn); margin-left: auto; }
 .canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; }
 .stage {

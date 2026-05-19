@@ -4,6 +4,7 @@ import {
   fillRect,
   outlineRect,
   buildLegend,
+  setTilesetDirective,
   BACKGROUND_GLYPH,
   DEFAULT_LEGEND,
   DEFAULT_TILESET,
@@ -50,6 +51,10 @@ document.querySelector('#app').innerHTML = `
         <button id="levelsBtn" title="Open level (Ctrl/Cmd+O)">Levels</button>
         <button id="dlBtn" title="Download current level as .txt">Download</button>
         <button id="playBtn" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
+        <label class="tileset-pick" title="Tileset (sets the # tileset: directive)">
+          <span>Tileset</span>
+          <select id="tilesetSel"></select>
+        </label>
         <span id="cursor">cursor —</span>
         <span id="dirty"></span>
       </div>
@@ -70,6 +75,7 @@ const gutter = document.querySelector('#gutter span');
 const rulerCol = document.querySelector('#rulerCol span');
 const cursorEl = document.querySelector('#cursor');
 const dirtyEl = document.querySelector('#dirty');
+const tilesetSel = document.querySelector('#tilesetSel');
 const legendEl = document.querySelector('#legend');
 const problemsEl = document.querySelector('#problems');
 const previewCanvas = document.querySelector('#preview');
@@ -167,7 +173,42 @@ async function syncTileset(id) {
 // buffer's `# tileset:` may have changed (load/switch, debounced edit, undo).
 async function reflow() {
   await syncTileset(parse(src.value).meta.tileset);
+  syncTilesetMenu();
   run();
+}
+
+// --- Tileset menu (v9+) -------------------------------------------------
+// A toolbar <select> driven by the tilesets manifest. Selecting an entry
+// rewrites the buffer's `# tileset:` directive via the pure setTileset-
+// Directive helper, then reflows so the new lookup is loaded and the
+// legend updates. Levels that name a tileset not in the manifest (offline
+// /missing) still appear in the menu as "<id> (missing)" so the active
+// state is honest.
+const escAttr = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+
+async function populateTilesetMenu() {
+  const list = await levels.tilesets();
+  const items = list.length
+    ? list
+    : [{ id: DEFAULT_TILESET, name: 'Dirt Platformer Tiles' }];
+  tilesetSel.innerHTML = items
+    .map((t) => `<option value="${escAttr(t.id)}">${escAttr(t.name)}</option>`)
+    .join('');
+}
+
+function syncTilesetMenu() {
+  const id = parse(src.value).meta.tileset;
+  if (![...tilesetSel.options].some((o) => o.value === id)) {
+    tilesetSel.insertAdjacentHTML(
+      'beforeend',
+      `<option value="${escAttr(id)}">${escAttr(id)} (missing)</option>`,
+    );
+  }
+  if (tilesetSel.value !== id) tilesetSel.value = id;
 }
 
 const caretLineCol = (value, pos) => {
@@ -417,6 +458,12 @@ function tryPlaytest() {
 document.querySelector('#levelsBtn').addEventListener('click', openDialog);
 document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
 document.querySelector('#playBtn').addEventListener('click', tryPlaytest);
+tilesetSel.addEventListener('change', () => {
+  const next = tilesetSel.value;
+  const updated = setTilesetDirective(src.value, next, DEFAULT_TILESET);
+  if (updated !== src.value) applyEdit(updated); // history step + run()
+  reflow(); // load the new lookup → swap legend → sync the select label
+});
 document.addEventListener('keydown', (e) => {
   const mod = e.metaKey || e.ctrlKey;
   if (!mod) return;
@@ -520,6 +567,7 @@ overlay.addEventListener('pointercancel', () => {
 (async function start() {
   try {
     await levels.init();
+    await populateTilesetMenu(); // before setBuffer so the first reflow finds options
     const list = levels.list();
     const startId =
       (levels.lastOpen() && list.some((l) => l.id === levels.lastOpen())

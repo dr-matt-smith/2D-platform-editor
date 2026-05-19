@@ -1,0 +1,12 @@
+{
+  "name": "Pixel Adventure 1",
+  "notes": "CC0 pack (Licence-creative-commons-0.txt in this directory). The player/exit/pickup PNGs are animation sheets — legend thumbnails show the strip; preview falls back to shapes (no platformer-atlas in this set).",
+  "glyphs": {
+    "empty":  { "name": "Sky (Blue)", "char": ".", "role": "background", "image": "Background/Blue.png",                                       "color": null },
+    "filled": { "name": "Crate",      "char": "#", "role": "terrain",    "image": "Items/Boxes/Box1/Idle.png",                                  "color": null },
+    "player": { "name": "Mask Dude",  "char": "P", "role": "entity",     "image": "Main Characters/Mask Dude/Idle (32x32).png",                 "color": null },
+    "exit":   { "name": "Checkpoint", "char": "E", "role": "entity",     "image": "Items/Checkpoints/End/End (Idle).png",                       "color": null },
+    "hazard": { "name": "Spikes",     "char": "^", "role": "terrain",    "image": "Traps/Spikes/Idle.png",                                       "color": null },
+    "pickup": { "name": "Apple",      "char": "o", "role": "entity",     "image": "Items/Fruits/Apple.png",                                      "color": null }
+  }
+}

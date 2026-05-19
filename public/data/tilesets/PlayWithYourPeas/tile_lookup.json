@@ -1,0 +1,12 @@
+{
+  "name": "Play With Your Peas",
+  "notes": "Original cartoon pack (Peas characters, Block tiles, Flag goal). No platformer-atlas, so the editor renders shapes; thumbnails come from these single-frame PNGs.",
+  "glyphs": {
+    "empty":  { "name": "Empty",       "char": ".", "role": "background", "image": null,                       "color": "#1b2a3a" },
+    "filled": { "name": "Block",       "char": "#", "role": "terrain",    "image": "tiles/Block-Normal.png",   "color": null },
+    "player": { "name": "Pea",         "char": "P", "role": "entity",     "image": "tiles/Pea-Standard.png",   "color": null },
+    "exit":   { "name": "Goal flag",   "char": "E", "role": "entity",     "image": "tiles/Flag-Good.png",      "color": null },
+    "hazard": { "name": "Trap alert",  "char": "^", "role": "terrain",    "image": "tiles/Alert-Trap.png",     "color": null },
+    "pickup": { "name": "Happy point", "char": "o", "role": "entity",     "image": "tiles/Icon-HappyPoints.png","color": null }
+  }
+}

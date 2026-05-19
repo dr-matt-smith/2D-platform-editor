@@ -1,6 +1,22 @@
 [
   {
+    "id": "2D Circle Graphic",
+    "name": "2D Circle Graphic"
+  },
+  {
     "id": "Dirt_Platformer_Tiles",
     "name": "Dirt Platformer Tiles"
+  },
+  {
+    "id": "Pixel Adventure 1",
+    "name": "Pixel Adventure 1"
+  },
+  {
+    "id": "PlayWithYourPeas",
+    "name": "Play With Your Peas"
+  },
+  {
+    "id": "Treasure Hunters",
+    "name": "Treasure Hunters"
   }
 ]

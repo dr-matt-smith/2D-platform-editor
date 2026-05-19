@@ -154,6 +154,42 @@ export function outlineRect(grid, x0, y0, x1, y1, glyph) {
   );
 }
 
+/**
+ * Pure buffer edit: set/replace/remove the `# tileset:` directive without
+ * disturbing other headers, comments, or the grid. Used by the tileset menu
+ * to flip the active tileset on the open buffer (v9+).
+ *
+ *   - id === defaultId AND no existing directive → text unchanged.
+ *   - id === defaultId AND directive exists       → that line is removed
+ *     (mirrors `serialize`'s "emit only when non-default" rule).
+ *   - id !== defaultId AND directive exists       → that line is rewritten.
+ *   - id !== defaultId AND no directive           → a new `# tileset: <id>`
+ *     line is inserted into the header region (after any existing leading
+ *     `#`-directives and `//`-comments, before the grid).
+ */
+export function setTilesetDirective(text, id, defaultId = DEFAULT_TILESET) {
+  const lines = text.split('\n');
+  const tilesetRe = /^#\s*tileset\s*:/i;
+  const directiveRe = /^#\s*\w+\s*:/;
+  const idx = lines.findIndex((l) => tilesetRe.test(l));
+
+  if (id === defaultId) {
+    if (idx >= 0) lines.splice(idx, 1);
+    return lines.join('\n');
+  }
+  const newLine = `# tileset: ${id}`;
+  if (idx >= 0) {
+    lines[idx] = newLine;
+    return lines.join('\n');
+  }
+  // Insert into the header band: after the last consecutive leading
+  // directive/comment line, before the first grid row.
+  let at = 0;
+  while (at < lines.length && (directiveRe.test(lines[at]) || isComment(lines[at]))) at++;
+  lines.splice(at, 0, newLine);
+  return lines.join('\n');
+}
+
 /** Serialize back to canonical text that re-parses to an equivalent level. */
 export function serialize({ meta, grid }) {
   const header = [];

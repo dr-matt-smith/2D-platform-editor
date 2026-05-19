@@ -1,0 +1,12 @@
+{
+  "name": "Treasure Hunters",
+  "notes": "CC0 pack (Licence-creative-commons-0.txt in this directory). Themed mini-packs under each subfolder; the editor pulls one representative frame per glyph. No platformer-atlas, so the preview falls back to shapes.",
+  "glyphs": {
+    "empty":  { "name": "Empty",         "char": ".", "role": "background", "image": null,                                                                                                                                "color": "#0e1d2e" },
+    "filled": { "name": "Island terrain","char": "#", "role": "terrain",    "image": "Palm Tree Island/Sprites/Terrain/Terrain (32x32).png",                                                                                "color": null },
+    "player": { "name": "Captain",       "char": "P", "role": "entity",     "image": "Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/09-Idle Sword/Idle Sword 01.png",                         "color": null },
+    "exit":   { "name": "Map",           "char": "E", "role": "entity",     "image": null,                                                                                                                                "color": "#2ecc71" },
+    "hazard": { "name": "Seashell trap", "char": "^", "role": "terrain",    "image": "Shooter Traps/Sprites/Seashell/Seashell Idle/1.png",                                                                                  "color": null },
+    "pickup": { "name": "Gold coin",     "char": "o", "role": "entity",     "image": "Pirate Treasure/Sprites/Gold Coin/01.png",                                                                                            "color": null }
+  }
+}
