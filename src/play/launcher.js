@@ -15,9 +15,11 @@ const SPRITE_KEYS = ['player', 'coin', 'spike'];
 // must not stack a second Game/Input.
 let open = false;
 
-// M3 placeholder art: a flat-colour tile per sprite so playtest is visibly
-// testable before the real CC BY 4.0 PNGs land in M4. M4 replaces this with
-// loadSprite() and keeps these as the offline/load-failure fallback.
+// Real art is the original CC BY 4.0 sprites vendored at
+// /play-assets/<key>.png (TDD v9 §8). These flat-colour tiles are the
+// offline / load-failure fallback so playtest still runs if a PNG is
+// missing (engine degrades, never crashes).
+const SPRITE_URL = (k) => `/play-assets/${k}.png`;
 const STUB_COLOUR = { player: '#5cc8ff', coin: '#ffcc33', spike: '#e8533a' };
 function stubSprite(colour) {
   const cv = document.createElement('canvas');
@@ -61,7 +63,15 @@ export function launchPlaytest(parsed, legend) {
 
   const input = new Input();
   const assets = new AssetLoader();
-  for (const k of SPRITE_KEYS) assets.sprites[k] = stubSprite(STUB_COLOUR[k]);
+  // Start on stubs so the first frame draws immediately, then swap in the
+  // real PNG per sprite as it loads (loadSprite overwrites sprites[k]); a
+  // failed load just keeps the stub. The coin pickup sound needs no asset —
+  // it is synthesised by the vendored AssetLoader on first play() (after
+  // this user-gesture launch, satisfying autoplay policy).
+  for (const k of SPRITE_KEYS) {
+    assets.sprites[k] = stubSprite(STUB_COLOUR[k]);
+    assets.loadSprite(k, SPRITE_URL(k)).catch(() => {});
+  }
 
   const game = new Game({ canvas, assets, input });
 
