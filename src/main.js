@@ -15,6 +15,7 @@ import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm } from './loaderDialog.js';
 import { downloadText } from './download.js';
 import { createHistory } from './history.js';
+import { launchPlaytest } from './play/launcher.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
@@ -46,6 +47,7 @@ document.querySelector('#app').innerHTML = `
       <div class="status">
         <button id="levelsBtn" title="Open level (Ctrl/Cmd+O)">Levels</button>
         <button id="dlBtn" title="Download current level as .txt">Download</button>
+        <button id="playBtn" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
         <span id="cursor">cursor —</span>
         <span id="dirty"></span>
       </div>
@@ -391,8 +393,28 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = '';
   }
 });
+// Playtest the LIVE buffer (unsaved edits included). If the launch gate
+// blocks (validation error, or no exit to reach), keep the editor open and
+// surface the blocking reasons in the existing problems panel — no overlay.
+function tryPlaytest() {
+  const parsed = parse(src.value);
+  const r = launchPlaytest(parsed, legend);
+  if (!r.ok) {
+    const issues = validate(parsed, legend);
+    if (tilesetWarn) issues.push(tilesetWarn);
+    const extra = r.reasons.filter(
+      (rs) => !issues.some((i) => i.message === rs.message),
+    );
+    renderProblems([...issues, ...extra]);
+    problemsEl.classList.remove('flash');
+    void problemsEl.offsetWidth; // restart the CSS animation
+    problemsEl.classList.add('flash');
+  }
+}
+
 document.querySelector('#levelsBtn').addEventListener('click', openDialog);
 document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
+document.querySelector('#playBtn').addEventListener('click', tryPlaytest);
 document.addEventListener('keydown', (e) => {
   const mod = e.metaKey || e.ctrlKey;
   if (!mod) return;
@@ -400,6 +422,9 @@ document.addEventListener('keydown', (e) => {
   if (k === 'o') {
     e.preventDefault();
     openDialog();
+  } else if (k === 'enter') {
+    e.preventDefault();
+    tryPlaytest();
   } else if (k === 'z' && !e.shiftKey) {
     e.preventDefault(); // own the undo so native textarea undo can't diverge
     applyHistory(history.undo(src.value));

@@ -293,3 +293,53 @@ body {
 .cf-btn:hover { background: #3d3d40; }
 .cf-btn.primary { background: #2d5a88; border-color: #3a6ea5; }
 .cf-btn.primary:hover { background: #356aa0; }
+
+/* --- Playtest overlay (v9) ------------------------------------------- */
+/* Modal over the whole app; the canvas keeps its world-pixel intrinsic
+   size and is scaled-to-fit by max-width/height (canvas is a replaced
+   element, so aspect ratio is preserved). No camera (TDD v9 §5). */
+.playtest {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(10, 11, 14, 0.92);
+}
+.playtest-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--fg);
+  font: inherit;
+}
+.playtest-bar .hint { opacity: 0.7; }
+.playtest-bar button {
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.playtest-bar button:hover { background: #3d3d40; }
+.playtest canvas {
+  max-width: 96vw;
+  max-height: 82vh;
+  background: #181a20;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+.playtest .credit { font-size: 12px; opacity: 0.55; color: var(--fg); }
+
+/* Flash the problems panel when a playtest launch is refused (v9). */
+@keyframes ptflash {
+  0%   { box-shadow: inset 0 0 0 2px #e8533a; }
+  100% { box-shadow: inset 0 0 0 2px transparent; }
+}
+.problems.flash { animation: ptflash 0.7s ease-out; }
