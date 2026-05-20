@@ -170,6 +170,12 @@ async function syncTileset(id) {
   tileset = r.tileset;
   legend = r.legend;
   legendBase = r.base;
+  // v14: expose readiness so the Playwright playtest spec can wait for
+  // the active tileset to be loaded before pressing Play. Live users
+  // never need this — they take seconds to click Play after page load
+  // — but tests fire input immediately and would otherwise race the
+  // async tileset fetch.
+  if (typeof window !== 'undefined') window.__activeTileset = tileset;
   // Only nag when a level explicitly named a set we couldn't load; a failed
   // *default* (offline Dirt) is the pre-existing degrade-to-shapes path.
   tilesetWarn =

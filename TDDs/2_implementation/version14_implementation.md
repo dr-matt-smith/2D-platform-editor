@@ -1,7 +1,23 @@
 # Version 14 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-21 · Design:
-[../1_design/version14_design.md](../1_design/version14_design.md)
+Status: **Delivered (M1–M3)** · Date: 2026-05-21 · Design:
+[../1_design/version14_design.md](../1_design/version14_design.md) ·
+Transcript: [../3_transcripts/version14_build.md](../3_transcripts/version14_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` /
+`__temp/wish_list.md` stayed out):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `1cff612` | wire `tileset` through `main → launcher → PlaytestScene`; export `drawFallback` from `renderer.js` |
+| 2 | `4e159a6` | `buildViewGrid` pure helper + `PlaytestScene.draw` rewritten to delegate to the editor renderer + overlay the moving player; 125 → 131 tests |
+| 3 | _this commit_ | Playwright playtest-by-tileset spec (Dirt ≠ PlayWithYourPeas); `main.js` exposes `window.__activeTileset` to defeat a Playwright-only race; v14 transcript; design + impl Delivered |
+
+Outcome: 125 → 131 unit tests (+6 view-grid splice cases),
+Playwright 10 → 11 (+1 visible-payoff spec). Both builds clean.
+The playtest now uses the active tileset's art for every shipped
+tileset; engine code (physics + state) byte-untouched.
 
 A single focused feature: PlaytestScene's `draw()` is rewritten to
 delegate the static layer to the editor renderer and overlay only the
