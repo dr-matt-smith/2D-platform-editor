@@ -10,6 +10,9 @@ const MIN_LEFT = 220;
 const MIN_RIGHT = 220;
 const MIN_PROBLEMS = 60;
 const MIN_EDITOR = 240;
+// The horizontal splitter bar's CSS height. Reserved when clamping
+// so neither side's min is silently eaten by the bar's own pixels.
+const SPLITTER_H_PX = 6;
 
 /**
  * Clamp a desired left-pane pixel width so neither pane drops below
@@ -163,7 +166,7 @@ export function setupProblemsSplitter({ doc = document, win = window, storage } 
   try { initialRaw = store.getItem(V13_STORAGE_KEY); } catch { /* ok */ }
   const initialPx = initialRaw != null ? Number(initialRaw) : NaN;
   if (Number.isFinite(initialPx)) {
-    setH(clampPx(initialPx, MIN_PROBLEMS, MIN_EDITOR, win.innerHeight));
+    setH(clampPx(initialPx, MIN_PROBLEMS, MIN_EDITOR + SPLITTER_H_PX, win.innerHeight));
   }
 
   let dragging = false;
@@ -184,7 +187,12 @@ export function setupProblemsSplitter({ doc = document, win = window, storage } 
     // clientY decreases. The desired height is the distance from the
     // pointer to the bottom of the viewport (minus a half-bar nudge
     // is unnecessary; the clamp tolerates small offsets).
-    const h = clampPx(win.innerHeight - e.clientY, MIN_PROBLEMS, MIN_EDITOR, win.innerHeight);
+    const h = clampPx(
+      win.innerHeight - e.clientY,
+      MIN_PROBLEMS,
+      MIN_EDITOR + SPLITTER_H_PX,
+      win.innerHeight,
+    );
     setH(h);
   }
 

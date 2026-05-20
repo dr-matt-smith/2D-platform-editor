@@ -82,3 +82,84 @@ test('splitter: drag is clamped — neither pane can go below 220 px', async ({ 
   const tooFarLeft = await widthOf(page, '.pane.left');
   expect(tooFarLeft).toBeGreaterThanOrEqual(220 - 1);
 });
+
+// --- v13: vertical splitter for the problems panel --------------------
+
+const heightOf = (page, selector) =>
+  page.locator(selector).evaluate((el) => el.getBoundingClientRect().height);
+
+async function dragSplitterH(page, dyPx) {
+  const box = await page.locator('#splitterH').boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  // Negative dy = move UP = problems panel grows. Positive dy = down,
+  // panel shrinks (clamped at min 60).
+  await page.mouse.move(cx, cy + dyPx, { steps: 8 });
+  await page.mouse.up();
+}
+
+test('problems splitter: drag UP grows the problems panel (live)', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => !!document.querySelector('#splitterH'));
+
+  const before = await heightOf(page, '.problems');
+  // Drag the bar up by 100 px → the panel below it gains ≈ 100 px.
+  await dragSplitterH(page, -100);
+  const after = await heightOf(page, '.problems');
+
+  expect(after).toBeGreaterThan(before + 80);
+});
+
+test('problems splitter: height is persisted across a page reload', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => !!document.querySelector('#splitterH'));
+
+  await dragSplitterH(page, -150);
+  const dragged = await heightOf(page, '.problems');
+
+  await page.reload();
+  await page.waitForFunction(() => !!document.querySelector('#splitterH'));
+  const reloaded = await heightOf(page, '.problems');
+
+  expect(Math.abs(reloaded - dragged)).toBeLessThan(3);
+});
+
+test('problems splitter: double-click resets to ~25vh', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => !!document.querySelector('#splitterH'));
+
+  // Move it off-default first.
+  await dragSplitterH(page, -200);
+  expect(await heightOf(page, '.problems')).toBeGreaterThan(350);
+
+  await page.locator('#splitterH').dblclick();
+  const reset = await heightOf(page, '.problems');
+
+  // CSS default is 25vh; viewport is 800 (playwright.config.js) → 200.
+  // Allow ±15 px for borders, scrollbars, sub-pixel rounding.
+  const vh = page.viewportSize().height;
+  expect(Math.abs(reset - vh * 0.25)).toBeLessThan(15);
+});
+
+test('problems splitter: drag is clamped — panel ≥60 px, editor ≥240 px', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => !!document.querySelector('#splitterH'));
+
+  // Yank way down — panel should clamp to its min (60 px).
+  await dragSplitterH(page, 2000);
+  const tooFarDown = await heightOf(page, '.problems');
+  expect(tooFarDown).toBeGreaterThanOrEqual(60 - 1);
+  expect(tooFarDown).toBeLessThanOrEqual(80); // close to 60
+
+  // Reset, then yank way up — editor's 240 px min stops the panel
+  // from claiming the whole viewport.
+  await page.locator('#splitterH').dblclick();
+  await dragSplitterH(page, -2000);
+  const panel = await heightOf(page, '.problems');
+  const editor = await heightOf(page, '.editor');
+  expect(editor).toBeGreaterThanOrEqual(240 - 1);
+  // And the panel is at most viewport - 240 - 6 (the bar) − a couple of px slack.
+  expect(panel).toBeLessThanOrEqual(page.viewportSize().height - 240);
+});

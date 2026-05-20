@@ -1,9 +1,11 @@
 # 2D Level Designer — Version 13 Design Document
 
-Status: Proposed · Date: 2026-05-20 · Builds on:
+Status: **Delivered** · Date: 2026-05-20 · Builds on:
 [version12_design.md](version12_design.md) (which it directly mirrors,
-rotated 90°) · Implementation:
+rotated 90°) · Built:
 [../2_implementation/version13_implementation.md](../2_implementation/version13_implementation.md)
+(M1–M3, all §7 acceptance met) ·
+[../3_transcripts/version13_build.md](../3_transcripts/version13_build.md)
 
 ## 1. Purpose
 

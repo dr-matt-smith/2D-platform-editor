@@ -1,7 +1,23 @@
 # Version 13 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-20 · Design:
-[../1_design/version13_design.md](../1_design/version13_design.md)
+Status: **Delivered (M1–M3)** · Date: 2026-05-20 · Design:
+[../1_design/version13_design.md](../1_design/version13_design.md) ·
+Transcript: [../3_transcripts/version13_build.md](../3_transcripts/version13_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` / `__temp/wish_list.md`
+stayed out):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `9081425` | visible 6 px horizontal `.splitter-h`; `.problems` height var-driven (25vh fallback) |
+| 2 | `6033e2d` | `setupProblemsSplitter` (drag + persistence + reset); `loadInitial(storageKey?)`; 124 → 125 tests. **Plus a follow-up fix during M3** to reserve the bar's 6 px in the clamp (editor min was being violated by 6 px) |
+| 3 | _this commit_ | 4 new Playwright vertical specs (drag/persist/reset/clamp); v13 transcript; design + impl Delivered |
+
+Outcome: 124 → 125 unit tests (+1; existing v12 tests unchanged),
+Playwright 6 → 8 (+2 after a latent clamp-vs-bar bug surfaced and
+was fixed). The visible feature — drag to resize, reload to keep,
+double-click to reset — works in production.
 
 A single focused feature: drag the line between `.editor` and
 `.problems` to resize the problems panel. Strict sibling of v12 (same
