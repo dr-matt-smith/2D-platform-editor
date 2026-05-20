@@ -5,7 +5,7 @@ import { parse } from './level.js';
 import { draw, tileMask, THIN } from './renderer.js';
 
 function fakeCtx() {
-  const calls = { fillRect: 0, arc: 0 };
+  const calls = { fillRect: 0, arc: 0, drawImage: 0 };
   return {
     canvas: { width: 0, height: 0 },
     set fillStyle(_) {},
@@ -16,19 +16,29 @@ function fakeCtx() {
     closePath() {},
     arc: () => calls.arc++,
     fill() {},
-    drawImage() {},
+    drawImage: () => calls.drawImage++,
     calls,
   };
 }
 
-// Records decor/bg indices (drawTile) and filled-terrain masks (drawFilled).
-function fakeTileset() {
+// v10 tileset shape — `atlasReady` gates decor; `terrainFor(mask)` and
+// `entityFor(char)` are the per-cell accessors the renderer consults.
+// `terrainFor` records the masks and returns a truthy image stub so the
+// renderer takes the image path (the same path Dirt prod uses).
+// `entityFor` returns null by default → renderer falls back to shapes
+// (Dirt's pattern; entity glyphs declare `image: null`).
+function fakeTileset(opts = {}) {
   const idx = [];
   const masks = [];
+  const STUB = { width: 32, height: 32 };
   return {
-    ready: true,
+    atlasReady: opts.atlasReady ?? true,
     drawTile: (_c, i) => idx.push(i),
-    drawFilled: (_c, m) => masks.push(m),
+    terrainFor: (m) => {
+      masks.push(m);
+      return opts.terrainImage === false ? null : STUB;
+    },
+    entityFor: opts.entityFor ?? (() => null),
     idx,
     masks,
   };
@@ -72,16 +82,18 @@ test('canvas is sized to grid * tile', () => {
   assert.equal(ctx.canvas.height, 20);
 });
 
-test('no-atlas path: walls drawn as fallback blocks, bg skipped', () => {
+test('no-tileset path: walls drawn as fallback blocks, bg skipped', () => {
   const ctx = fakeCtx();
   draw(ctx, parse('####\n#..#'), null, 10); // 1 sky rect + 6 wall blocks
   assert.equal(ctx.calls.fillRect, 1 + 6);
+  assert.equal(ctx.calls.drawImage, 0);
 });
 
-test('no-atlas path: entity glyphs use shape fallbacks', () => {
+test('no-tileset path: entity glyphs use shape fallbacks', () => {
   const ctx = fakeCtx();
   draw(ctx, parse('P.o'), null, 10);
   assert.equal(ctx.calls.arc, 2); // P disc + o pip
+  assert.equal(ctx.calls.drawImage, 0);
 });
 
 test('atlas path: an inset 3x3 block emits the 9 thick masks + sky fill', () => {
@@ -134,6 +146,45 @@ test('cave theme: dark bg, no grass/moon/stars, drips kept', () => {
   assert.equal(ts.idx.filter((i) => i === 11).length, 0); // no sky tile
   assert.equal(ts.idx.filter((i) => i === 21 || i === 22).length, 0); // no grass
   assert.equal(ts.idx.filter((i) => i === 3).length, 0); // no moon
+});
+
+// v10: per-cell fallback chain — tileset.terrainFor(mask) draws an image
+// for # cells, tileset.entityFor(char) draws an image for entity cells.
+// Tilesets WITHOUT an atlas (atlasReady:false) still get per-cell terrain
+// and entity sprites — that's the bug the v8 `ready` gate caused.
+test('v10 atlas-less tileset: # cells use terrainFor image, decor skipped', () => {
+  const ctx = fakeCtx();
+  const ts = fakeTileset({ atlasReady: false });
+  draw(ctx, parse('...\n###'), ts, 8);
+  // Sky fillRect once + 0 fallback blocks (terrainFor handled the 3 #).
+  assert.equal(ctx.calls.fillRect, 1);
+  // 3 # cells → 3 drawImage calls into the canvas.
+  assert.equal(ctx.calls.drawImage, 3);
+  // No atlas decor pass: no drawTile calls.
+  assert.equal(ts.idx.length, 0);
+});
+
+test('v10 atlas-less tileset: entityFor image trumps shape fallback', () => {
+  const ctx = fakeCtx();
+  const stubP = { width: 32, height: 32 };
+  const ts = fakeTileset({
+    atlasReady: false,
+    entityFor: (c) => (c === 'P' ? stubP : null),
+  });
+  draw(ctx, parse('P.o'), ts, 8);
+  // P → drawImage (entity sprite). o → drawFallback (entity returned null).
+  assert.equal(ctx.calls.drawImage, 1);
+  assert.equal(ctx.calls.arc, 1); // only o is a shape now
+});
+
+test('v10 graceful fall-through: terrainFor returns null → shape fallback', () => {
+  const ctx = fakeCtx();
+  const ts = fakeTileset({ atlasReady: false, terrainImage: false });
+  draw(ctx, parse('###'), ts, 8);
+  // No images returned for terrain → all 3 # cells take the shape path.
+  assert.equal(ctx.calls.drawImage, 0);
+  // 1 sky fillRect + 3 # block fillRects.
+  assert.equal(ctx.calls.fillRect, 1 + 3);
 });
 
 // Regression gate: the Dirt tile_lookup.json must map every mask to the same

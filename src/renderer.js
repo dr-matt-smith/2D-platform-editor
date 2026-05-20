@@ -1,18 +1,26 @@
 // Pure renderer: parsed level + tileset in, pixels out. No DOM reads, so it
 // is trivially testable and reusable (design §5).
 //
-// When the atlas is loaded it draws a 9-slice autotiled dirt block plus a
-// deterministic decor pass (sky/moon/stars/grass/drips) so authored levels
-// resemble the source screenshots (design §10 #6). When the atlas is missing
-// it degrades to flat colour + shapes. Entities (P, o, E) and the hazard `^`
-// have no sprite in a dirt tileset, so they are always drawn as shapes.
+// v10 lifts the v8 "atlas-or-shape" all-or-nothing gate. Each cell now
+// resolves its art through the tileset's per-cell accessors with a graceful
+// fallback to shape colours:
+//
+//   background:  `atlasReady` ? blit sky/cave atlas tile : skip (SKY rect
+//                already painted by the always-on first pass)
+//   terrain (#): tileset.terrainFor(mask) ?? drawFallback('#')
+//   decor:       `atlasReady` only — still Dirt-only data (v8 decor limit,
+//                preserved as declared; v11 lifts decor data into the
+//                lookup)
+//   entities:    tileset.entityFor(char) ?? drawFallback(char)
+//
+// Dirt's render is byte-identical: its lookup populates terrain.masks via
+// the legacy `filled` alias, its entity glyphs declare `image: null` so
+// entityFor returns null and the shape path runs as before.
 import { BACKGROUND_GLYPH } from './level.js';
 import { SKY, FALLBACK } from './palette.js';
 
-// Atlas tile indices (confirmed layout — see tileset.js / tiles.json).
+// Atlas decor indices (confirmed Dirt-atlas layout — see tileset.js / tiles.json).
 const T = {
-  // 9-slice dirt block, row-major (row 0 / 1 / 2):
-  dirt: [0, 1, 2, 8, 9, 10, 16, 17, 18],
   sky: 11,
   caveBg: 19, // dirt_fill — dark textured background for cave theme
   moon: 3,
@@ -20,9 +28,6 @@ const T = {
   grass: [21, 22],
   drip: [15, 23],
 };
-
-// FALLBACK (sprite-less colours/shapes) + SKY now live in palette.js so the
-// tile_lookup.json glyph colours can be drift-guarded against them (§11 #2).
 
 // Stable position hash so decor never flickers between renders (keeps draw
 // deterministic — same input, same pixels).
@@ -52,8 +57,8 @@ export function tileMask(grid, r, c) {
 }
 
 // "Thin" masks (single / four caps / mid-v / mid-h) — exactly the old v5
-// PLATFORM-cell set, re-expressed. The decor pass leaves these finished
-// platform tiles alone.
+// PLATFORM-cell set. The decor pass leaves these finished platform tiles
+// alone (only consulted when the decor pass runs, i.e. atlas-driven).
 export const THIN = new Set([0, 1, 2, 4, 5, 8, 10]);
 
 function drawFallback(ctx, glyph, x, y, t) {
@@ -77,11 +82,15 @@ function drawFallback(ctx, glyph, x, y, t) {
   }
 }
 
+// Draw a pre-loaded image into a single tile cell.
+const blitImage = (ctx, im, x, y, t) =>
+  ctx.drawImage(im, 0, 0, im.width, im.height, x, y, t, t);
+
 /**
  * Draw a parsed level to a 2D canvas context.
  * @param ctx CanvasRenderingContext2D
  * @param parsed result of level.parse()
- * @param tileset result of loadTileset() (may be null / ready:false)
+ * @param tileset result of loadTileset() (may be null / atlasReady:false)
  * @param tile pixel size per cell
  */
 export function draw(ctx, parsed, tileset, tile = 24) {
@@ -91,44 +100,46 @@ export function draw(ctx, parsed, tileset, tile = 24) {
   if (ctx.canvas.width !== w) ctx.canvas.width = w;
   if (ctx.canvas.height !== h) ctx.canvas.height = h;
 
-  const ready = !!tileset?.ready;
+  const atlasReady = !!tileset?.atlasReady;
   const cave = meta.theme === 'cave';
   const px = (c) => c * tile;
   const py = (r) => r * tile;
-  const blit = (idx, c, r) => tileset.drawTile(ctx, idx, px(c), py(r), tile);
 
   ctx.fillStyle = SKY;
   ctx.fillRect(0, 0, w || 1, h || 1);
 
-  // Pass 1: background. With an atlas, fill every cell with the sky tile so
-  // the palette matches; without one the flat SKY rect above is enough.
-  if (ready) {
+  // Pass 1: background sky-tile blit (atlas-driven; Dirt-only).
+  if (atlasReady) {
     const bg = cave ? T.caveBg : T.sky;
     for (let r = 0; r < grid.length; r++)
-      for (let c = 0; c < grid[r].length; c++) blit(bg, c, r);
+      for (let c = 0; c < grid[r].length; c++) tileset.drawTile(ctx, bg, px(c), py(r), tile);
   }
 
-  // Pass 2: terrain. tileMask (v7) picks the autotile; the tileset resolves
-  // the mask to its tile_lookup.json image. THIN masks (single / caps /
-  // mids) are recorded so the decor pass leaves their finished art alone.
+  // Pass 2: terrain (#). Per-cell: tileset.terrainFor(mask) → image, else
+  // shape fallback. THIN cells are recorded for the decor pass below
+  // regardless of source — the pass only reads `thinCells` when atlas-
+  // driven, so non-atlas tilesets pay only a Set.add cost.
   const thinCells = new Set();
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       if (grid[r][c] !== '#') continue;
-      if (ready) {
-        const m = tileMask(grid, r, c);
+      const m = tileMask(grid, r, c);
+      const im = tileset?.terrainFor?.(m);
+      if (im) {
         if (THIN.has(m)) thinCells.add(r * meta.width + c);
-        tileset.drawFilled(ctx, m, px(c), py(r), tile);
+        blitImage(ctx, im, px(c), py(r), tile);
       } else {
         drawFallback(ctx, '#', px(c), py(r), tile);
       }
     }
   }
 
-  // Pass 3: decor (atlas only). Drips hang under any dirt with open space
-  // below (both themes). Grass + moon + stars are sky-theme only.
-  if (ready) {
+  // Pass 3: decor (atlas-driven; Dirt-only — v8 decor limit, design §5).
+  // Drips hang under any dirt with open space below (both themes). Grass +
+  // moon + stars are sky-theme only.
+  if (atlasReady) {
     const rows = grid.length;
+    const blit = (idx, c, r) => tileset.drawTile(ctx, idx, px(c), py(r), tile);
     let mooned = false;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < grid[r].length; c++) {
@@ -151,12 +162,15 @@ export function draw(ctx, parsed, tileset, tile = 24) {
     }
   }
 
-  // Pass 4: entities + hazard, always shapes (no sprites in a dirt tileset).
+  // Pass 4: entities + hazard. Per-cell: tileset.entityFor(char) → image,
+  // else colour-shape fallback (today's path; what Dirt always uses).
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
-      drawFallback(ctx, g, px(c), py(r), tile);
+      const im = tileset?.entityFor?.(g);
+      if (im) blitImage(ctx, im, px(c), py(r), tile);
+      else drawFallback(ctx, g, px(c), py(r), tile);
     }
   }
 }
