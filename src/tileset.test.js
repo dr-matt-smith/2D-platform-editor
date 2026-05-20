@@ -22,7 +22,9 @@ const mockLoadImage = () => async (src) => ({ _src: src });
 const mockLoadImageNoAtlas = () => async (src) =>
   src.endsWith('platformertiles.png') ? null : { _src: src };
 
-const src = (im) => im?._src ?? null;
+// In v11 accessors return a draw spec `{image, sx, sy, sw, sh}` (or null).
+// This helper digs out the source URL from the underlying mock Image.
+const src = (spec) => spec?.image?._src ?? null;
 
 // --- tests ---------------------------------------------------------------
 
@@ -135,4 +137,122 @@ test('missing tile_lookup.json (404) yields safe-null accessors, no throw', asyn
   });
   assert.equal(t.terrainFor('7'), null);
   assert.equal(t.entityFor('P'), null);
+  assert.equal(t.decorationFor?.('T'), null);
+});
+
+// --- v11 accessor contract (draw specs) -------------------------------
+
+// Mock loadImage that bakes width/height into the returned stub so the
+// loader's frame math has real numbers to work with.
+const mockLoadImageWH = (w, h) => async (s) => ({ _src: s, width: w, height: h });
+
+test('v11: accessors return draw specs {image, sx, sy, sw, sh}', async () => {
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      terrain: { default: { image: 'tiles/Block.png' } },
+      glyphs: {
+        player: { name: 'P', char: 'P', role: 'player', image: 'p.png' },
+      },
+    }),
+    loadImage: mockLoadImageWH(32, 32),
+  });
+  const tspec = t.terrainFor('5');
+  assert.deepEqual(
+    { sx: tspec.sx, sy: tspec.sy, sw: tspec.sw, sh: tspec.sh },
+    { sx: 0, sy: 0, sw: 32, sh: 32 },
+  );
+  assert.match(tspec.image._src, /\/x\/tiles\/Block\.png$/);
+
+  const espec = t.entityFor('P');
+  assert.deepEqual(
+    { sx: espec.sx, sy: espec.sy, sw: espec.sw, sh: espec.sh },
+    { sx: 0, sy: 0, sw: 32, sh: 32 },
+  );
+});
+
+test('v11: glyphs.frames crops the spec to one frame of a horizontal strip', async () => {
+  // Mask Dude-style: image is 352 wide × 32 tall, 11 frames horizontal.
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch({
+      glyphs: {
+        player: {
+          name: 'Mask Dude', char: 'P', role: 'player',
+          image: 'Idle.png', frames: 11,
+        },
+      },
+    }),
+    loadImage: mockLoadImageWH(352, 32),
+  });
+  const spec = t.entityFor('P');
+  assert.equal(spec.sx, 0);    // default frame = 0
+  assert.equal(spec.sy, 0);
+  assert.equal(spec.sw, 32);   // 352 / 11
+  assert.equal(spec.sh, 32);
+});
+
+test('v11: glyphs.frame picks a specific frame index', async () => {
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch({
+      glyphs: {
+        pickup: {
+          name: 'Apple', char: 'o', role: 'pickup',
+          image: 'Apple.png', frames: 17, frame: 5,
+        },
+      },
+    }),
+    loadImage: mockLoadImageWH(544, 32),
+  });
+  const spec = t.entityFor('o');
+  assert.equal(spec.sw, 32);          // 544 / 17
+  assert.equal(spec.sx, 5 * 32);      // frame 5
+});
+
+test('v11: out-of-range frame falls back to frame 0 (defensive)', async () => {
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { name: 'P', char: 'P', role: 'player',
+          image: 'p.png', frames: 4, frame: 99 },
+      },
+    }),
+    loadImage: mockLoadImageWH(128, 32),
+  });
+  assert.equal(t.entityFor('P').sx, 0);
+});
+
+test('v11: non-divisor frame width still resolves (right edge ignored)', async () => {
+  // Width 100 / 4 frames = 25 per frame (floor); 100 - 25*4 = 0 fits, so
+  // pick a deliberately non-divisor: 101/4 = 25 floor, 4 used cols.
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { name: 'P', char: 'P', role: 'player',
+          image: 'p.png', frames: 4 },
+      },
+    }),
+    loadImage: mockLoadImageWH(101, 32),
+  });
+  // Loader warns; spec still produced with floor-divided frame width.
+  assert.equal(t.entityFor('P').sw, 25);
+});
+
+test('v11: decorationFor returns decoration glyphs; entityFor returns null for them', async () => {
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { name: 'P', char: 'P', role: 'player', image: 'p.png' },
+        tree:   { name: 'Tree', char: 'T', role: 'decoration', image: 't.png' },
+        bush:   { name: 'Bush', char: 'b', role: 'decoration', image: 'b.png' },
+      },
+    }),
+    loadImage: mockLoadImageWH(32, 32),
+  });
+  // Decorations live in their own bucket — never returned by entityFor.
+  assert.equal(t.entityFor('T'), null);
+  assert.equal(t.entityFor('b'), null);
+  // … and entities aren't accidentally returned as decorations.
+  assert.equal(t.decorationFor('P'), null);
+  // The decoration accessor returns the right spec.
+  assert.match(t.decorationFor('T').image._src, /\/x\/t\.png$/);
+  assert.match(t.decorationFor('b').image._src, /\/x\/b\.png$/);
 });

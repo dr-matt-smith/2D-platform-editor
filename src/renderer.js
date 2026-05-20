@@ -1,21 +1,23 @@
 // Pure renderer: parsed level + tileset in, pixels out. No DOM reads, so it
 // is trivially testable and reusable (design §5).
 //
-// v10 lifts the v8 "atlas-or-shape" all-or-nothing gate. Each cell now
-// resolves its art through the tileset's per-cell accessors with a graceful
-// fallback to shape colours:
+// v10 lifted the v8 "atlas-or-shape" all-or-nothing gate. v11 extends the
+// accessor contract from "Image" to a **draw spec** {image,sx,sy,sw,sh}
+// so sprite sheets can be cropped to one frame, and adds a decoration
+// pass:
 //
 //   background:  `atlasReady` ? blit sky/cave atlas tile : skip (SKY rect
 //                already painted by the always-on first pass)
 //   terrain (#): tileset.terrainFor(mask) ?? drawFallback('#')
-//   decor:       `atlasReady` only — still Dirt-only data (v8 decor limit,
-//                preserved as declared; v11 lifts decor data into the
-//                lookup)
-//   entities:    tileset.entityFor(char) ?? drawFallback(char)
+//   decor:       `atlasReady` only — Dirt-only data (v8 decor limit,
+//                preserved; v11+ lifts decor data into the lookup)
+//   Pass 4a decorations: tileset.decorationFor(char) drawn under entities
+//   Pass 4b entities:    tileset.entityFor(char) ?? drawFallback(char)
 //
-// Dirt's render is byte-identical: its lookup populates terrain.masks via
-// the legacy `filled` alias, its entity glyphs declare `image: null` so
-// entityFor returns null and the shape path runs as before.
+// Dirt's render is byte-identical: `frames` defaults to 1, so each spec
+// covers the whole image — same drawImage args as the v10 path. Dirt's
+// entity glyphs declare `image: null` so entityFor returns null and the
+// shape path runs as before.
 import { BACKGROUND_GLYPH } from './level.js';
 import { SKY, FALLBACK } from './palette.js';
 
@@ -82,9 +84,12 @@ function drawFallback(ctx, glyph, x, y, t) {
   }
 }
 
-// Draw a pre-loaded image into a single tile cell.
-const blitImage = (ctx, im, x, y, t) =>
-  ctx.drawImage(im, 0, 0, im.width, im.height, x, y, t, t);
+// Draw a tileset draw-spec into a single tile cell. The spec carries
+// the source sub-region (so animation sheets render one frame, not a
+// squashed strip — v11 §8). For specs without `frames`, sw/sh equal
+// the image's natural size and the args match the v10 path exactly.
+const blitImage = (ctx, spec, x, y, t) =>
+  ctx.drawImage(spec.image, spec.sx, spec.sy, spec.sw, spec.sh, x, y, t, t);
 
 /**
  * Draw a parsed level to a 2D canvas context.
@@ -162,15 +167,35 @@ export function draw(ctx, parsed, tileset, tile = 24) {
     }
   }
 
-  // Pass 4: entities + hazard. Per-cell: tileset.entityFor(char) → image,
-  // else colour-shape fallback (today's path; what Dirt always uses).
+  // Pass 4a: decorations (v11 §4.3). Drawn BEFORE entities so a player
+  // walking through trees reads as "in front of the tree". Decoration
+  // chars are inert at the playtest level (the adapter ignores them);
+  // here we just place their sprite. `decorationFor` returns null for
+  // non-decoration chars so this loop is cheap on tilesets without any.
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
-      const im = tileset?.entityFor?.(g);
-      if (im) blitImage(ctx, im, px(c), py(r), tile);
-      else drawFallback(ctx, g, px(c), py(r), tile);
+      const spec = tileset?.decorationFor?.(g);
+      if (spec) blitImage(ctx, spec, px(c), py(r), tile);
+    }
+  }
+
+  // Pass 4b: entities + hazard. Per-cell: tileset.entityFor(char) →
+  // spec, else colour-shape fallback. entityFor returns null for any
+  // char that's a decoration, so Pass 4a's cells aren't double-drawn.
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const g = grid[r][c];
+      if (g === BACKGROUND_GLYPH || g === '#') continue;
+      const spec = tileset?.entityFor?.(g);
+      if (spec) blitImage(ctx, spec, px(c), py(r), tile);
+      else if (!tileset?.decorationFor?.(g)) {
+        // Only fall back to shape when it's neither an entity nor a
+        // decoration — decorations are already drawn by Pass 4a and
+        // shouldn't be re-shape-drawn here.
+        drawFallback(ctx, g, px(c), py(r), tile);
+      }
     }
   }
 }

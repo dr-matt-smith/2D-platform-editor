@@ -21,24 +21,27 @@ function fakeCtx() {
   };
 }
 
-// v10 tileset shape — `atlasReady` gates decor; `terrainFor(mask)` and
-// `entityFor(char)` are the per-cell accessors the renderer consults.
-// `terrainFor` records the masks and returns a truthy image stub so the
-// renderer takes the image path (the same path Dirt prod uses).
-// `entityFor` returns null by default → renderer falls back to shapes
-// (Dirt's pattern; entity glyphs declare `image: null`).
+// v11 tileset shape — accessors return DRAW SPECS, not bare Images:
+// `{ image, sx, sy, sw, sh }`. `terrainFor(mask)` records the masks and
+// returns a spec so the renderer takes the image path. `entityFor` and
+// `decorationFor` default to null → renderer falls back to shapes for
+// entities and skips decorations.
+const STUB_IMAGE = { width: 32, height: 32 };
+const fullSpec = (im = STUB_IMAGE) => ({
+  image: im, sx: 0, sy: 0, sw: im.width, sh: im.height,
+});
 function fakeTileset(opts = {}) {
   const idx = [];
   const masks = [];
-  const STUB = { width: 32, height: 32 };
   return {
     atlasReady: opts.atlasReady ?? true,
     drawTile: (_c, i) => idx.push(i),
     terrainFor: (m) => {
       masks.push(m);
-      return opts.terrainImage === false ? null : STUB;
+      return opts.terrainImage === false ? null : fullSpec();
     },
     entityFor: opts.entityFor ?? (() => null),
+    decorationFor: opts.decorationFor ?? (() => null),
     idx,
     masks,
   };
@@ -164,17 +167,74 @@ test('v10 atlas-less tileset: # cells use terrainFor image, decor skipped', () =
   assert.equal(ts.idx.length, 0);
 });
 
-test('v10 atlas-less tileset: entityFor image trumps shape fallback', () => {
+test('v10 atlas-less tileset: entityFor spec trumps shape fallback', () => {
   const ctx = fakeCtx();
-  const stubP = { width: 32, height: 32 };
   const ts = fakeTileset({
     atlasReady: false,
-    entityFor: (c) => (c === 'P' ? stubP : null),
+    entityFor: (c) => (c === 'P' ? fullSpec() : null),
   });
   draw(ctx, parse('P.o'), ts, 8);
   // P → drawImage (entity sprite). o → drawFallback (entity returned null).
   assert.equal(ctx.calls.drawImage, 1);
   assert.equal(ctx.calls.arc, 1); // only o is a shape now
+});
+
+// --- v11 decoration pass + draw-spec contract -------------------------
+
+test('v11: decorationFor draws via Pass 4a (under entities, never as shape)', () => {
+  const ctx = fakeCtx();
+  // 'T' is a decoration; the renderer must NOT shape-fallback it in
+  // Pass 4b, AND must draw it via decorationFor in Pass 4a.
+  const ts = fakeTileset({
+    atlasReady: false,
+    decorationFor: (c) => (c === 'T' ? fullSpec() : null),
+  });
+  draw(ctx, parse('PTE'), ts, 8);
+  // T → exactly one drawImage (decoration in Pass 4a). P + E shape-
+  // fallback (P disc = arc, E block = fillRect); no second drawImage
+  // for T (it would mean Pass 4b double-drew the decoration).
+  assert.equal(ctx.calls.drawImage, 1);
+  assert.equal(ctx.calls.arc, 1);          // P disc only
+  // 1 sky fillRect + 1 for the 'E' block = 2; if the decoration were
+  // incorrectly falling back to shape (E-like block) we'd see 3.
+  assert.equal(ctx.calls.fillRect, 2);
+});
+
+test('v11: a player char drawn over a (separate) decoration tile composites in order', () => {
+  const ctx = fakeCtx();
+  const ts = fakeTileset({
+    atlasReady: false,
+    entityFor: (c) => (c === 'P' ? fullSpec() : null),
+    decorationFor: (c) => (c === 'T' ? fullSpec() : null),
+  });
+  // Distinct cells: P at col 0, T at col 1. Both get drawImage. Order
+  // is Pass 4a then 4b but the count is the same; this test mainly
+  // documents the cell-independent behaviour.
+  draw(ctx, parse('PT'), ts, 8);
+  assert.equal(ctx.calls.drawImage, 2);
+});
+
+test('v11: draw-spec sub-region carried into ctx.drawImage args', () => {
+  // The renderer must forward sx/sy/sw/sh from the spec into the
+  // 9-arg drawImage call so a sheet renders one frame, not the strip.
+  const calls = [];
+  const ctx = {
+    canvas: { width: 0, height: 0 },
+    set fillStyle(_) {},
+    fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
+    closePath() {}, arc() {}, fill() {},
+    drawImage: (...a) => calls.push(a),
+  };
+  const ts = fakeTileset({
+    atlasReady: false,
+    entityFor: () => ({
+      image: { width: 352, height: 32 }, sx: 64, sy: 0, sw: 32, sh: 32,
+    }),
+  });
+  draw(ctx, parse('P'), ts, 8);
+  assert.equal(calls.length, 1);
+  // Args: (image, sx, sy, sw, sh, dx, dy, dw, dh)
+  assert.deepEqual(calls[0].slice(1, 5), [64, 0, 32, 32]);
 });
 
 test('v10 graceful fall-through: terrainFor returns null → shape fallback', () => {
