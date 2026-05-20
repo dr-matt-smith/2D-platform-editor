@@ -104,7 +104,19 @@ const blitImage = (ctx, spec, x, y, t) =>
  * @param tileset result of loadTileset() (may be null / atlasReady:false)
  * @param tile pixel size per cell
  */
-export function draw(ctx, parsed, tileset, tile = 24) {
+/**
+ * Draw a parsed level via the active tileset.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{grid: string[], meta: object}} parsed
+ * @param {object|null} tileset  result of `loadTileset()`
+ * @param {number} [tile=24]     pixel size per cell
+ * @param {number} [now]         optional `performance.now()` for animated
+ *   sprite frames (TDD v16). Omitted → animated entries resolve to frame 0,
+ *   making the editor preview deterministic / static. Playtest passes
+ *   `performance.now()` to drive multi-frame playback.
+ */
+export function draw(ctx, parsed, tileset, tile = 24, now) {
   const { grid, meta } = parsed;
   const w = meta.width * tile;
   const h = meta.height * tile;
@@ -135,7 +147,7 @@ export function draw(ctx, parsed, tileset, tile = 24) {
     for (let c = 0; c < grid[r].length; c++) {
       if (grid[r][c] !== '#') continue;
       const m = tileMask(grid, r, c);
-      const im = tileset?.terrainFor?.(m);
+      const im = tileset?.terrainFor?.(m, now);
       if (im) {
         if (THIN.has(m)) thinCells.add(r * meta.width + c);
         blitImage(ctx, im, px(c), py(r), tile);
@@ -182,7 +194,7 @@ export function draw(ctx, parsed, tileset, tile = 24) {
     for (let c = 0; c < grid[r].length; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
-      const spec = tileset?.decorationFor?.(g);
+      const spec = tileset?.decorationFor?.(g, now);
       if (spec) blitImage(ctx, spec, px(c), py(r), tile);
     }
   }
@@ -194,9 +206,9 @@ export function draw(ctx, parsed, tileset, tile = 24) {
     for (let c = 0; c < grid[r].length; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
-      const spec = tileset?.entityFor?.(g);
+      const spec = tileset?.entityFor?.(g, now);
       if (spec) blitImage(ctx, spec, px(c), py(r), tile);
-      else if (!tileset?.decorationFor?.(g)) {
+      else if (!tileset?.decorationFor?.(g, now)) {
         // Only fall back to shape when it's neither an entity nor a
         // decoration — decorations are already drawn by Pass 4a and
         // shouldn't be re-shape-drawn here.

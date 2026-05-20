@@ -153,11 +153,17 @@ export class PlaytestScene extends Scene {
       });
     }
     const viewGrid = buildViewGrid(this.parsed.grid, cleared);
+    // v16: capture wall-clock `now` once per frame and forward to the
+    // renderer + the player overlay. Animated sprites (frames > 1 with
+    // no explicit frame) cycle from this clock; static sprites ignore
+    // it. The editor preview path omits `now` and stays deterministic.
+    const now = performance.now();
     editorDraw(
       ctx,
       { grid: viewGrid, meta: this.parsed.meta, rows: this.parsed.rows },
       this.tileset,
       TILE,
+      now,
     );
 
     // Overlay the moving player at its physics-driven float position
@@ -165,7 +171,7 @@ export class PlaytestScene extends Scene {
     // motion). Tileset sprite if authored; the editor's exact same
     // shape fallback otherwise — keeping Dirt's blue disc identical
     // between preview and playtest.
-    const spec = this.tileset?.entityFor?.(this.playerChar);
+    const spec = this.tileset?.entityFor?.(this.playerChar, now);
     const px = Math.round(this.player.x);
     const py = Math.round(this.player.y);
     if (spec) {

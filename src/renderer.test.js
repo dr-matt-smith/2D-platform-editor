@@ -247,6 +247,55 @@ test('v10 graceful fall-through: terrainFor returns null → shape fallback', ()
   assert.equal(ctx.calls.fillRect, 1 + 3);
 });
 
+// v16: the renderer must forward its optional `now` arg to the
+// tileset's accessors so animated sprites can advance their frame.
+// The editor preview path (no `now`) must still resolve to frame 0.
+test('v16: draw forwards `now` to terrainFor/entityFor/decorationFor', () => {
+  const seen = { terrain: [], entity: [], decoration: [] };
+  const ctx = fakeCtx();
+  const ts = {
+    atlasReady: false,
+    drawTile() {},
+    terrainFor: (_m, now) => {
+      seen.terrain.push(now);
+      return fullSpec();
+    },
+    entityFor: (_c, now) => {
+      seen.entity.push(now);
+      return null; // fall back to shape; we only care about the `now` value
+    },
+    decorationFor: (_c, now) => {
+      seen.decoration.push(now);
+      return null;
+    },
+  };
+  // PE — one terrain cell wouldn't exist; use a level with #, P, E.
+  draw(ctx, parse('#PE'), ts, 8, 12345);
+  // terrainFor called for the `#` cell with now=12345.
+  assert.ok(seen.terrain.length > 0);
+  for (const v of seen.terrain) assert.equal(v, 12345);
+  // entityFor called for P and E cells with the same `now`.
+  assert.ok(seen.entity.length >= 2);
+  for (const v of seen.entity) assert.equal(v, 12345);
+  // decorationFor called by both Pass 4a and Pass 4b's de-dup check.
+  for (const v of seen.decoration) assert.equal(v, 12345);
+});
+
+test('v16: omitting `now` passes undefined — animators default to frame 0', () => {
+  const seen = [];
+  const ctx = fakeCtx();
+  const ts = {
+    atlasReady: false,
+    drawTile() {},
+    terrainFor: (_m, now) => { seen.push(now); return fullSpec(); },
+    entityFor: () => null,
+    decorationFor: () => null,
+  };
+  draw(ctx, parse('#'), ts, 8); // no `now`
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0], undefined);
+});
+
 // Regression gate: the Dirt tile_lookup.json must map every mask to the same
 // tile v6 drew (design §4 table). With the tileMask test above, this proves
 // the v7 render is byte-identical to v6 without rendering.
