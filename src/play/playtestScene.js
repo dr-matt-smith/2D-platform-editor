@@ -1,7 +1,28 @@
 import { Scene } from './core/scene.js';
 import { rectsOverlap } from './core/aabb.js';
-import { COLOURS } from './constants.js';
+import { COLOURS, TILE } from './constants.js';
 import { toWorld } from './adapter.js';
+import { draw as editorDraw, drawFallback } from '../renderer.js';
+import { roleOf } from '../level.js';
+
+/**
+ * Pure helper (v14): rebuild a parsed grid with selected cells blanked
+ * to background. Used to remove the player's spawn cell and any
+ * collected coins from the static layer before handing the grid to the
+ * editor renderer. The original grid is not mutated.
+ *
+ * @param {string[]} grid          rows from `parse()` (equal-width strings)
+ * @param {{r:number,c:number}[]} clearedCells cells to set to '.'
+ * @returns {string[]} a fresh array of rows
+ */
+export function buildViewGrid(grid, clearedCells) {
+  const rows = grid.map((row) => row.split(''));
+  for (const cell of clearedCells) {
+    const { r, c } = cell ?? {};
+    if (rows[r] && rows[r][c] != null) rows[r][c] = '.';
+  }
+  return rows.map((cells) => cells.join(''));
+}
 
 /**
  * The single playtest scene (TDD v9 §7). v9 does NOT vendor upstream's
@@ -53,6 +74,25 @@ export class PlaytestScene extends Scene {
     this.score = 0;
     this.total = this.coins.length;
     this.phase = 'play'; // 'play' | 'won' | 'dead'
+
+    // v14: locate the player's spawn cell + glyph char in the parsed
+    // grid. The editor renderer needs the cell blanked so it doesn't
+    // draw the player at its static spawn position underneath the
+    // moving overlay; the overlay uses the char to pick its sprite
+    // via tileset.entityFor(...). Fallback to 'P' if the legend lacks
+    // a role:player char (the launch gate would normally reject that).
+    this.spawnRC = null;
+    this.playerChar = 'P';
+    const grid = this.parsed.grid;
+    for (let r = 0; r < grid.length && !this.spawnRC; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        if (roleOf(this.legend, grid[r][c]) === 'player') {
+          this.spawnRC = { r, c };
+          this.playerChar = grid[r][c];
+          break;
+        }
+      }
+    }
   }
 
   update(dt) {
@@ -98,14 +138,41 @@ export class PlaytestScene extends Scene {
   }
 
   draw(ctx) {
-    ctx.fillStyle = COLOURS.bg;
-    ctx.fillRect(0, 0, this.worldW, this.worldH);
+    // v14: static layer rendered by the editor renderer over a "view
+    // grid" — the parsed grid with the player's spawn cell and any
+    // collected coin cells blanked to background. This makes playtest
+    // and editor preview pixel-equivalent for the static layer (the
+    // editor renderer is now the single source of pixel truth).
+    const cleared = [];
+    if (this.spawnRC) cleared.push(this.spawnRC);
+    for (const coin of this.coins) {
+      if (!coin.collected) continue;
+      cleared.push({
+        r: Math.round(coin.y / TILE),
+        c: Math.round(coin.x / TILE),
+      });
+    }
+    const viewGrid = buildViewGrid(this.parsed.grid, cleared);
+    editorDraw(
+      ctx,
+      { grid: viewGrid, meta: this.parsed.meta, rows: this.parsed.rows },
+      this.tileset,
+      TILE,
+    );
 
-    for (const p of this.platforms) p.draw(ctx);
-    for (const g of this.goals) g.draw(ctx);
-    for (const c of this.coins) if (!c.collected) c.draw(ctx, this.game.assets);
-    for (const s of this.spikes) s.draw(ctx, this.game.assets);
-    this.player.draw(ctx, this.game.assets);
+    // Overlay the moving player at its physics-driven float position
+    // (rounded to integer pixels so the sprite is pixel-aligned during
+    // motion). Tileset sprite if authored; the editor's exact same
+    // shape fallback otherwise — keeping Dirt's blue disc identical
+    // between preview and playtest.
+    const spec = this.tileset?.entityFor?.(this.playerChar);
+    const px = Math.round(this.player.x);
+    const py = Math.round(this.player.y);
+    if (spec) {
+      ctx.drawImage(spec.image, spec.sx, spec.sy, spec.sw, spec.sh, px, py, TILE, TILE);
+    } else {
+      drawFallback(ctx, this.playerChar, px, py, TILE);
+    }
 
     // HUD
     ctx.fillStyle = COLOURS.text;
