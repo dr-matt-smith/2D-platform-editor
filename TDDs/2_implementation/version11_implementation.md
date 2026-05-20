@@ -1,7 +1,26 @@
 # Version 11 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-20 · Design:
-[../1_design/version11_design.md](../1_design/version11_design.md)
+Status: **Delivered (M1–M5)** · Date: 2026-05-20 · Design:
+[../1_design/version11_design.md](../1_design/version11_design.md) ·
+Transcript: [../3_transcripts/version11_build.md](../3_transcripts/version11_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` / `__temp/wish_list.md`
+stayed out):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `4b0538b` | role resolver in `level.js` (V11_ROLES + ROLE_FROM_KEY + roleOf) + role-driven `validate.js`; 86 → 97 tests |
+| 2 | `678dd12` | adapter + gate role-driven (`toWorld(parsed, legend, tile)`); multi-char hazards/pickups + `'@'` rebinding + decoration ignored; 97 → 104 tests |
+| 3 | `1ef775d` | tileset accessors return draw specs `{image,sx,sy,sw,sh}`; `frames`/`frame` cropping; renderer Pass 4a decoration loop; 104 → 113 tests |
+| 4 | `b93579d` | Pixel Adventure 1 `frames: 11` (Mask Dude) + `frames: 17` (Apple); PA1 preview hash `b1d290f0…` → `f01ffb6b…` |
+| 5 | _this commit_ | v11 transcript; design + impl Delivered |
+
+Outcome: tests 86 → 113 (+27). Playwright suite green throughout (2/2,
+including the pairwise preview-hash distinctness assertion). Dirt +
+2D Circle Graphic + PlayWithYourPeas + Treasure Hunters render
+**byte-identically** to v10 — verified by md5 hash of the preview
+canvases — confirming v11 is strictly additive.
 
 Three composable additions on the v10 foundation: **multi-glyph roles**,
 a **decoration** category, and **sprite-frame cropping**. Strictly

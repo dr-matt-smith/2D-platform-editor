@@ -1,10 +1,11 @@
 # 2D Level Designer — Version 11 Design Document
 
-Status: Proposed · Date: 2026-05-20 · Builds on:
+Status: **Delivered** · Date: 2026-05-20 · Builds on:
 [version10_design.md](version10_design.md) §11 (v11+ candidates) ·
-Implementation:
+Built:
 [../2_implementation/version11_implementation.md](../2_implementation/version11_implementation.md)
-(to follow once the scope here is approved)
+(M1–M5, all §12 acceptance met) ·
+[../3_transcripts/version11_build.md](../3_transcripts/version11_build.md)
 
 ## 1. Purpose
 
