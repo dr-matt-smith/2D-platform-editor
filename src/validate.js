@@ -1,10 +1,12 @@
 // Edit-time lint. Pure: parsed level in, array of issues out (design §2, §5).
 // Each issue: { line, col, severity: 'error'|'warn', message }.
 // line/col are 1-based; line is the original file line (from parsed.rows).
-import { DEFAULT_LEGEND } from './level.js';
+import { DEFAULT_LEGEND, roleOf } from './level.js';
 
 // `legend` is the active tileset's char-keyed legend (v8). Defaults to the
-// Dirt set so existing callers/tests are unchanged.
+// Dirt set so existing callers/tests are unchanged. Role-driven checks
+// (v11) consult `roleOf(legend, char)` instead of literal glyph chars, so
+// a tileset can ship multiple hazard / pickup chars (TDD v11 §6).
 export function validate(parsed, legend = DEFAULT_LEGEND) {
   const { grid, rows, meta } = parsed;
   const issues = [];
@@ -25,11 +27,13 @@ export function validate(parsed, legend = DEFAULT_LEGEND) {
     }
   }
 
-  // Rule: exactly one player spawn.
+  // Rule: exactly one cell of role:player. Any glyph char whose legend
+  // entry resolves to role 'player' counts (today every shipped tileset
+  // uses 'P', but the rule is role-driven so a tileset could rebind it).
   const spawns = [];
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
-      if (grid[r][c] === 'P') spawns.push({ r, c });
+      if (roleOf(legend, grid[r][c]) === 'player') spawns.push({ r, c });
     }
   }
   if (spawns.length === 0) {
@@ -37,7 +41,7 @@ export function validate(parsed, legend = DEFAULT_LEGEND) {
       line: 1,
       col: 1,
       severity: 'error',
-      message: 'no player spawn (expected exactly one P)',
+      message: 'no player spawn (expected exactly one)',
     });
   } else if (spawns.length > 1) {
     // Flag every spawn after the first so each is locatable.
@@ -46,18 +50,23 @@ export function validate(parsed, legend = DEFAULT_LEGEND) {
         line: at(spawns[i].r),
         col: spawns[i].c + 1,
         severity: 'error',
-        message: `extra player spawn (only one P allowed)`,
+        message: `extra player spawn (only one allowed)`,
       });
     }
   }
 
-  // Rule: at least one exit (legend marks E as entity, >=1).
-  if (!grid.some((row) => row.includes('E'))) {
+  // Rule: at least one cell of role:exit (warn if none — playtest gate
+  // promotes this to a hard block since the win is otherwise unreachable).
+  const hasExit = grid.some((row) => {
+    for (const ch of row) if (roleOf(legend, ch) === 'exit') return true;
+    return false;
+  });
+  if (!hasExit) {
     issues.push({
       line: 1,
       col: 1,
       severity: 'warn',
-      message: 'no exit (E) in level',
+      message: 'no exit in level',
     });
   }
 

@@ -4,6 +4,8 @@ import {
   parse,
   serialize,
   buildLegend,
+  roleOf,
+  V11_ROLES,
   LEGEND,
   DEFAULT_LEGEND,
   DEFAULT_TILESET,
@@ -96,4 +98,83 @@ test('buildLegend maps a lookup glyphs section to a char-keyed legend', () => {
   assert.equal(lg['@'].name, 'Hero');
   assert.equal(buildLegend(null), DEFAULT_LEGEND); // no lookup → fallback
   assert.equal(buildLegend({}), DEFAULT_LEGEND);
+});
+
+// --- v11 role resolution ----------------------------------------------
+
+test('V11_ROLES is the locked taxonomy (TDD v11 §3)', () => {
+  assert.deepEqual(
+    [...V11_ROLES].sort(),
+    ['background', 'decoration', 'exit', 'hazard', 'pickup', 'player', 'terrain'],
+  );
+});
+
+test('DEFAULT_LEGEND now uses v11 specific roles, not the v10 generic ones', () => {
+  assert.equal(DEFAULT_LEGEND['.'].role, 'background');
+  assert.equal(DEFAULT_LEGEND['#'].role, 'terrain');
+  assert.equal(DEFAULT_LEGEND.P.role, 'player');
+  assert.equal(DEFAULT_LEGEND['^'].role, 'hazard'); // v10 had this mistyped as 'terrain'
+  assert.equal(DEFAULT_LEGEND.o.role, 'pickup');
+  assert.equal(DEFAULT_LEGEND.E.role, 'exit');
+});
+
+test('roleOf returns the v11 role for a char in the legend, null otherwise', () => {
+  assert.equal(roleOf(DEFAULT_LEGEND, 'P'), 'player');
+  assert.equal(roleOf(DEFAULT_LEGEND, 'E'), 'exit');
+  assert.equal(roleOf(DEFAULT_LEGEND, '?'), null);
+  assert.equal(roleOf(null, 'P'), null);
+  assert.equal(roleOf(undefined, 'P'), null);
+});
+
+test('buildLegend: legacy v10 lookup (role:"entity") maps to v11 specifics via key', () => {
+  // Mirrors the shape every shipped tile_lookup.json uses (Dirt + the
+  // four user packs): the role string is coarse but the KEY is specific.
+  const lookup = {
+    glyphs: {
+      empty:  { name: 'Empty',  char: '.', role: 'background' },
+      filled: { name: 'Filled', char: '#', role: 'terrain' },
+      player: { name: 'P',      char: 'P', role: 'entity' },
+      exit:   { name: 'E',      char: 'E', role: 'entity' },
+      hazard: { name: 'H',      char: '^', role: 'terrain' }, // v10 mistype
+      pickup: { name: 'p',      char: 'o', role: 'entity' },
+    },
+  };
+  const lg = buildLegend(lookup);
+  assert.equal(lg.P.role, 'player');
+  assert.equal(lg.E.role, 'exit');
+  assert.equal(lg['^'].role, 'hazard'); // legacy 'terrain' overridden via key
+  assert.equal(lg.o.role, 'pickup');
+});
+
+test('buildLegend: new-style key with explicit v11 role takes the role verbatim', () => {
+  const lookup = {
+    glyphs: {
+      apple:  { name: 'Apple',  char: 'o', role: 'pickup' },
+      cherry: { name: 'Cherry', char: 'O', role: 'pickup' },
+      fire:   { name: 'Fire',   char: '*', role: 'hazard' },
+      tree:   { name: 'Tree',   char: 'T', role: 'decoration' },
+    },
+  };
+  const lg = buildLegend(lookup);
+  assert.equal(lg.o.role, 'pickup');
+  assert.equal(lg.O.role, 'pickup');
+  assert.equal(lg['*'].role, 'hazard');
+  assert.equal(lg.T.role, 'decoration');
+});
+
+test('buildLegend: unknown role on a new-style key resolves to "unknown"', () => {
+  const lg = buildLegend({
+    glyphs: { mystery: { name: '?', char: '?', role: 'meeple' } },
+  });
+  assert.equal(lg['?'].role, 'unknown');
+});
+
+test('buildLegend: legacy key wins over a deliberately-wrong explicit role', () => {
+  // Safety net: a v10 lookup using a legacy key (`player`) but an author
+  // who set role to 'hazard' by mistake — we keep the key meaning, not
+  // the typo, so back-compat with the four shipped packs is robust.
+  const lg = buildLegend({
+    glyphs: { player: { name: 'P', char: 'P', role: 'hazard' } },
+  });
+  assert.equal(lg.P.role, 'player');
 });

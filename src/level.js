@@ -1,38 +1,77 @@
 // Level format: optional `# key: value` header directives, then an ASCII grid.
 // `//` lines are comments stripped at parse time. See TDDs/1_design/version01_design.md §4.
 
+// v11 role taxonomy. Every legend entry's `role` is one of these once
+// `buildLegend` has normalised it (TDD v11 §3). Everything downstream
+// (validator, playtest adapter, gate) keys behaviour off these names.
+export const V11_ROLES = Object.freeze(
+  new Set(['background', 'terrain', 'player', 'exit', 'hazard', 'pickup', 'decoration']),
+);
+
+// Legacy `tile_lookup.json` files use coarse role names ('entity'/'terrain')
+// with the GLYPHS KEY as the real source of truth (`glyphs.player`, `glyphs.
+// hazard`, …). The resolver below maps those keys onto the v11 specific
+// roles so v10 lookups (Dirt + the four user packs) keep working unchanged.
+const ROLE_FROM_KEY = Object.freeze({
+  empty: 'background',
+  filled: 'terrain',
+  player: 'player',
+  exit: 'exit',
+  hazard: 'hazard',
+  pickup: 'pickup',
+});
+
+// Resolve a glyph entry's role per TDD v11 §11 (locked: key-inference wins
+// for legacy keys; for any other key the explicit `role` field is the
+// source of truth).
+function resolveRole(key, glyphEntry) {
+  if (key in ROLE_FROM_KEY) return ROLE_FROM_KEY[key];
+  const r = glyphEntry?.role;
+  return V11_ROLES.has(r) ? r : 'unknown';
+}
+
 // Default (Dirt) glyph legend, char-keyed: the offline fallback and
 // `validate`'s default. The active tileset's legend is derived from its
-// tile_lookup.json via `buildLegend` (v8). Colours mirror src/palette.js
-// (image-less swatches); `image` is tileset-relative or null. `LEGEND` is a
-// deprecated alias kept so existing importers/tests keep working.
+// tile_lookup.json via `buildLegend`. `role` values are v11 specifics
+// (TDD v11 §3); v10 declared 'entity'/'terrain' here but nothing read
+// `.role` from this constant, so the rename is consumer-neutral.
+// Colours mirror src/palette.js (image-less swatches); `image` is
+// tileset-relative or null. `LEGEND` is a deprecated alias.
 export const DEFAULT_LEGEND = {
   '.': { name: 'Empty', role: 'background', image: null, color: '#1b2a3a' },
   '#': { name: 'Filled', role: 'terrain', image: 'tiles/01_dirt_top.png', color: null },
-  P: { name: 'Player spawn', role: 'entity', image: null, color: '#3498db' },
-  '^': { name: 'Hazard', role: 'terrain', image: null, color: '#c0392b' },
-  o: { name: 'Pickup', role: 'entity', image: null, color: '#f1c40f' },
-  E: { name: 'Exit', role: 'entity', image: null, color: '#2ecc71' },
+  P: { name: 'Player spawn', role: 'player', image: null, color: '#3498db' },
+  '^': { name: 'Hazard', role: 'hazard', image: null, color: '#c0392b' },
+  o: { name: 'Pickup', role: 'pickup', image: null, color: '#f1c40f' },
+  E: { name: 'Exit', role: 'exit', image: null, color: '#2ecc71' },
 };
 export const LEGEND = DEFAULT_LEGEND;
 
 // Build a char-keyed legend from a tileset's tile_lookup.json `glyphs`
-// section. Falls back to the Dirt default if absent. Pure.
+// section. Falls back to the Dirt default if absent. Pure. Each entry's
+// `role` is resolved to a v11 specific role (TDD v11 §3); v10 lookups
+// declaring `role: 'entity'`/`'terrain'` are handled by the key-inference
+// fallback so no data migration is required.
 export function buildLegend(lookup) {
   const glyphs = lookup?.glyphs;
   if (!glyphs) return DEFAULT_LEGEND;
   const legend = {};
-  for (const g of Object.values(glyphs)) {
+  for (const [key, g] of Object.entries(glyphs)) {
     if (!g?.char) continue;
     legend[g.char] = {
       name: g.name ?? g.char,
-      role: g.role ?? 'terrain',
+      role: resolveRole(key, g),
       image: g.image ?? null,
       color: g.color ?? null,
     };
   }
   return legend;
 }
+
+// Char → v11 role accessor. Returns `null` for chars not in the legend
+// (the validator uses this to flag undefined glyphs). Used by validate,
+// the playtest adapter, the gate, and anywhere downstream of v11.
+export const roleOf = (legend, char) => legend?.[char]?.role ?? null;
 
 export const BACKGROUND_GLYPH = '.';
 export const DEFAULT_TILESET = 'Dirt_Platformer_Tiles';
