@@ -18,11 +18,14 @@ export class PlaytestScene extends Scene {
   /**
    * @param game   vendored Game
    * @param parsed level.js parse() result (the launch snapshot)
-   * @param onExit  called when the player chooses to leave (Esc / button)
+   * @param legend the active tileset legend, used by `toWorld` to map
+   *               chars to roles (TDD v11 §7)
+   * @param onExit called when the player chooses to leave (Esc / button)
    */
-  constructor(game, parsed, onExit) {
+  constructor(game, parsed, legend, onExit) {
     super(game);
     this.parsed = parsed;
+    this.legend = legend;
     this.onExit = onExit;
   }
 
@@ -32,7 +35,7 @@ export class PlaytestScene extends Scene {
 
   /** Rebuild fresh entities from the snapshot — deterministic (design §11). */
   restart() {
-    const w = toWorld(this.parsed);
+    const w = toWorld(this.parsed, this.legend);
     this.player = w.player;
     this.platforms = w.platforms;
     this.coins = w.coins;

@@ -53,3 +53,26 @@ test('reasons use the validator issue shape (line/col/severity/message)', () => 
     assert.equal(typeof r.message, 'string');
   }
 });
+
+// --- v11 role-driven exit detection ----------------------------------
+
+test('v11: exit detected by ROLE, not literal "E"', () => {
+  // A tileset where the exit char is '$' (e.g. a treasure-chest goal).
+  const legend = {
+    '.': { role: 'background' },
+    P:   { role: 'player' },
+    $:   { role: 'exit' },
+  };
+  const g = playtestGate(parse('P.$'), legend);
+  assert.equal(g.ok, true);
+  assert.deepEqual(g.reasons, []);
+});
+
+test('v11: no role:exit anywhere → blocked even though "E" is undefined glyph', () => {
+  const legend = { '.': { role: 'background' }, P: { role: 'player' } };
+  const g = playtestGate(parse('P..'), legend);
+  assert.equal(g.ok, false);
+  // The 'no exit' reason is present even when the legend lacks an
+  // exit-role char entirely.
+  assert.ok(g.reasons.some((r) => /needs an exit/.test(r.message)));
+});

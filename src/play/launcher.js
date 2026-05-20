@@ -46,7 +46,7 @@ export function launchPlaytest(parsed, legend) {
   const gate = playtestGate(parsed, legend);
   if (!gate.ok) return gate;
 
-  const dims = toWorld(parsed); // for canvas intrinsic size only
+  const dims = toWorld(parsed, legend); // for canvas intrinsic size only
 
   const overlay = document.createElement('div');
   overlay.className = 'playtest';
@@ -107,7 +107,7 @@ export function launchPlaytest(parsed, legend) {
     .querySelector('[data-act="restart"]')
     .addEventListener('click', () => game.scene && game.scene.restart());
 
-  game.setScene(new PlaytestScene(game, parsed, exit));
+  game.setScene(new PlaytestScene(game, parsed, legend, exit));
   game.start();
   return { ok: true, reasons: [] };
 }
