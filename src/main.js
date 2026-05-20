@@ -17,7 +17,7 @@ import { openLevelDialog, openConfirm } from './loaderDialog.js';
 import { downloadText } from './download.js';
 import { createHistory } from './history.js';
 import { launchPlaytest } from './play/launcher.js';
-import { setupSplitter } from './splitter.js';
+import { setupSplitter, setupProblemsSplitter } from './splitter.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
@@ -90,6 +90,8 @@ const octx = overlay.getContext('2d');
 // work — so the saved pane ratio is applied on the very first paint
 // (no flash from the 50/50 default to the persisted width).
 setupSplitter();
+// v13: sibling splitter for the problems panel (vertical).
+setupProblemsSplitter();
 
 // The active char-keyed legend + the tileset base for thumbnail URLs. Both
 // start on the Dirt default so the first paint (before any async tileset

@@ -80,3 +80,21 @@ test('loadInitial: null storage degrades to the viewport-midpoint fallback', () 
   assert.equal(loadInitial(null, 1280), 640);
   assert.equal(loadInitial(undefined, 1280), 640);
 });
+
+// --- v13: storageKey override ----------------------------------------
+
+test('loadInitial: storageKey arg reads from a different key (v13 piggyback)', () => {
+  const s = memStore({
+    'ld:v12:splitter': '600',     // v12 horizontal pane width
+    'ld:v13:problemsH': '180',    // v13 problems panel height
+  });
+  // Default key (v12): the horizontal pane width.
+  assert.equal(loadInitial(s, 1280), 600);
+  // Custom key (v13): the problems height — different value, same
+  // helper. Mins differ between axes, so callers pass appropriate
+  // mins too.
+  assert.equal(
+    loadInitial(s, 800, 60, 240, 'ld:v13:problemsH'),
+    180,
+  );
+});
