@@ -4,8 +4,11 @@ The mechanic for the editor's **Playtest** mode is **not authored here**. It
 is vendored from
 [`dr-matt-smith/simple-platformer-1`](https://github.com/dr-matt-smith/simple-platformer-1)
 at pinned commit **`4c3b936`** ("Rename project to drop kaplay/Bean
-association"), licensed **CC BY 4.0** (see `../../public/play-assets/LICENSE`
-and `sources.md`). See `TDDs/1_design/version09_design.md`.
+association"), licensed **CC BY 4.0** (see [`./LICENSE`](./LICENSE) and
+[`./sources.md`](./sources.md)). See `TDDs/1_design/version09_design.md`
+for the initial vendor design and `TDDs/1_design/version15_design.md`
+for the v15 cleanup that moved the licence text here from
+`public/play-assets/`.
 
 `core/`, `entities/{player,platform,coin,spike}.js` and `constants.js` are
 **byte-identical to upstream@4c3b936** except the four deliberate forks

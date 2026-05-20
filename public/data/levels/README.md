@@ -75,7 +75,7 @@ To try one: `npm run dev` and pick it from the **Levels** dialog.
 The **Play** button (or **Ctrl/Cmd+Enter**) plays the *current buffer*
 — unsaved edits included — with a real platformer mechanic vendored from
 [`simple-platformer-1`](https://github.com/dr-matt-smith/simple-platformer-1)
-(`@4c3b936`, CC BY 4.0; see `public/play-assets/{sources.md,LICENSE}`).
+(`@4c3b936`, CC BY 4.0; see `src/play/{sources.md,LICENSE}`).
 Glyphs map as `#` solid · `P` spawn · `^` lethal · `o` coin · `E` exit.
 **Win:** collect every `o`, then touch an `E`. **Lose:** touch a `^` or
 fall off the world. `R` restarts, `Esc` exits back to the editor.

@@ -65,8 +65,8 @@ scale-to-fit (no camera).
 ```
 src/              editor (parse, validate, renderer, levels, history, …)
 src/play/         vendored playtest engine + adapter + gate + scene
+                  (CC BY 4.0; LICENSE + sources.md alongside the code)
 public/data/      bundled levels and tilesets (+ generated manifests)
-public/play-assets/  CC BY 4.0 sprites for playtest (LICENSE + sources.md)
 TDDs/             per-version Design / Implementation / Transcript docs
 scripts/          manifest generators (pre-dev/build hooks)
 ```
@@ -76,10 +76,15 @@ scripts/          manifest generators (pre-dev/build hooks)
 Each version ships as a TDD trio under `TDDs/`:
 `1_design/versionNN_design.md` → `2_implementation/versionNN_implementation.md`
 → `3_transcripts/versionNN_build.md`, one path-scoped commit per
-milestone. Current version: **v9** (playtest mode).
+milestone.
 
 ## Licence
 
 The editor itself is **MIT** (see `package.json`). The vendored playtest
-engine and sprites under `public/play-assets/` are **CC BY 4.0**
-(`public/play-assets/LICENSE`, attribution in `public/play-assets/sources.md`).
+engine under `src/play/` is **CC BY 4.0** (full text in
+[`src/play/LICENSE`](src/play/LICENSE); attribution in
+[`src/play/sources.md`](src/play/sources.md)). Earlier versions also
+vendored three CC BY 4.0 PNG sprites under `public/play-assets/`;
+v14 made the editor renderer the single source of pixel truth for
+playtest, and v15 removed the sprites + moved the licence text into
+`src/play/` where the engine code lives.
