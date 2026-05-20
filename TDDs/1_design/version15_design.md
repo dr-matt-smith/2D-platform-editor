@@ -1,10 +1,12 @@
 # 2D Level Designer — Version 15 Design Document
 
-Status: Proposed · Date: 2026-05-21 · Builds on:
+Status: **Delivered** · Date: 2026-05-21 · Builds on:
 [version14_design.md](version14_design.md) (which made the editor
 renderer the single source of pixel truth for both preview and
-playtest) · Implementation:
+playtest) · Built:
 [../2_implementation/version15_implementation.md](../2_implementation/version15_implementation.md)
+(M1–M3, all §7 acceptance met) ·
+[../3_transcripts/version15_build.md](../3_transcripts/version15_build.md)
 
 ## 1. Purpose
 
