@@ -41,7 +41,7 @@ function stubSprite(colour) {
  * @returns { ok:boolean, reasons:[] } — when !ok the overlay is NOT opened
  *          and the caller surfaces `reasons` in the problems panel.
  */
-export function launchPlaytest(parsed, legend) {
+export function launchPlaytest(parsed, legend, tileset) {
   if (open) return { ok: true, reasons: [] };
   const gate = playtestGate(parsed, legend);
   if (!gate.ok) return gate;
@@ -107,7 +107,7 @@ export function launchPlaytest(parsed, legend) {
     .querySelector('[data-act="restart"]')
     .addEventListener('click', () => game.scene && game.scene.restart());
 
-  game.setScene(new PlaytestScene(game, parsed, legend, exit));
+  game.setScene(new PlaytestScene(game, parsed, legend, tileset, exit));
   game.start();
   return { ok: true, reasons: [] };
 }

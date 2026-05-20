@@ -16,16 +16,23 @@ import { toWorld } from './adapter.js';
  */
 export class PlaytestScene extends Scene {
   /**
-   * @param game   vendored Game
-   * @param parsed level.js parse() result (the launch snapshot)
-   * @param legend the active tileset legend, used by `toWorld` to map
-   *               chars to roles (TDD v11 §7)
-   * @param onExit called when the player chooses to leave (Esc / button)
+   * @param game    vendored Game
+   * @param parsed  level.js parse() result (the launch snapshot)
+   * @param legend  the active tileset legend, used by `toWorld` to map
+   *                chars to roles (TDD v11 §7)
+   * @param tileset the active tileset object (v14): consumed by the
+   *                editor renderer when drawing the static scene, and
+   *                by `entityFor(playerChar)` when drawing the moving
+   *                player overlay. May be null on an offline fallback;
+   *                in that case the renderer + overlay both fall back
+   *                to shape colours, matching the editor preview.
+   * @param onExit  called when the player chooses to leave (Esc / button)
    */
-  constructor(game, parsed, legend, onExit) {
+  constructor(game, parsed, legend, tileset, onExit) {
     super(game);
     this.parsed = parsed;
     this.legend = legend;
+    this.tileset = tileset;
     this.onExit = onExit;
   }
 

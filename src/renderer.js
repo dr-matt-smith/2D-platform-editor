@@ -63,7 +63,13 @@ export function tileMask(grid, r, c) {
 // alone (only consulted when the decor pass runs, i.e. atlas-driven).
 export const THIN = new Set([0, 1, 2, 4, 5, 8, 10]);
 
-function drawFallback(ctx, glyph, x, y, t) {
+/**
+ * Image-less shape fallback for a glyph (e.g. Dirt's blue-disc player,
+ * red-triangle spike). Exported (v14) so the playtest overlay can reuse
+ * the same shape path the editor preview uses, keeping the two views
+ * pixel-equivalent for sprite-less glyphs.
+ */
+export function drawFallback(ctx, glyph, x, y, t) {
   const f = FALLBACK[glyph];
   if (!f) return; // unknown glyph: leave as background (validator flags it)
   ctx.fillStyle = f.color;

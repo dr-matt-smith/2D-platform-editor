@@ -451,7 +451,9 @@ window.addEventListener('beforeunload', (e) => {
 // surface the blocking reasons in the existing problems panel — no overlay.
 function tryPlaytest() {
   const parsed = parse(src.value);
-  const r = launchPlaytest(parsed, legend);
+  // v14: hand the active tileset to playtest so it renders with the
+  // same art the editor preview uses, not the play-assets sprites.
+  const r = launchPlaytest(parsed, legend, tileset);
   if (!r.ok) {
     const issues = validate(parsed, legend);
     if (tilesetWarn) issues.push(tilesetWarn);
