@@ -46,6 +46,7 @@ document.querySelector('#app').innerHTML = `
         <textarea id="src" spellcheck="false" autocomplete="off"></textarea>
       </div>
     </div>
+    <div class="splitter" id="splitter" title="Drag to resize panes · double-click to reset"></div>
     <div class="pane right">
       <div class="status">
         <button id="levelsBtn" title="Open level (Ctrl/Cmd+O)">Levels</button>

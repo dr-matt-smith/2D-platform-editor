@@ -28,8 +28,25 @@ body {
 #app { display: flex; flex-direction: column; height: 100vh; }
 
 .editor { display: flex; flex: 1; min-height: 0; }
-.pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.pane.left { border-right: 1px solid var(--line); }
+/* v12: width-driven left pane; right pane takes the remainder. The
+   visible divider is the .splitter element, not the old border. */
+.pane { min-width: 0; display: flex; flex-direction: column; }
+.pane.left { width: var(--left-pct, 50%); min-width: 220px; }
+.pane.right { flex: 1; min-width: 220px; }
+
+/* v12: draggable vertical splitter between text + canvas panes. */
+.splitter {
+  flex: 0 0 6px;
+  width: 6px;
+  background: var(--line);
+  cursor: col-resize;
+  /* Keep the bar from blocking text-selection on adjacent elements
+     once a drag completes (it claims pointer events while down). */
+  user-select: none;
+  touch-action: none;
+}
+.splitter:hover { background: var(--dim); }
+.splitter.dragging { background: var(--fg); }
 
 .ruler-col {
   height: var(--lh);
