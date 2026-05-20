@@ -1,12 +1,14 @@
 # 2D Level Designer — Version 16 Design Document
 
-Status: Proposed · Date: 2026-05-21 · Builds on:
+Status: **Delivered** · Date: 2026-05-21 · Builds on:
 [version11_design.md](version11_design.md) §13 (sprite-frame cropping
 was frozen on `frame: 0`; per-frame animation explicitly deferred to a
 later version) and [version14_design.md](version14_design.md) (which
 made the editor renderer the single source of pixel truth for both
-preview and playtest) · Implementation: *to follow once this scope is
-approved*.
+preview and playtest) · Built:
+[../2_implementation/version16_implementation.md](../2_implementation/version16_implementation.md)
+(M1–M3, all §10 acceptance met) ·
+[../3_transcripts/version16_build.md](../3_transcripts/version16_build.md)
 
 ## 1. Purpose
 

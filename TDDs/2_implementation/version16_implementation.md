@@ -1,7 +1,23 @@
 # Version 16 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-21 · Design:
-[../1_design/version16_design.md](../1_design/version16_design.md)
+Status: **Delivered (M1–M3)** · Date: 2026-05-21 · Design:
+[../1_design/version16_design.md](../1_design/version16_design.md) ·
+Transcript: [../3_transcripts/version16_build.md](../3_transcripts/version16_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` /
+`__temp/wish_list.md` stayed out):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `363b9c4` | `buildSpec` returns static spec OR `(now) → spec` animator; `fps` field; `resolve()` helper; accessors gain optional `now`; 131 → 138 tests |
+| 2 | `a1e3000` | `draw(ctx, parsed, tileset, tile, now)` forwards `now` to all three accessor calls; `PlaytestScene.draw` passes `performance.now()`; 138 → 140 tests |
+| 3 | _this commit_ | `tests/playtest-animation.spec.js` (PA1 playtest changes over 400 ms); v16 transcript; design + impl Delivered |
+
+Outcome: 131 → 140 unit tests (+9), Playwright 11 → 12 (+1
+animation smoke). Both builds clean. Pixel Adventure 1's Mask Dude
+and Apple sheets now cycle live in playtest at the default 10 fps,
+with zero `tile_lookup.json` edits.
 
 A single focused feature: cycle multi-frame sprite sheets over time
 during playtest. Three small path-scoped commits.
