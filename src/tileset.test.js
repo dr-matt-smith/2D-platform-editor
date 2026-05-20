@@ -256,3 +256,108 @@ test('v11: decorationFor returns decoration glyphs; entityFor returns null for t
   assert.match(t.decorationFor('T').image._src, /\/x\/t\.png$/);
   assert.match(t.decorationFor('b').image._src, /\/x\/b\.png$/);
 });
+
+// --- v16 animated playback (TDD §4 truth table) -----------------------
+
+// 11-frame strip at the default fps (10).
+const animatedPlayerLookup = {
+  glyphs: {
+    player: { name: 'Mask Dude', char: 'P', role: 'player',
+      image: 'Idle.png', frames: 11 /* fps default 10 */ },
+  },
+};
+
+test('v16: frames>1 + no frame, no fps → animator cycles at default 10 fps', async () => {
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch(animatedPlayerLookup),
+    loadImage: mockLoadImageWH(352, 32), // 11 frames of 32px each
+  });
+  // At now=0, frame 0 (sx=0).
+  assert.equal(t.entityFor('P', 0).sx, 0);
+  // At default 10 fps, 100ms is exactly one frame.
+  assert.equal(t.entityFor('P', 100).sx, 32);
+  assert.equal(t.entityFor('P', 200).sx, 64);
+  // Cycle: 11 frames × 100ms = 1100ms is one full cycle → frame 0.
+  assert.equal(t.entityFor('P', 1100).sx, 0);
+  // Mid-cycle: frame 5.
+  assert.equal(t.entityFor('P', 550).sx, 5 * 32);
+});
+
+test('v16: back-compat — entityFor without `now` resolves to frame 0', async () => {
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch(animatedPlayerLookup),
+    loadImage: mockLoadImageWH(352, 32),
+  });
+  // Existing v11/v15 callers pass no `now`. Animator default-clamps
+  // to time 0 → frame 0. (This is what keeps every pre-v16 test green.)
+  assert.equal(t.entityFor('P').sx, 0);
+});
+
+test('v16: explicit `frame: i` freezes regardless of `now` (v11 author override)', async () => {
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { name: 'P', char: 'P', role: 'player',
+          image: 'p.png', frames: 11, frame: 5 },
+      },
+    }),
+    loadImage: mockLoadImageWH(352, 32),
+  });
+  // Different `now` values all return the same static spec.
+  assert.equal(t.entityFor('P', 0).sx,   5 * 32);
+  assert.equal(t.entityFor('P', 500).sx, 5 * 32);
+  assert.equal(t.entityFor('P', 9999).sx, 5 * 32);
+});
+
+test('v16: `fps: 0` is the explicit freeze opt-out (frame 0 always)', async () => {
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { name: 'P', char: 'P', role: 'player',
+          image: 'p.png', frames: 11, fps: 0 },
+      },
+    }),
+    loadImage: mockLoadImageWH(352, 32),
+  });
+  assert.equal(t.entityFor('P', 0).sx, 0);
+  assert.equal(t.entityFor('P', 500).sx, 0);
+});
+
+test('v16: custom `fps` controls the cycle rate', async () => {
+  // 4 frames of 32px, fps:25 → one frame every 40ms.
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { name: 'P', char: 'P', role: 'player',
+          image: 'p.png', frames: 4, fps: 25 },
+      },
+    }),
+    loadImage: mockLoadImageWH(128, 32),
+  });
+  assert.equal(t.entityFor('P', 0).sx,   0);
+  assert.equal(t.entityFor('P', 40).sx,  32);    // frame 1
+  assert.equal(t.entityFor('P', 80).sx,  64);    // frame 2
+  assert.equal(t.entityFor('P', 160).sx, 0);     // wrap: frame 4 % 4
+});
+
+test('v16: negative or non-finite `now` clamp safely to frame 0', async () => {
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch(animatedPlayerLookup),
+    loadImage: mockLoadImageWH(352, 32),
+  });
+  assert.equal(t.entityFor('P', -1).sx, 0);
+  assert.equal(t.entityFor('P', NaN).sx, 0);
+});
+
+test('v16: animator runs at draw-time, not load-time — same tileset, different snapshots', async () => {
+  // Critical for the renderer: the spec must reflect `now` at the
+  // CALL site, not the load site. (i.e. don't accidentally close
+  // over a frozen frame.)
+  const t = await loadTileset('PA1', {
+    fetch: mockFetch(animatedPlayerLookup),
+    loadImage: mockLoadImageWH(352, 32),
+  });
+  const a = t.entityFor('P', 0);
+  const b = t.entityFor('P', 300);
+  assert.notEqual(a.sx, b.sx);
+});

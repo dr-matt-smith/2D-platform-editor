@@ -52,16 +52,32 @@ const browserLoadImage = (src) =>
     im.src = src;
   });
 
+// Default playback rate for an animated glyph (TDD v16 §4): authors who
+// declare `frames > 1` without an explicit `frame` get this fps unless
+// they override with `fps: <n>` (or `fps: 0` to freeze on frame 0).
+const DEFAULT_FPS = 10;
+
 /**
- * Build a draw spec for a loaded image, honouring optional `frames`/
- * `frame` cropping (horizontal strip, one row). For `frames === 1`
- * (default) the spec covers the whole image and the drawImage args
- * match the v10 path exactly (Dirt byte-identical).
+ * Build a draw spec for a loaded image, honouring optional `frames` /
+ * `frame` / `fps` (TDD v16 §4). Returns one of:
+ *
+ *   • a STATIC spec `{ image, sx, sy, sw, sh }` — for `frames === 1`
+ *     (whole image), an explicit `frame: i` (still at frame i, v11
+ *     author override), or `fps: 0` (explicit freeze on frame 0); or
+ *   • an ANIMATOR `(now) => spec` — for `frames > 1` with no explicit
+ *     `frame`, cycling at `fps` (default 10). The animator is a pure
+ *     function of `now` (no shared mutable state), so unit tests can
+ *     hit it with any clock value.
+ *
+ * Accessors below normalise both shapes via `resolve(entry, now)`.
+ * Calling an animator with `now === undefined` resolves to frame 0
+ * (`(undefined ?? 0) * fps / 1000 === 0`), so v11/v15 callers that
+ * don't pass `now` continue to see the static-frame-0 behaviour.
  *
  * A `frames` value that doesn't divide `image.width` is non-fatal —
- * console.warn'd, with the right edge ignored (TDD v11 §11 §recommendation).
+ * console.warn'd, with the right edge ignored (TDD v11 §11).
  */
-function buildSpec(image, framesField = 1, frameField = 0) {
+function buildSpec(image, framesField = 1, frameField = null, fpsField = null) {
   if (!image) return null;
   const frames = Math.max(1, Math.floor(framesField ?? 1));
   if (frames === 1) {
@@ -75,9 +91,35 @@ function buildSpec(image, framesField = 1, frameField = 0) {
       `tileset: frames:${frames} doesn't divide image width ${image.width}; right edge ignored`,
     );
   }
-  const frameIdx = Math.max(0, Math.floor(frameField ?? 0));
-  const safeFrame = frameIdx < frames ? frameIdx : 0;
-  return { image, sx: safeFrame * sw, sy: 0, sw, sh };
+  // Author override: explicit `frame: i` → static at clamped frame.
+  if (frameField != null) {
+    const frameIdx = Math.max(0, Math.floor(frameField));
+    const safeFrame = frameIdx < frames ? frameIdx : 0;
+    return { image, sx: safeFrame * sw, sy: 0, sw, sh };
+  }
+  // No explicit frame: animate at `fps`. fps === 0 is the explicit
+  // "freeze on frame 0" opt-out for animated sheets.
+  const fps = Math.max(0, Math.floor(fpsField ?? DEFAULT_FPS));
+  if (fps === 0) {
+    return { image, sx: 0, sy: 0, sw, sh };
+  }
+  return (now) => {
+    // Defensive clamp: `??` doesn't catch NaN, and a negative `now`
+    // would produce a negative `sx` (drawImage UB). Real callers
+    // pass `performance.now()` so this is belt-and-braces, but the
+    // unit tests exercise NaN / negative explicitly.
+    const t = Number.isFinite(now) && now > 0 ? now : 0;
+    const frame = Math.floor((t * fps) / 1000) % frames;
+    return { image, sx: frame * sw, sy: 0, sw, sh };
+  };
+}
+
+// Normalise a stored entry into a draw spec at time `now`. Static
+// entries are returned as-is; animator functions are called with
+// `now` (and produce frame 0 when `now` is undefined).
+function resolve(entry, now) {
+  if (entry == null) return null;
+  return typeof entry === 'function' ? entry(now) : entry;
 }
 
 /**
@@ -129,7 +171,10 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
   for (const g of Object.values(lookup?.glyphs ?? {})) {
     if (!g?.char || !g?.image) continue;
     const im = await loadImageFn(base + g.image);
-    const spec = buildSpec(im, g.frames, g.frame);
+    // v16: also read optional `fps`; buildSpec returns either a static
+    // spec (frames=1; or frame:i explicit; or fps:0) or a (now)=>spec
+    // animator (frames>1 with no explicit frame).
+    const spec = buildSpec(im, g.frames, g.frame, g.fps);
     if (spec) specsByChar[g.char] = spec;
     if (legend[g.char]?.role === 'decoration') decorationChars.add(g.char);
   }
@@ -155,14 +200,19 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
      * through the v10 fallback chain: masks → default →
      * `glyphs.filled.image` (the legend thumb) → null. Returning null
      * is the renderer's signal to draw a colour-shape fallback.
+     *
+     * v16: optional `now` (ms, e.g. `performance.now()`) drives any
+     * animated `glyphs.filled` strip; omitting it resolves to
+     * frame 0 (back-compat — terrain rarely animates and editor
+     * preview never calls with `now`).
      */
-    terrainFor(mask) {
-      return (
+    terrainFor(mask, now) {
+      const entry =
         terrainMaskSpecs[mask] ??
         terrainDefaultSpec ??
         specsByChar['#'] ??
-        null
-      );
+        null;
+      return resolve(entry, now);
     },
 
     /**
@@ -170,21 +220,26 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
      * Decorations are returned separately by `decorationFor`; this
      * accessor returns null for decoration chars so the renderer's
      * entity pass doesn't double-draw them.
+     *
+     * v16: optional `now` (ms) drives multi-frame animation. Omitting
+     * it resolves to frame 0 — the editor preview takes this path and
+     * stays static, matching v11/v15.
      */
-    entityFor(char) {
+    entityFor(char, now) {
       if (decorationChars.has(char)) return null;
-      return specsByChar[char] ?? null;
+      return resolve(specsByChar[char], now);
     },
 
     /**
      * v11: paintable, no-collision overlay glyphs. Returned by their
      * own accessor so the renderer can draw them in Pass 4a (under
      * entities). Returns null for non-decoration chars even if the
-     * char is otherwise known.
+     * char is otherwise known. v16: `now` carries through to animated
+     * decorations.
      */
-    decorationFor(char) {
+    decorationFor(char, now) {
       if (!decorationChars.has(char)) return null;
-      return specsByChar[char] ?? null;
+      return resolve(specsByChar[char], now);
     },
   };
 }
