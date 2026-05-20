@@ -26,3 +26,8 @@ Thumbs.db
 
 # Local v4 render previews (not committed)
 v4_preview/
+
+# Playwright (diagnostic runs; screenshots regenerated on demand)
+playwright-report/
+test-results/
+tests/screenshots/
