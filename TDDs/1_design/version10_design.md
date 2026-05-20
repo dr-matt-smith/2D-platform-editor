@@ -1,9 +1,11 @@
 # 2D Level Designer — Version 10 Design Document
 
-Status: Proposed · Date: 2026-05-20 · Builds on:
+Status: **Delivered** · Date: 2026-05-20 · Builds on:
 [version09_design.md](version09_design.md) §14 (v10 candidates incl. "tile-
-set rendering beyond Dirt") · Implementation:
+set rendering beyond Dirt") · Built:
 [../2_implementation/version10_implementation.md](../2_implementation/version10_implementation.md)
+(M1–M4, all §10 acceptance met) ·
+[../3_transcripts/version10_build.md](../3_transcripts/version10_build.md)
 
 ## 1. Purpose
 

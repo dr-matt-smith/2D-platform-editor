@@ -1,7 +1,25 @@
 # Version 10 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-20 · Design:
-[../1_design/version10_design.md](../1_design/version10_design.md)
+Status: **Delivered (M1–M4)** · Date: 2026-05-20 · Design:
+[../1_design/version10_design.md](../1_design/version10_design.md) ·
+Transcript: [../3_transcripts/version10_build.md](../3_transcripts/version10_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`above_ground2.txt` / `fred.txt` / `manifest.json` modifications stayed
+out):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `de01d27` | `tileset.js` `terrainFor`/`entityFor` + new schema (`terrain.{default,masks}`) + back-compat alias for legacy `filled`; 10 tests (73 → 83) |
+| 2 | `6cb3657` | `renderer.js` per-cell fallback chain; Dirt byte-identical; +3 tests (83 → 86) |
+| 3 | `e6d473f` | Playwright mutual-distinctness assertion across all preview canvases |
+| 4 | _this commit_ | v10 transcript; design + impl Delivered |
+
+Outcome: tests 73 → 86 (renderer + loader unit tests; no churn to
+existing passing tests). Playwright suite 1 → 2, both green. After M2
+every shipped tileset's preview canvas hashes distinctly — the v8
+decor-atlas limit's visible symptom is fixed without a single data
+file change.
 
 Fix the v8 decor-atlas limit visibly: render the editor preview per-cell
 from the active tileset's lookup, so the three non-Dirt previews
