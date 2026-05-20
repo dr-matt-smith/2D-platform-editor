@@ -7,7 +7,8 @@
 // thumbnails are independent (driven by glyphs[*].image) and should look
 // distinct in every set.
 import { test, expect } from '@playwright/test';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
 const OUT = 'tests/screenshots';
@@ -72,4 +73,38 @@ test('capture preview + legend for every manifest tileset', async ({ page }) => 
 
   // Sanity assertion: every tileset produced a preview file.
   expect(manifest.length).toBeGreaterThan(0);
+});
+
+// v10 acceptance gate. Before v10 this would fail (Pixel Adventure / Peas /
+// Treasure Hunters all hashed 2ba7f2c8 — the v8 shape fallback ignored the
+// active tileset). After v10 (renderer reads tileset.terrainFor / entityFor
+// per cell) every tileset's preview is its own — so the hashes must be
+// pairwise distinct. Same `tutorial` level for every shot, so any pair
+// matching means the renderer isn't tileset-aware on the canvas.
+test('preview canvases hash mutually distinctly across tilesets', () => {
+  const files = readdirSync(OUT)
+    .filter((f) => f.endsWith('-preview.png'))
+    .sort();
+  expect(files.length, 'no preview screenshots — run the capture test first').toBeGreaterThan(1);
+
+  const hashByFile = new Map(
+    files.map((f) => [
+      f,
+      createHash('md5').update(readFileSync(join(OUT, f))).digest('hex'),
+    ]),
+  );
+  // Pairwise compare and report ALL collisions, not just the first one.
+  const collisions = [];
+  const entries = [...hashByFile.entries()];
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      if (entries[i][1] === entries[j][1]) {
+        collisions.push(`${entries[i][0]} == ${entries[j][0]} (${entries[i][1]})`);
+      }
+    }
+  }
+  expect(
+    collisions,
+    `tilesets render identically on the canvas (legend may still look right):\n  ${collisions.join('\n  ')}`,
+  ).toEqual([]);
 });
