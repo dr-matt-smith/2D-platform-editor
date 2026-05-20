@@ -190,12 +190,28 @@ body {
 .legend .glyph b { color: var(--fg); }
 
 .problems {
-  height: 25vh;
+  /* v13: height-driven by a CSS variable (set by the user dragging
+     the horizontal splitter); the 25vh fallback matches the v0–v12
+     default so a fresh user sees no change. The visible top border
+     is now the .splitter-h element rather than this rule. */
+  height: var(--problems-h, 25vh);
   overflow: auto;
-  border-top: 1px solid var(--line);
   background: var(--panel);
   padding: 6px 0;
 }
+
+/* v13: draggable horizontal splitter between the editor area and
+   the problems panel. Symmetric to v12's .splitter, rotated 90°. */
+.splitter-h {
+  flex: 0 0 6px;
+  height: 6px;
+  background: var(--line);
+  cursor: row-resize;
+  user-select: none;
+  touch-action: none;
+}
+.splitter-h:hover { background: var(--dim); }
+.splitter-h.dragging { background: var(--fg); }
 .problems .ok { padding: 4px 12px; color: var(--dim); }
 .problems .row {
   padding: 3px 12px;

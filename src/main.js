@@ -69,6 +69,7 @@ document.querySelector('#app').innerHTML = `
       <div class="legend" id="legend" title="Click a glyph to draw with it · drag on the preview to fill · hold Shift to draw an outline"></div>
     </div>
   </div>
+  <div class="splitter-h" id="splitterH" title="Drag to resize · double-click to reset"></div>
   <div class="problems" id="problems"></div>
 `;
 
