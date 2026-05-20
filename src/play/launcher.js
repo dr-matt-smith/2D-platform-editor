@@ -9,31 +9,9 @@ import { toWorld } from './adapter.js';
 import { playtestGate } from './playtestGate.js';
 import { PlaytestScene } from './playtestScene.js';
 
-const SPRITE_KEYS = ['player', 'coin', 'spike'];
-
 // One playtest at a time — a second Ctrl/Cmd+Enter while the overlay is up
 // must not stack a second Game/Input.
 let open = false;
-
-// Real art is the original CC BY 4.0 sprites vendored at
-// /play-assets/<key>.png (TDD v9 §8). These flat-colour tiles are the
-// offline / load-failure fallback so playtest still runs if a PNG is
-// missing (engine degrades, never crashes).
-// Vite's deploy base ('/' in dev, '/2D-platform-editor/' on GitHub Pages).
-const BASE = import.meta.env?.BASE_URL ?? '/';
-const SPRITE_URL = (k) => `${BASE}play-assets/${k}.png`;
-// Stub palette is intentionally close to each real PNG so the pre-load
-// frame doesn't flash a clashing colour: player body (green, recoloured
-// by scripts/gen-player-sprite.mjs), coin (warm yellow), spike (red).
-const STUB_COLOUR = { player: '#6ecd5a', coin: '#ffcc33', spike: '#e8533a' };
-function stubSprite(colour) {
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = 16;
-  const g = cv.getContext('2d');
-  g.fillStyle = colour;
-  g.fillRect(0, 0, 16, 16);
-  return cv;
-}
 
 /**
  * @param parsed result of level.js parse(src.value) — the LIVE buffer
@@ -57,7 +35,7 @@ export function launchPlaytest(parsed, legend, tileset) {
       <span class="hint">Arrows / Space: move &amp; jump</span>
     </div>
     <canvas></canvas>
-    <div class="credit">Mechanic &amp; sprites: simple-platformer-1 @4c3b936 · CC BY 4.0</div>`;
+    <div class="credit">Mechanic: simple-platformer-1 @4c3b936 · CC BY 4.0</div>`;
   const canvas = overlay.querySelector('canvas');
   canvas.width = dims.worldW;
   canvas.height = dims.worldH;
@@ -67,16 +45,12 @@ export function launchPlaytest(parsed, legend, tileset) {
   open = true;
 
   const input = new Input();
+  // AssetLoader is retained for `assets.play('coin', …)` — the coin
+  // pickup sound is synthesised at runtime by the vendored synth()
+  // (no audio file vendored). v15 dropped the legacy sprite-loading
+  // since v14 makes the editor renderer the single source of pixel
+  // truth for the playtest canvas (no `assets.sprite("…")` calls).
   const assets = new AssetLoader();
-  // Start on stubs so the first frame draws immediately, then swap in the
-  // real PNG per sprite as it loads (loadSprite overwrites sprites[k]); a
-  // failed load just keeps the stub. The coin pickup sound needs no asset —
-  // it is synthesised by the vendored AssetLoader on first play() (after
-  // this user-gesture launch, satisfying autoplay policy).
-  for (const k of SPRITE_KEYS) {
-    assets.sprites[k] = stubSprite(STUB_COLOUR[k]);
-    assets.loadSprite(k, SPRITE_URL(k)).catch(() => {});
-  }
 
   const game = new Game({ canvas, assets, input });
 
