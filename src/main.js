@@ -17,6 +17,7 @@ import { openLevelDialog, openConfirm } from './loaderDialog.js';
 import { downloadText } from './download.js';
 import { createHistory } from './history.js';
 import { launchPlaytest } from './play/launcher.js';
+import { setupSplitter } from './splitter.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
@@ -83,6 +84,11 @@ const previewCanvas = document.querySelector('#preview');
 const overlay = document.querySelector('#overlay');
 const ctx = previewCanvas.getContext('2d');
 const octx = overlay.getContext('2d');
+
+// v12: wire the splitter as soon as the DOM exists, before any async
+// work — so the saved pane ratio is applied on the very first paint
+// (no flash from the 50/50 default to the persisted width).
+setupSplitter();
 
 // The active char-keyed legend + the tileset base for thumbnail URLs. Both
 // start on the Dirt default so the first paint (before any async tileset
