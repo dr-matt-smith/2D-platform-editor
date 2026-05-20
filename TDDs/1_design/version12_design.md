@@ -1,9 +1,11 @@
 # 2D Level Designer — Version 12 Design Document
 
-Status: Proposed · Date: 2026-05-20 · Builds on:
+Status: **Delivered** · Date: 2026-05-20 · Builds on:
 [version11_design.md](version11_design.md) (concludes the tileset
-schema arc) · Implementation:
+schema arc) · Built:
 [../2_implementation/version12_implementation.md](../2_implementation/version12_implementation.md)
+(M1–M3, all §7 acceptance met) ·
+[../3_transcripts/version12_build.md](../3_transcripts/version12_build.md)
 
 ## 1. Purpose
 

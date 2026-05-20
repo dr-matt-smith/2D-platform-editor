@@ -1,7 +1,24 @@
 # Version 12 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-20 · Design:
-[../1_design/version12_design.md](../1_design/version12_design.md)
+Status: **Delivered (M1–M3)** · Date: 2026-05-20 · Design:
+[../1_design/version12_design.md](../1_design/version12_design.md) ·
+Transcript: [../3_transcripts/version12_build.md](../3_transcripts/version12_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` / `__temp/wish_list.md`
+stayed out):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `f30d7ea` | layout swap (`--left-pct` variable + `.splitter` 6 px element); no JS drag yet |
+| 2 | `081dc05` | `src/splitter.js` (pure `clampPx`/`loadInitial` + drag + persistence + reset); 113 → 124 tests |
+| 3 | _this commit_ | Playwright e2e (4 new specs: drag / persist / reset / clamp); v12 transcript; design + impl Delivered |
+
+Outcome: 113 → 124 unit tests (+11 pure clamp/persistence cases),
+Playwright 2 → 6 tests (+4 real-browser behaviour specs).
+`npm run build` + `npm run build:pages` clean. The visible feature —
+drag to resize, reload to keep, double-click to reset — works in
+production.
 
 A single focused feature: a draggable vertical splitter between the
 text and canvas panes. Three small path-scoped commits; one
