@@ -205,6 +205,43 @@ body {
 }
 .legend .glyph b { color: var(--fg); }
 
+/* v18: group headers force a new flex row (the `.legend` parent is
+   `display: flex; flex-wrap: wrap`). Decoration-image labels (`.inert`)
+   are non-clickable — placement lands in v19+. */
+.legend .legend-group {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 4px 0 2px 0;
+}
+.legend .glyph.inert {
+  opacity: 0.55;
+  cursor: default;
+  border-style: dashed;
+}
+.legend .glyph.inert:hover { background: #2a2a2a; } /* no hover lift */
+
+/* v18: Background-image dropdown in the legend, styled like the
+   toolbar's Tileset:/Level: pickers. */
+.legend .bg-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#bgImgSel {
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 6px;
+  max-width: 220px;
+  cursor: pointer;
+}
+#bgImgSel:hover { background: #3d3d40; }
+
 .problems {
   /* v17: a fixed single-line message bar. The v13 height-driven
      resize is retired (the splitter is hidden; the panel is no

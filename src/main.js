@@ -5,6 +5,7 @@ import {
   outlineRect,
   buildLegend,
   setTilesetDirective,
+  setBackgroundImageDirective,
   BACKGROUND_GLYPH,
   DEFAULT_LEGEND,
   DEFAULT_TILESET,
@@ -103,28 +104,134 @@ setupProblemsSplitter();
 let legend = DEFAULT_LEGEND;
 let legendBase = `${BASE}data/tilesets/${DEFAULT_TILESET}/`;
 
+// Tileset state — declared up here (instead of next to ensureTileset
+// below) so renderLegend can safely read `tileset?.lookup` even at its
+// FIRST module-init call. Otherwise `let tileset` was in temporal-
+// dead-zone when renderLegend ran for the DEFAULT_LEGEND, throwing a
+// ReferenceError and leaving the legend visually empty.
+let tileset = null;
+let activeTilesetId = null;
+let tilesetWarn = null;
+
 let activeGlyph = '#';
-function renderLegend() {
-  legendEl.innerHTML = Object.entries(legend)
-    .map(([g, e]) => {
-      const thumb = e.image
-        ? `<img class="thumb" src="${legendBase}${e.image}" alt="" ` +
-          `onerror="this.replaceWith(Object.assign(document.createElement('span'),` +
-          `{className:'thumb'}))">`
-        : `<span class="thumb" style="background:${e.color || 'transparent'}"></span>`;
-      return (
-        `<button class="glyph${g === activeGlyph ? ' active' : ''}" data-glyph="${g}">` +
-        `${thumb}<b>${g === ' ' ? '·' : g}</b> ${e.name}</button>`
-      );
-    })
-    .join('');
+
+// v18: friendly group labels per role. Decorations + Foreground glyphs
+// merge into a single trailing "Decorations" group together with any
+// decoration-image entries from `lookup.images` (the image entries are
+// inert in v18 — placement is v19+).
+const ROLE_GROUP_ORDER = [
+  ['background', 'Empty'],
+  ['terrain', 'Terrain'],
+  ['player', 'Player'],
+  ['exit', 'Exit'],
+  ['hazard', 'Hazard'],
+  ['pickup', 'Pickup'],
+];
+
+// Small attribute/text escape — tileset author content is otherwise
+// trustable but defending the legend's innerHTML build is cheap.
+const escHtml = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+
+function renderGlyphButton(g, e) {
+  const thumb = e.image
+    ? `<img class="thumb" src="${legendBase}${e.image}" alt="" ` +
+      `onerror="this.replaceWith(Object.assign(document.createElement('span'),` +
+      `{className:'thumb'}))">`
+    : `<span class="thumb" style="background:${e.color || 'transparent'}"></span>`;
+  const active = g === activeGlyph ? ' active' : '';
+  return (
+    `<button class="glyph${active}" data-glyph="${escHtml(g)}" title="${escHtml(g)}">` +
+    `${thumb}${escHtml(e.name || g)}</button>`
+  );
 }
+
+function renderLegend() {
+  const lookup = tileset?.lookup;
+  const parts = [];
+
+  // Background-image dropdown — appears only when the active tileset
+  // declares ≥1 `images.<id>` entry with role:"background". Selecting
+  // an entry rewrites # background-image: via the pure setter; the
+  // (none) option clears the directive and restores the solid SKY fill.
+  const bgImages = lookup?.images
+    ? Object.entries(lookup.images).filter(([, v]) => v?.role === 'background')
+    : [];
+  if (bgImages.length) {
+    const current = parse(src.value).meta.backgroundImage ?? '';
+    const options = [
+      `<option value=""${current === '' ? ' selected' : ''}>(none)</option>`,
+      ...bgImages.map(
+        ([id, def]) =>
+          `<option value="${escHtml(id)}"${id === current ? ' selected' : ''}>` +
+          `${escHtml(def.name || id)}</option>`,
+      ),
+    ].join('');
+    parts.push(
+      `<div class="legend-group">Background:</div>` +
+        `<label class="bg-pick"><select id="bgImgSel">${options}</select></label>`,
+    );
+  }
+
+  // Group glyphs by their resolved v11 role.
+  const groupedByRole = {};
+  for (const [g, e] of Object.entries(legend)) {
+    const role = e.role || 'unknown';
+    (groupedByRole[role] ??= []).push([g, e]);
+  }
+
+  for (const [role, label] of ROLE_GROUP_ORDER) {
+    const entries = groupedByRole[role];
+    if (!entries?.length) continue;
+    parts.push(`<div class="legend-group">${escHtml(label)}</div>`);
+    for (const [g, e] of entries) parts.push(renderGlyphButton(g, e));
+  }
+
+  // Decorations group: decoration + foreground glyphs together, then
+  // any decoration-images (declared in v18 schema; placement is v19+).
+  const decoGlyphs = [
+    ...(groupedByRole.decoration ?? []),
+    ...(groupedByRole.foreground ?? []),
+  ];
+  const decoImages = lookup?.images
+    ? Object.entries(lookup.images).filter(([, v]) => v?.role === 'decoration')
+    : [];
+  if (decoGlyphs.length || decoImages.length) {
+    parts.push(`<div class="legend-group">Decorations</div>`);
+    for (const [g, e] of decoGlyphs) parts.push(renderGlyphButton(g, e));
+    for (const [id, def] of decoImages) {
+      const thumb = def.image
+        ? `<img class="thumb" src="${legendBase}${def.image}" alt="">`
+        : `<span class="thumb" style="background:#888"></span>`;
+      parts.push(
+        `<span class="glyph inert" data-image-id="${escHtml(id)}" ` +
+          `title="Decoration image — placement coming in v19+">` +
+          `${thumb}${escHtml(def.name || id)}</span>`,
+      );
+    }
+  }
+
+  legendEl.innerHTML = parts.join('');
+}
+
 renderLegend();
 legendEl.addEventListener('click', (e) => {
   const g = e.target.closest('[data-glyph]')?.dataset.glyph;
   if (g == null) return;
   activeGlyph = g;
   renderLegend();
+});
+// v18: Background dropdown change → rewrite # background-image: in the
+// buffer (undo step via applyEdit) → reflow paints the new BG.
+legendEl.addEventListener('change', (e) => {
+  if (!e.target.matches('#bgImgSel')) return;
+  const id = e.target.value || null;
+  const updated = setBackgroundImageDirective(src.value, id);
+  if (updated !== src.value) applyEdit(updated);
+  reflow();
 });
 
 // Measure the textarea's monospace character width so the column ruler and
@@ -141,9 +248,9 @@ document.documentElement.style.setProperty('--cw', `${charWidth()}px`);
 // set never refetches (the common path: every shipped level is Dirt → one
 // load). `tilesetWarn` is a synthetic problem appended when a level names a
 // tileset that could not be loaded (it falls back to Dirt, never crashes).
-let tileset = null;
-let activeTilesetId = null;
-let tilesetWarn = null;
+// (The `tileset`/`activeTilesetId`/`tilesetWarn` `let`s themselves are
+// declared up next to the legend/legendBase ones — v18 needed them
+// initialised before the first renderLegend call, see comment there.)
 const tilesetCache = new Map(); // id -> Promise<{ tileset, legend, base, ok }>
 
 function ensureTileset(id) {
