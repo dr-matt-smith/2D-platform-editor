@@ -141,7 +141,9 @@ body {
   gap: 6px;
   color: var(--fg);
 }
-.play-settings #ps-n {
+.play-settings #ps-n,
+.play-settings #ps-vw,
+.play-settings #ps-vh {
   font: inherit;
   color: var(--fg);
   background: #1d1d20;

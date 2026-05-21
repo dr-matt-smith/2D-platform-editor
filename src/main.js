@@ -7,6 +7,7 @@ import {
   setTilesetDirective,
   setBackgroundImageDirective,
   setPickupRequiredDirective,
+  setViewportDirective,
   BACKGROUND_GLYPH,
   DEFAULT_LEGEND,
   DEFAULT_TILESET,
@@ -696,6 +697,8 @@ document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(c
 // v18: Play Settings dialog → writes # pickup-required: into the buffer
 // (as a real undo step via applyEdit). `total` is the level's current
 // pickup count, shown for context inside the dialog.
+// v19: dialog gains a Viewport row; Save writes BOTH directives in a
+// single applyEdit so the undo step covers them as one unit.
 document.querySelector('#playSettingsBtn').addEventListener('click', () => {
   const parsed = parse(src.value);
   const total = parsed.grid.reduce(
@@ -704,9 +707,12 @@ document.querySelector('#playSettingsBtn').addEventListener('click', () => {
   );
   openPlaySettings({
     pickupRequired: parsed.meta.pickupRequired ?? 'all',
+    viewport: parsed.meta.viewport,
     total,
-    onSave: (value) => {
-      const updated = setPickupRequiredDirective(src.value, value);
+    onSave: ({ pickupRequired, viewport }) => {
+      let updated = src.value;
+      updated = setPickupRequiredDirective(updated, pickupRequired);
+      updated = setViewportDirective(updated, viewport);
       if (updated !== src.value) applyEdit(updated);
     },
   });

@@ -181,13 +181,27 @@ export function openConfirm({ message, actions, onChoice }) {
 }
 
 /**
- * v18 — Play Settings popup. v18 ships ONE row: pickup requirement.
- * `pickupRequired` is 'all' | 0 | positive integer; `total` is the
- * level's current pickup count (informational). Save invokes onSave
- * with the chosen value; Cancel calls onCancel (or just closes).
+ * v18+ — Play Settings popup.
+ *
+ * v18 shipped one row: pickup requirement.
+ * v19 adds a second row: viewport (camera in play mode).
+ *
+ * @param pickupRequired 'all' | 0 | positive integer (default 'all')
+ * @param viewport       null (default = fit / no scrolling) | { w, h }
+ * @param total          the level's current pickup count (informational)
+ * @param onSave         (value) => void where value =
+ *                       { pickupRequired, viewport }
+ * @param onCancel       () => void
  */
-export function openPlaySettings({ pickupRequired = 'all', total = 0, onSave, onCancel }) {
-  // Map the input value to one of the three rows + a numeric input.
+export function openPlaySettings({
+  pickupRequired = 'all',
+  viewport = null,
+  total = 0,
+  onSave,
+  onCancel,
+}) {
+  // Pickup row: map the input value to one of the three radio choices
+  // + the numeric input.
   const initialMode =
     pickupRequired === 'all' ? 'all' : pickupRequired === 0 ? 'none' : 'min';
   const initialN =
@@ -195,10 +209,33 @@ export function openPlaySettings({ pickupRequired = 'all', total = 0, onSave, on
       ? pickupRequired
       : Math.max(1, Math.min(total, 1));
 
+  // v19 viewport row: null → fit (radio "Fit"); { w, h } → window
+  // (radio "Window" + the two number inputs). When fit is selected we
+  // still pre-fill the inputs with a sensible default so flipping the
+  // radio without typing produces a usable viewport.
+  const initialVpMode = viewport ? 'window' : 'fit';
+  const initialVw = viewport?.w ?? 20;
+  const initialVh = viewport?.h ?? 12;
+
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
     <div class="modal confirm play-settings" role="dialog" aria-modal="true" aria-label="Play settings">
+      <p class="cf-msg"><strong>Viewport</strong> — camera in play mode.</p>
+      <div class="ps-rows">
+        <label class="ps-row">
+          <input type="radio" name="ps-viewport" value="fit" ${initialVpMode === 'fit' ? 'checked' : ''}>
+          <span>Fit whole level (default) — no scrolling</span>
+        </label>
+        <label class="ps-row">
+          <input type="radio" name="ps-viewport" value="window" ${initialVpMode === 'window' ? 'checked' : ''}>
+          <span>Window:</span>
+          <input type="number" id="ps-vw" min="4" max="200" value="${initialVw}">
+          <span>×</span>
+          <input type="number" id="ps-vh" min="4" max="200" value="${initialVh}">
+          <span>cells</span>
+        </label>
+      </div>
       <p class="cf-msg"><strong>Pickup requirement</strong> — what does the player need to collect before the exit ends the level?</p>
       <div class="ps-rows">
         <label class="ps-row">
@@ -228,11 +265,31 @@ export function openPlaySettings({ pickupRequired = 'all', total = 0, onSave, on
     backdrop.remove();
   }
   function readValue() {
-    const mode = backdrop.querySelector('input[name="ps-pickups"]:checked')?.value || 'all';
-    if (mode === 'all') return 'all';
-    if (mode === 'none') return 0;
-    const n = Number(backdrop.querySelector('#ps-n').value);
-    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
+    // Pickup ----------------------------------------------------------
+    const pickupMode =
+      backdrop.querySelector('input[name="ps-pickups"]:checked')?.value || 'all';
+    let pickupRequiredOut;
+    if (pickupMode === 'all') pickupRequiredOut = 'all';
+    else if (pickupMode === 'none') pickupRequiredOut = 0;
+    else {
+      const n = Number(backdrop.querySelector('#ps-n').value);
+      pickupRequiredOut = Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
+    }
+    // Viewport --------------------------------------------------------
+    const vpMode =
+      backdrop.querySelector('input[name="ps-viewport"]:checked')?.value || 'fit';
+    let viewportOut = null;
+    if (vpMode === 'window') {
+      const w = Number(backdrop.querySelector('#ps-vw').value);
+      const h = Number(backdrop.querySelector('#ps-vh').value);
+      // Defer the [4, 200] clamp to setViewportDirective so the dialog
+      // doesn't duplicate the rule; just floor sensible numbers here.
+      viewportOut = {
+        w: Number.isFinite(w) && w > 0 ? Math.floor(w) : 20,
+        h: Number.isFinite(h) && h > 0 ? Math.floor(h) : 12,
+      };
+    }
+    return { pickupRequired: pickupRequiredOut, viewport: viewportOut };
   }
   function save() { close(); onSave?.(readValue()); }
   function cancel() { close(); onCancel?.(); }
@@ -249,8 +306,15 @@ export function openPlaySettings({ pickupRequired = 'all', total = 0, onSave, on
   // immediate keyboard entry; typing into the input also auto-selects
   // that radio so the user doesn't need a second click.
   backdrop.querySelector('#ps-n').addEventListener('focus', () => {
-    backdrop.querySelector('input[value="min"]').checked = true;
+    backdrop.querySelector('input[name="ps-pickups"][value="min"]').checked = true;
   });
+  // Same affordance for the viewport W/H inputs: focusing either flips
+  // the "Window" radio so typing a value implicitly selects the row.
+  for (const id of ['#ps-vw', '#ps-vh']) {
+    backdrop.querySelector(id).addEventListener('focus', () => {
+      backdrop.querySelector('input[name="ps-viewport"][value="window"]').checked = true;
+    });
+  }
   document.addEventListener('keydown', onKey);
   document.body.appendChild(backdrop);
 }
