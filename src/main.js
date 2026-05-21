@@ -51,14 +51,17 @@ document.querySelector('#app').innerHTML = `
     <div class="splitter" id="splitter" title="Drag to resize panes · double-click to reset"></div>
     <div class="pane right">
       <div class="status">
-        <button id="levelsBtn" title="Open level (Ctrl/Cmd+O)">Levels</button>
         <button id="dlBtn" title="Download current level as .txt">Download</button>
         <button id="playBtn" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
+        <button id="newBtn" title="New level (opens the levels dialog)">New</button>
+        <label class="level-pick" title="Switch level (unsaved drafts are guarded)">
+          <span>Level:</span>
+          <select id="levelSel"></select>
+        </label>
         <label class="tileset-pick" title="Tileset (sets the # tileset: directive)">
-          <span>Tileset</span>
+          <span>Tileset:</span>
           <select id="tilesetSel"></select>
         </label>
-        <span id="cursor">cursor —</span>
         <span id="dirty"></span>
       </div>
       <div class="canvas-wrap">
@@ -228,6 +231,49 @@ function syncTilesetMenu() {
   if (tilesetSel.value !== id) tilesetSel.value = id;
 }
 
+// --- Level menu (v17) ----------------------------------------------------
+// Replaces the v8 "Levels" button + dialog as the everyday way to switch
+// levels. The dialog is still reachable via the [New] button — both
+// flows route through `switchTo()` / the v8 unsaved-changes guard.
+const levelSel = document.querySelector('#levelSel');
+
+function populateLevelMenu() {
+  const list = levels.list();
+  levelSel.innerHTML = list
+    .map(
+      (l) =>
+        `<option value="${escAttr(l.id)}">${l.modified ? '● ' : ''}${escAttr(l.name)}</option>`,
+    )
+    .join('');
+}
+
+// Sync the dropdown's selected option with the active buffer's
+// `currentId`. Re-populates first so a freshly-saved draft picks up
+// its ● modified marker on the next sync.
+function syncLevelMenu() {
+  populateLevelMenu();
+  const id = currentId;
+  if (id == null) {
+    // Untitled buffer (just-created via New, or the offline sample).
+    // Show a sticky synthetic option so the dropdown is honest.
+    if (![...levelSel.options].some((o) => o.value === '')) {
+      levelSel.insertAdjacentHTML(
+        'beforeend',
+        `<option value="">(untitled)</option>`,
+      );
+    }
+    levelSel.value = '';
+    return;
+  }
+  if (![...levelSel.options].some((o) => o.value === id)) {
+    levelSel.insertAdjacentHTML(
+      'beforeend',
+      `<option value="${escAttr(id)}">${escAttr(id)} (missing)</option>`,
+    );
+  }
+  if (levelSel.value !== id) levelSel.value = id;
+}
+
 const caretLineCol = (value, pos) => {
   const before = value.slice(0, pos).split('\n');
   return { line: before.length, col: before[before.length - 1].length };
@@ -287,6 +333,12 @@ function run() {
 }
 
 function updateCursor() {
+  // v17: the #cursor span was removed from the toolbar (the text
+  // pane is hidden, so a caret position is meaningless). cursorEl
+  // is null; we no-op rather than throw, and the helper itself
+  // stays because it's still called from several listeners. A v18
+  // cleanup could fully remove this + caretLineCol + lineColToCaret.
+  if (!cursorEl) return;
   const { line, col } = caretLineCol(src.value, src.selectionStart);
   const gy = line - firstGridLine;
   const inGrid = gy >= 0 && line >= firstGridLine;
@@ -357,6 +409,7 @@ function setBuffer(text, id) {
   reflow(); // … then swap to this level's tileset/legend when it loads
   updateCursor();
   refreshDirty();
+  syncLevelMenu(); // v17: keep the toolbar dropdown in sync with the buffer
 }
 
 // Restore a buffer from the history stack (no reset — keeps the timeline).
@@ -379,8 +432,11 @@ async function loadInto(id) {
 // Run `proceed` only after the current buffer's unsaved edits are dealt
 // with (shared by level-switch and new-level). A null currentId (offline
 // sample / freshly-created) has no draft to save, so it proceeds directly,
-// matching the pre-v8 switch behaviour.
-function guardUnsaved(proceed) {
+// matching the pre-v8 switch behaviour. v17: optional `onCancel` lets the
+// caller handle Cancel specifically (e.g. the level dropdown snaps its
+// value back); when omitted, the default re-opens the levels dialog —
+// the pre-v17 behaviour, preserved for back-compat with `newLevel`.
+function guardUnsaved(proceed, onCancel) {
   if (currentId && refreshDirty()) {
     openConfirm({
       message: `“${currentId}” has unsaved changes.`,
@@ -390,7 +446,7 @@ function guardUnsaved(proceed) {
         { label: 'Cancel', value: 'cancel' },
       ],
       onChoice: (choice) => {
-        if (choice === 'cancel') return openDialog(); // back to the list
+        if (choice === 'cancel') return onCancel ? onCancel() : openDialog();
         if (choice === 'save') levels.save(currentId, src.value);
         proceed();
       },
@@ -461,9 +517,23 @@ function tryPlaytest() {
   }
 }
 
-document.querySelector('#levelsBtn').addEventListener('click', openDialog);
+// v17: levels dialog is now opened only via the [New] button (the
+// dropdown handles switching). The dialog still has the level list +
+// new-level flow + per-row download from v8; v17 just stops using its
+// "switch level" entry as the primary path.
+document.querySelector('#newBtn').addEventListener('click', openDialog);
 document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
 document.querySelector('#playBtn').addEventListener('click', tryPlaytest);
+levelSel.addEventListener('change', () => {
+  const next = levelSel.value;
+  if (next === '' || next === currentId) return; // untitled / no-op
+  // Guard with onCancel that snaps the dropdown back rather than
+  // opening a dialog that no longer fits the v17 toolbar model.
+  guardUnsaved(
+    () => loadInto(next),
+    () => { syncLevelMenu(); },
+  );
+});
 tilesetSel.addEventListener('change', () => {
   const next = tilesetSel.value;
   const updated = setTilesetDirective(src.value, next, DEFAULT_TILESET);
@@ -574,6 +644,7 @@ overlay.addEventListener('pointercancel', () => {
   try {
     await levels.init();
     await populateTilesetMenu(); // before setBuffer so the first reflow finds options
+    populateLevelMenu(); // v17: build the Level dropdown's options before any setBuffer
     const list = levels.list();
     const startId =
       (levels.lastOpen() && list.some((l) => l.id === levels.lastOpen())

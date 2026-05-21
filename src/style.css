@@ -110,7 +110,7 @@ body {
   color: var(--dim);
   border-bottom: 1px solid var(--line);
 }
-#levelsBtn,
+#newBtn,
 #dlBtn,
 #playBtn {
   font: inherit;
@@ -121,19 +121,23 @@ body {
   padding: 2px 10px;
   cursor: pointer;
 }
-#levelsBtn:hover,
+#newBtn:hover,
 #dlBtn:hover,
 #playBtn:hover { background: #3d3d40; }
 
-/* Tileset picker (v9+): label + native <select> styled to match buttons. */
-.tileset-pick {
+/* Toolbar pickers (v9+/v17): "Level:" + "Tileset:" labelled native
+   <select>s styled to match the toolbar buttons. */
+.tileset-pick,
+.level-pick {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--dim);
 }
-.tileset-pick > span { font-size: 12px; }
-#tilesetSel {
+.tileset-pick > span,
+.level-pick > span { font-size: 12px; }
+#tilesetSel,
+#levelSel {
   font: inherit;
   color: var(--fg);
   background: #333;
@@ -143,7 +147,8 @@ body {
   max-width: 220px;
   cursor: pointer;
 }
-#tilesetSel:hover { background: #3d3d40; }
+#tilesetSel:hover,
+#levelSel:hover { background: #3d3d40; }
 #dirty { color: var(--warn); margin-left: auto; }
 .canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; }
 .stage {
