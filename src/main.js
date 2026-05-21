@@ -641,6 +641,15 @@ function tryPlaytest() {
   // the editor's run() is gated on editorMode === 'edit' (see below).
   editorMode = 'play';
   playController = r;
+  // v18 fix: the engine's TILE (20) differs from the editor's TILE
+  // (24), so the launcher's resize (gridW*20) leaves #preview ~17%
+  // smaller than the editor view. Pin the CSS display width to the
+  // editor's intrinsic size so the canvas occupies the same on-screen
+  // rectangle in both modes; aspect ratio is preserved from the
+  // canvas's width/height attributes (height: auto). Pixel-perfect
+  // 1.2× upscale courtesy of `image-rendering: pixelated`. Engine
+  // physics (in world units) stays byte-identical to upstream.
+  previewCanvas.style.width = `${parsed.meta.width * TILE}px`;
   document.body.classList.add('playmode');
   // Belt-and-braces: clear any stray marquee selection rect.
   octx.clearRect(0, 0, overlay.width, overlay.height);
@@ -655,6 +664,9 @@ function exitPlaytest() {
   editorMode = 'edit';
   document.body.classList.remove('playmode');
   document.removeEventListener('keydown', onPlayEsc, true);
+  // Release the play-mode display-size pin so the editor's run()
+  // below sizes #preview from its (restored) intrinsic dims.
+  previewCanvas.style.width = '';
   // Repaint the editor preview — resizes the canvas back to TILE size
   // and re-renders the buffer with the tileset's editor pass.
   run();
