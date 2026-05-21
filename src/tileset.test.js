@@ -361,3 +361,75 @@ test('v16: animator runs at draw-time, not load-time — same tileset, different
   const b = t.entityFor('P', 300);
   assert.notEqual(a.sx, b.sx);
 });
+
+// --- v18 background images + foreground decoration ------------------
+
+test('v18: lookup.images role:background → backgroundImage(id) returns the loaded Image', async () => {
+  const t = await loadTileset('PWYP', {
+    fetch: mockFetch({
+      glyphs: { filled: { char: '#', image: 'tiles/Block.png' } },
+      images: {
+        'bg-blue-clouds': { name: 'Blue', role: 'background', image: 'tiles/Background.png' },
+        'deco-plate':     { name: 'Plate', role: 'decoration', image: 'tiles/Plate.png' },
+      },
+    }),
+    loadImage: mockLoadImageWH(640, 400),
+  });
+  const bg = t.backgroundImage('bg-blue-clouds');
+  assert.ok(bg, 'background image returned');
+  assert.match(bg._src, /\/PWYP\/tiles\/Background\.png$/);
+  // Unknown ID → null (renderer's safe fallback path).
+  assert.equal(t.backgroundImage('does-not-exist'), null);
+  // Decoration images are NOT exposed via backgroundImage.
+  assert.equal(t.backgroundImage('deco-plate'), null);
+});
+
+test('v18: lookup.images role:decoration → decorationImage(id) returns the Image (v19 placement reuses)', async () => {
+  const t = await loadTileset('PWYP', {
+    fetch: mockFetch({
+      images: {
+        'deco-plate':   { name: 'Plate',   role: 'decoration', image: 'tiles/Plate.png' },
+        'deco-cloud-1': { name: 'Cloud 1', role: 'decoration', image: 'tiles/Cloud1.png' },
+      },
+    }),
+    loadImage: mockLoadImageWH(64, 64),
+  });
+  assert.ok(t.decorationImage('deco-plate'));
+  assert.ok(t.decorationImage('deco-cloud-1'));
+  assert.equal(t.decorationImage('bg-blue-clouds'), null); // wrong role
+});
+
+test('v18: role:"foreground" glyph → foregroundFor returns spec; entityFor/decorationFor return null', async () => {
+  // Mirror PWYPs Flag Pole entry (key not in ROLE_FROM_KEY, explicit role
+  // "foreground" wins via the v11 resolver — v18 extended V11_ROLES).
+  const t = await loadTileset('PWYP', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { name: 'Pea', char: 'P', role: 'player', image: 'P.png' },
+        flagpole: { name: 'Flag Pole', char: '|', role: 'foreground', image: 'pole.png' },
+      },
+    }),
+    loadImage: mockLoadImageWH(32, 32),
+  });
+  // foregroundFor returns a spec for the foreground char only.
+  assert.ok(t.foregroundFor('|'));
+  assert.equal(t.foregroundFor('|').sw, 32);
+  // entityFor returns null for the foreground char (the renderer's
+  // Pass 4b doesnt draw it; Pass 4c does).
+  assert.equal(t.entityFor('|'), null);
+  // decorationFor (the Pass 4a "background-decoration" bucket) is
+  // also null — foreground gets its own bucket.
+  assert.equal(t.decorationFor('|'), null);
+  // Regular entities still work.
+  assert.ok(t.entityFor('P'));
+});
+
+test('v18: no images / no foreground in lookup → accessors return null gracefully', async () => {
+  const t = await loadTileset('Dirt', {
+    fetch: mockFetch({ glyphs: {} }),
+    loadImage: mockLoadImage(),
+  });
+  assert.equal(t.backgroundImage('anything'), null);
+  assert.equal(t.decorationImage('anything'), null);
+  assert.equal(t.foregroundFor('|'), null);
+});

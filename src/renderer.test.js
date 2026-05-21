@@ -296,6 +296,106 @@ test('v16: omitting `now` passes undefined — animators default to frame 0', ()
   assert.equal(seen[0], undefined);
 });
 
+// --- v18 background image + foreground decoration passes ------------
+
+test('v18: Pass 0a draws meta.backgroundImage stretched to level dims', () => {
+  const calls = [];
+  const ctx = {
+    canvas: { width: 0, height: 0 },
+    set fillStyle(_) {},
+    fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
+    closePath() {}, arc() {}, fill() {},
+    drawImage: (...a) => calls.push(a),
+  };
+  const bgImage = { width: 640, height: 400 };
+  const ts = {
+    atlasReady: false,
+    drawTile() {},
+    backgroundImage: (id) => (id === 'bg-x' ? bgImage : null),
+    terrainFor: () => null,
+    entityFor: () => null,
+    decorationFor: () => null,
+    foregroundFor: () => null,
+  };
+  // 5×3 level → 5*tile × 3*tile target dims; tile=10 → 50×30.
+  const parsed = parse('#####\n#P.E#\n#####');
+  draw(ctx, { ...parsed, meta: { ...parsed.meta, backgroundImage: 'bg-x' } }, ts, 10);
+  // First drawImage call should be the background, stretched.
+  assert.equal(calls.length >= 1, true);
+  const bg = calls[0];
+  assert.equal(bg[0], bgImage);
+  assert.equal(bg[1], 0);
+  assert.equal(bg[2], 0);
+  assert.equal(bg[3], 5 * 10); // levelW
+  assert.equal(bg[4], 3 * 10); // levelH
+});
+
+test('v18: Pass 0a skips when meta.backgroundImage is null OR the ID is unknown', () => {
+  const calls = [];
+  const ctx = fakeCtx();
+  ctx.drawImage = () => calls.push('img'); // count any drawImage
+  const ts = {
+    atlasReady: false,
+    drawTile() {},
+    backgroundImage: () => null, // tileset has none
+    terrainFor: () => null,
+    entityFor: () => null,
+    decorationFor: () => null,
+    foregroundFor: () => null,
+  };
+  // meta.backgroundImage is null by default for a fresh parse.
+  draw(ctx, parse('#'), ts, 10);
+  assert.equal(calls.length, 0);
+});
+
+test('v18: Pass 4c draws foregroundFor cells AFTER entities (Flag-Pole-over-Player)', () => {
+  const order = [];
+  const ctx = fakeCtx();
+  ctx.drawImage = () => order.push('img'); // each drawImage call recorded
+  const playerSpec = { image: { width: 32, height: 32 }, sx: 0, sy: 0, sw: 32, sh: 32 };
+  const poleSpec = { image: { width: 32, height: 32 }, sx: 0, sy: 0, sw: 32, sh: 32 };
+  const ts = {
+    atlasReady: false,
+    drawTile() {},
+    terrainFor: () => null,
+    // Entity for P, foreground for |.
+    entityFor: (g) => (g === 'P' ? playerSpec : null),
+    decorationFor: () => null,
+    foregroundFor: (g) => (g === '|' ? poleSpec : null),
+  };
+  // P then | on the same row — entity painted first, foreground last.
+  draw(ctx, parse('P|E'), ts, 10);
+  // Two drawImage calls (P + |); the | call must come AFTER P, since
+  // Pass 4c runs after Pass 4b in the renderer loop. (E falls back
+  // to drawFallback shape since entityFor returns null for it; no
+  // drawImage from that.)
+  assert.equal(order.length, 2);
+});
+
+test('v18: Pass 4b shape-fallback skipped when char is a foreground decoration', () => {
+  // entityFor + decorationFor + foregroundFor all gate the
+  // drawFallback path — only when ALL three are null does the
+  // shape get drawn. A foreground char must NOT shape-fallback.
+  const ctx = fakeCtx();
+  const poleSpec = { image: { width: 32, height: 32 }, sx: 0, sy: 0, sw: 32, sh: 32 };
+  const ts = {
+    atlasReady: false,
+    drawTile() {},
+    terrainFor: () => null,
+    entityFor: () => null,
+    decorationFor: () => null,
+    foregroundFor: (g) => (g === '|' ? poleSpec : null),
+  };
+  draw(ctx, parse('|'), ts, 10);
+  // No shape-fallback fillRect (other than the always-on SKY rect).
+  // SKY rect = 1; no '#' cells, no shape entity → exactly 1 fillRect.
+  assert.equal(ctx.calls.fillRect, 1);
+  // The | character WAS drawn (via Pass 4c, drawImage).
+  assert.equal(ctx.calls.drawImage, 1);
+  // No arc (no shape entity).
+  assert.equal(ctx.calls.arc, 0);
+});
+
 // Regression gate: the Dirt tile_lookup.json must map every mask to the same
 // tile v6 drew (design §4 table). With the tileMask test above, this proves
 // the v7 render is byte-identical to v6 without rendering.

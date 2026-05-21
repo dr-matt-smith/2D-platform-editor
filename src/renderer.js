@@ -6,13 +6,16 @@
 // so sprite sheets can be cropped to one frame, and adds a decoration
 // pass:
 //
+//   Pass 0a (v18): meta.backgroundImage ? drawImage stretched : skip
+//                  (the always-on SKY fillRect is the safe fallback)
 //   background:  `atlasReady` ? blit sky/cave atlas tile : skip (SKY rect
 //                already painted by the always-on first pass)
 //   terrain (#): tileset.terrainFor(mask) ?? drawFallback('#')
 //   decor:       `atlasReady` only — Dirt-only data (v8 decor limit,
 //                preserved; v11+ lifts decor data into the lookup)
-//   Pass 4a decorations: tileset.decorationFor(char) drawn under entities
+//   Pass 4a decorations: tileset.decorationFor(char) drawn UNDER entities
 //   Pass 4b entities:    tileset.entityFor(char) ?? drawFallback(char)
+//   Pass 4c (v18):       tileset.foregroundFor(char) drawn OVER entities
 //
 // Dirt's render is byte-identical: `frames` defaults to 1, so each spec
 // covers the whole image — same drawImage args as the v10 path. Dirt's
@@ -131,6 +134,16 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
   ctx.fillStyle = SKY;
   ctx.fillRect(0, 0, w || 1, h || 1);
 
+  // Pass 0a (v18): whole-rectangle background image, stretched to fill
+  // the level area, painted OVER the SKY fillRect so the rect is the
+  // safe fallback when the lookup didn't author one. The directive
+  // (`# background-image:`) names a tileset.images entry by stable ID;
+  // unknown IDs degrade silently to the SKY fillRect.
+  if (meta.backgroundImage && tileset?.backgroundImage) {
+    const bg = tileset.backgroundImage(meta.backgroundImage);
+    if (bg) ctx.drawImage(bg, 0, 0, w, h);
+  }
+
   // Pass 1: background sky-tile blit (atlas-driven; Dirt-only).
   if (atlasReady) {
     const bg = cave ? T.caveBg : T.sky;
@@ -201,19 +214,37 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
 
   // Pass 4b: entities + hazard. Per-cell: tileset.entityFor(char) →
   // spec, else colour-shape fallback. entityFor returns null for any
-  // char that's a decoration, so Pass 4a's cells aren't double-drawn.
+  // char that's a decoration OR foreground (v18), so Pass 4a / 4c's
+  // cells aren't double-drawn here.
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
       const spec = tileset?.entityFor?.(g, now);
       if (spec) blitImage(ctx, spec, px(c), py(r), tile);
-      else if (!tileset?.decorationFor?.(g, now)) {
-        // Only fall back to shape when it's neither an entity nor a
-        // decoration — decorations are already drawn by Pass 4a and
-        // shouldn't be re-shape-drawn here.
+      else if (
+        !tileset?.decorationFor?.(g, now) &&
+        !tileset?.foregroundFor?.(g, now)
+      ) {
+        // Only fall back to shape when the cell isn't an entity,
+        // background-decoration, or foreground-decoration —
+        // decorations are drawn by Pass 4a / 4c.
         drawFallback(ctx, g, px(c), py(r), tile);
       }
+    }
+  }
+
+  // Pass 4c (v18): foreground decoration glyphs (role: "foreground").
+  // Drawn AFTER entities + player so a Flag Pole etc. sits in front
+  // of the cell's interactable tile + any entity that occupies it.
+  // `foregroundFor` returns null for non-foreground chars so this
+  // loop is cheap on tilesets without any.
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const g = grid[r][c];
+      if (g === BACKGROUND_GLYPH || g === '#') continue;
+      const spec = tileset?.foregroundFor?.(g, now);
+      if (spec) blitImage(ctx, spec, px(c), py(r), tile);
     }
   }
 }

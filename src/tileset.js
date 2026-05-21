@@ -164,10 +164,13 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
 
   // All glyph images keyed by char, with frame cropping applied per
   // glyph entry. The resolved legend tells us each char's v11 role so
-  // we can bucket decorations separately for the renderer's Pass 4a.
+  // we can bucket decorations separately for the renderer's Pass 4a
+  // (background-decorations, drawn UNDER entities) and the v18 Pass
+  // 4c (foreground-decorations, drawn OVER entities).
   const legend = buildLegend(lookup);
   const specsByChar = {};
   const decorationChars = new Set();
+  const foregroundChars = new Set(); // v18
   for (const g of Object.values(lookup?.glyphs ?? {})) {
     if (!g?.char || !g?.image) continue;
     const im = await loadImageFn(base + g.image);
@@ -176,7 +179,27 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
     // animator (frames>1 with no explicit frame).
     const spec = buildSpec(im, g.frames, g.frame, g.fps);
     if (spec) specsByChar[g.char] = spec;
-    if (legend[g.char]?.role === 'decoration') decorationChars.add(g.char);
+    const role = legend[g.char]?.role;
+    if (role === 'decoration') decorationChars.add(g.char);
+    else if (role === 'foreground') foregroundChars.add(g.char);
+  }
+
+  // v18: `images` block — stable IDs keyed; each entry declares a
+  // `role` (`background` = whole-rectangle stretch fill;
+  // `decoration` = free-positioned overlay, placement deferred to
+  // v19 but we pre-load the image so v19 is purely additive).
+  const backgroundImages = {};
+  const decorationImages = {};
+  if (lookup?.images) {
+    await Promise.all(
+      Object.entries(lookup.images).map(async ([imgId, def]) => {
+        if (!def?.image) return;
+        const im = await loadImageFn(base + def.image);
+        if (!im) return;
+        if (def.role === 'background') backgroundImages[imgId] = im;
+        else if (def.role === 'decoration') decorationImages[imgId] = im;
+      }),
+    );
   }
 
   const atlasCrop = (ctx, index, dx, dy, size) => {
@@ -226,7 +249,9 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
      * stays static, matching v11/v15.
      */
     entityFor(char, now) {
-      if (decorationChars.has(char)) return null;
+      // v18: foreground decorations also bypass entityFor — they get
+      // drawn by Pass 4c via foregroundFor(), AFTER entities + player.
+      if (decorationChars.has(char) || foregroundChars.has(char)) return null;
       return resolve(specsByChar[char], now);
     },
 
@@ -240,6 +265,39 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
     decorationFor(char, now) {
       if (!decorationChars.has(char)) return null;
       return resolve(specsByChar[char], now);
+    },
+
+    /**
+     * v18: foreground-decoration glyphs (role: "foreground"). Drawn
+     * by renderer Pass 4c, AFTER entities + player, so a Flag Pole
+     * etc. correctly sits in front of the player. Inert in playtest
+     * — `entityFor` returns null for these chars, the adapter
+     * doesn't build a collision entity for them. Returns null for
+     * any non-foreground char.
+     */
+    foregroundFor(char, now) {
+      if (!foregroundChars.has(char)) return null;
+      return resolve(specsByChar[char], now);
+    },
+
+    /**
+     * v18: pre-loaded `images.<id>` entries declared with
+     * `role: "background"`. Painted stretched-to-fill by the
+     * renderer's Pass 0a when `parsed.meta.backgroundImage`
+     * matches an ID here. Returns null for unknown IDs.
+     */
+    backgroundImage(id) {
+      return backgroundImages[id] ?? null;
+    },
+
+    /**
+     * v18: pre-loaded `images.<id>` entries declared with
+     * `role: "decoration"`. Schema-declared in v18 but free
+     * placement is v19+ — accessor exists so v19's renderer can
+     * use the cached images without re-fetching.
+     */
+    decorationImage(id) {
+      return decorationImages[id] ?? null;
     },
   };
 }
