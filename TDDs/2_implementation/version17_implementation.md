@@ -1,7 +1,26 @@
 # Version 17 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-21 · Design:
-[../1_design/version17_design.md](../1_design/version17_design.md)
+Status: **Delivered (M1–M3)** · Date: 2026-05-21 · Design:
+[../1_design/version17_design.md](../1_design/version17_design.md) ·
+Transcript: [../3_transcripts/version17_build.md](../3_transcripts/version17_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` /
+`__temp/wish_list.md` stayed out; M2 picked up a previously-staged
+`public/data/tilesets/PlayWithYourPeas/sources.txt` — see the v17
+transcript for the post-mortem):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `1aa35be` | hide left pane + both splitters; `.pane.right` full-width; `.problems` collapsed to a fixed 1-line bar with severity-tinted text; new `summariseIssues` helper (8 unit tests); `tests/splitter.spec.js` retired |
+| 2 | `e5ac18d` | toolbar — `Tileset:` colon; new `Level:` `<select>` + `[New]` button; cursor span removed; `populateLevelMenu` / `syncLevelMenu` mirroring v12 tileset-menu; `guardUnsaved` gains optional `onCancel`; CSS extended for `.level-pick` / `#levelSel` |
+| 3 | _this commit_ | v17 transcript; design + impl Delivered |
+
+Outcome: 140 → 148 unit tests (+8 summariseIssues cases),
+Playwright 12 → 4 (retired the splitter spec; tileset capture +
+distinctness + playtest-tileset + playtest-animation all unchanged).
+Both builds clean. The four UX changes from §4 land cleanly on the
+live deploy.
 
 Three small path-scoped commits. The four UX changes in design §4
 split cleanly into a layout milestone (left pane + splitters hidden,
