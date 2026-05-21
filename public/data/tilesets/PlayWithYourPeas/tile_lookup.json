@@ -1,12 +1,20 @@
 {
   "name": "Play With Your Peas",
-  "notes": "Original cartoon pack (Peas characters, Block tiles, Flag goal). No platformer-atlas, so the editor renders shapes; thumbnails come from these single-frame PNGs.",
+  "notes": "Original cartoon pack (Peas characters, Block tiles, Flag goal). No platformer-atlas, so the editor renders shapes for the grid; thumbnails come from these single-frame PNGs. v18 adds the `images` block (background + decoration art) and the `decoration` glyph (Flag Pole, role:foreground) that draws over its cell.",
   "glyphs": {
-    "empty":  { "name": "Empty",       "char": ".", "role": "background", "image": null,                       "color": "#1b2a3a" },
-    "filled": { "name": "Block",       "char": "#", "role": "terrain",    "image": "tiles/Block-Normal.png",   "color": null },
-    "player": { "name": "Pea",         "char": "P", "role": "entity",     "image": "tiles/Pea-Standard.png",   "color": null },
-    "exit":   { "name": "Goal flag",   "char": "E", "role": "entity",     "image": "tiles/Flag-Good.png",      "color": null },
-    "hazard": { "name": "Trap alert",  "char": "^", "role": "terrain",    "image": "tiles/Alert-Trap.png",     "color": null },
-    "pickup": { "name": "Happy point", "char": "o", "role": "entity",     "image": "tiles/Icon-HappyPoints.png","color": null }
+    "empty":      { "name": "Empty",     "char": ".", "role": "background", "image": null,                          "color": "#1b2a3a" },
+    "filled":     { "name": "Block",     "char": "#", "role": "terrain",    "image": "tiles/Block-Normal.png",      "color": null },
+    "player":     { "name": "Pea",       "char": "P", "role": "entity",     "image": "tiles/Pea-Standard.png",      "color": null },
+    "exit":       { "name": "Goal flag", "char": "E", "role": "entity",     "image": "tiles/Flag-Good.png",         "color": null },
+    "hazard":     { "name": "Trap alert","char": "^", "role": "terrain",    "image": "tiles/Alert-Trap.png",        "color": null },
+    "pickup":     { "name": "Pickup",    "char": "o", "role": "entity",     "image": "tiles/Icon-HappyPoints.png",  "color": null },
+    "decoration": { "name": "Flag Pole", "char": "|", "role": "foreground", "image": "tiles/Flag-Pole.png",         "color": null }
+  },
+  "images": {
+    "bg-blue-clouds": { "name": "Blue with clouds", "role": "background", "image": "tiles/Background.png" },
+    "deco-plate":     { "name": "Plate",            "role": "decoration", "image": "tiles/Plate.png" },
+    "deco-cloud-1":   { "name": "Cloud 1",          "role": "decoration", "image": "tiles/Cloud1.png" },
+    "deco-cloud-2":   { "name": "Cloud 2",          "role": "decoration", "image": "tiles/Cloud2.png" },
+    "deco-cloud-3":   { "name": "Cloud 3",          "role": "decoration", "image": "tiles/Cloud3.png" }
   }
 }

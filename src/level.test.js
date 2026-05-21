@@ -102,10 +102,21 @@ test('buildLegend maps a lookup glyphs section to a char-keyed legend', () => {
 
 // --- v11 role resolution ----------------------------------------------
 
-test('V11_ROLES is the locked taxonomy (TDD v11 §3)', () => {
+test('V11_ROLES is the locked taxonomy (TDD v11 §3, extended by v18 §3.3)', () => {
+  // v11 introduced 7 roles; v18 adds "foreground" for decoration glyphs
+  // that render OVER entities (renderer Pass 4c).
   assert.deepEqual(
     [...V11_ROLES].sort(),
-    ['background', 'decoration', 'exit', 'hazard', 'pickup', 'player', 'terrain'],
+    [
+      'background',
+      'decoration',
+      'exit',
+      'foreground',
+      'hazard',
+      'pickup',
+      'player',
+      'terrain',
+    ],
   );
 });
 

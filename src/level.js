@@ -4,8 +4,12 @@
 // v11 role taxonomy. Every legend entry's `role` is one of these once
 // `buildLegend` has normalised it (TDD v11 §3). Everything downstream
 // (validator, playtest adapter, gate) keys behaviour off these names.
+// v18: `foreground` joins the role taxonomy as a decoration variant
+// that renders OVER the interactable tile + entities (renderer Pass 4c),
+// whereas the existing `decoration` / `background` roles render UNDER
+// (Pass 4a). Inert in playtest — visual only.
 export const V11_ROLES = Object.freeze(
-  new Set(['background', 'terrain', 'player', 'exit', 'hazard', 'pickup', 'decoration']),
+  new Set(['background', 'terrain', 'player', 'exit', 'hazard', 'pickup', 'decoration', 'foreground']),
 );
 
 // Legacy `tile_lookup.json` files use coarse role names ('entity'/'terrain')
@@ -80,7 +84,10 @@ export const DEFAULT_TILESET = 'Dirt_Platformer_Tiles';
 // dirt background, no celestial decor. Default 'sky'.
 export const THEMES = new Set(['sky', 'cave']);
 
-const DIRECTIVE = /^#\s*(\w+)\s*:\s*(.+?)\s*$/;
+// v18: allow `-` in directive keys (`background-image`, `pickup-required`).
+// Pre-v18 keys (`name`, `tileset`, `theme`, `size`) keep parsing
+// unchanged — the broader character class is a superset.
+const DIRECTIVE = /^#\s*([\w-]+)\s*:\s*(.+?)\s*$/;
 const SIZE = /^(\d+)\s*x\s*(\d+)$/i;
 
 const isComment = (line) => line.trimStart().startsWith('//');
@@ -102,6 +109,10 @@ export function parse(text) {
     width: 0,
     height: 0,
     declared: null,
+    // v18 additions. Absent directives → defaults that preserve v17
+    // behaviour: no background image, all pickups required to win.
+    backgroundImage: null,
+    pickupRequired: 'all',
   };
   const rawRows = []; // { text, line }
   let inGrid = false;
@@ -124,6 +135,19 @@ export function parse(text) {
         } else if (key === 'size') {
           const s = value.match(SIZE);
           if (s) meta.declared = { w: Number(s[1]), h: Number(s[2]) };
+        } else if (key === 'background-image' || key === 'backgroundimage') {
+          // v18: pick a tileset.lookup.images entry by stable ID;
+          // unknown IDs render as "no background" (renderer just
+          // falls back to the SKY fill).
+          meta.backgroundImage = value || null;
+        } else if (key === 'pickup-required' || key === 'pickuprequired') {
+          // v18: 'all' (default) | 0 (no minimum) | positive int.
+          // Anything else → 'all' (the safe default; the playtest
+          // gate's existing "no exit" warning still flags real
+          // problems).
+          const trimmed = value.trim().toLowerCase();
+          if (trimmed === 'all') meta.pickupRequired = 'all';
+          else if (/^\d+$/.test(trimmed)) meta.pickupRequired = Number(trimmed);
         }
         continue;
       }
@@ -229,6 +253,64 @@ export function setTilesetDirective(text, id, defaultId = DEFAULT_TILESET) {
   return lines.join('\n');
 }
 
+/**
+ * v18: set/replace/remove the `# background-image:` directive on a
+ * buffer without disturbing other headers or the grid. Mirrors
+ * `setTilesetDirective`. Passing `null` or `''` removes the line
+ * (default: no background image, solid SKY fill).
+ */
+export function setBackgroundImageDirective(text, id) {
+  return setHeaderDirective(text, /^#\s*background-image\s*:/i, id, (v) =>
+    `# background-image: ${v}`,
+  );
+}
+
+/**
+ * v18: set/replace/remove the `# pickup-required:` directive.
+ * Accepted values: `'all'` (default — removed from the buffer when
+ * set), `0` (no minimum, touch exit to win), or a positive integer
+ * (collect at least N before exit becomes winnable).
+ */
+export function setPickupRequiredDirective(text, value) {
+  const normalised =
+    value === 'all' || value == null
+      ? null // remove (default = all)
+      : Number.isInteger(value) && value >= 0
+        ? String(value)
+        : null;
+  return setHeaderDirective(
+    text,
+    /^#\s*pickup-required\s*:/i,
+    normalised,
+    (v) => `# pickup-required: ${v}`,
+  );
+}
+
+// Internal: set / replace / remove a header directive line. `pattern`
+// matches the existing line if any; `value` is the new payload (null →
+// remove); `format` renders the payload into a `# key: value` line.
+// Insert position: after the last consecutive leading directive /
+// `//` comment, before the first grid row — same rule the v9
+// `setTilesetDirective` uses.
+function setHeaderDirective(text, pattern, value, format) {
+  const lines = text.split('\n');
+  const directiveRe = /^#\s*\w[\w-]*\s*:/;
+  const idx = lines.findIndex((l) => pattern.test(l));
+  if (value == null || value === '') {
+    if (idx >= 0) lines.splice(idx, 1);
+    return lines.join('\n');
+  }
+  const newLine = format(value);
+  if (idx >= 0) {
+    lines[idx] = newLine;
+    return lines.join('\n');
+  }
+  let at = 0;
+  while (at < lines.length && (directiveRe.test(lines[at]) || isComment(lines[at]))) at++;
+  lines.splice(at, 0, newLine);
+  return lines.join('\n');
+}
+
 /** Serialize back to canonical text that re-parses to an equivalent level. */
 export function serialize({ meta, grid }) {
   const header = [];
@@ -237,5 +319,8 @@ export function serialize({ meta, grid }) {
     header.push(`# tileset: ${meta.tileset}`);
   if (meta?.theme && meta.theme !== 'sky') header.push(`# theme: ${meta.theme}`);
   if (meta?.declared) header.push(`# size: ${meta.declared.w}x${meta.declared.h}`);
+  if (meta?.backgroundImage) header.push(`# background-image: ${meta.backgroundImage}`);
+  if (meta?.pickupRequired != null && meta.pickupRequired !== 'all')
+    header.push(`# pickup-required: ${meta.pickupRequired}`);
   return [...header, ...grid].join('\n');
 }
