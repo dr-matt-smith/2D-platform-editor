@@ -413,47 +413,28 @@ body {
 .cf-btn.primary:hover { background: #356aa0; }
 
 /* --- Playtest overlay (v9) ------------------------------------------- */
-/* Modal over the whole app; the canvas keeps its world-pixel intrinsic
-   size and is scaled-to-fit by max-width/height (canvas is a replaced
-   element, so aspect ratio is preserved). No camera (TDD v9 §5). */
-.playtest {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: rgba(10, 11, 14, 0.92);
-}
-.playtest-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--fg);
-  font: inherit;
-}
-.playtest-bar .hint { opacity: 0.7; }
-.playtest-bar button {
+/* v18 §4.3: play-in-place. PlaytestScene mounts directly on #preview.
+   In play mode `body.playmode` toggles the toolbar between the edit
+   buttons (Download / Play / New / Level / Tileset) and the play
+   buttons (Restart / Exit), and disables the marquee overlay's
+   pointer events so canvas drags don't paint while playing. The v9
+   .playtest modal CSS is retired here. */
+.play-only { display: none; }
+body.playmode .edit-only { display: none; }
+body.playmode .play-only { display: inline-flex; }
+body.playmode #overlay { pointer-events: none; }
+#restartBtn,
+#exitBtn {
   font: inherit;
   color: var(--fg);
   background: #333;
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 5px 12px;
+  padding: 2px 10px;
   cursor: pointer;
 }
-.playtest-bar button:hover { background: #3d3d40; }
-.playtest canvas {
-  max-width: 96vw;
-  max-height: 82vh;
-  background: #181a20;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  image-rendering: pixelated;
-}
-.playtest .credit { font-size: 12px; opacity: 0.55; color: var(--fg); }
+#restartBtn:hover,
+#exitBtn:hover { background: #3d3d40; }
 
 /* Flash the problems panel when a playtest launch is refused (v9). */
 @keyframes ptflash {

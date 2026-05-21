@@ -52,17 +52,19 @@ document.querySelector('#app').innerHTML = `
     <div class="splitter" id="splitter" title="Drag to resize panes · double-click to reset"></div>
     <div class="pane right">
       <div class="status">
-        <button id="dlBtn" title="Download current level as .txt">Download</button>
-        <button id="playBtn" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
-        <button id="newBtn" title="New level (opens the levels dialog)">New</button>
-        <label class="level-pick" title="Switch level (unsaved drafts are guarded)">
+        <button id="dlBtn" class="edit-only" title="Download current level as .txt">Download</button>
+        <button id="playBtn" class="edit-only" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
+        <button id="newBtn" class="edit-only" title="New level (opens the levels dialog)">New</button>
+        <label class="level-pick edit-only" title="Switch level (unsaved drafts are guarded)">
           <span>Level:</span>
           <select id="levelSel"></select>
         </label>
-        <label class="tileset-pick" title="Tileset (sets the # tileset: directive)">
+        <label class="tileset-pick edit-only" title="Tileset (sets the # tileset: directive)">
           <span>Tileset:</span>
           <select id="tilesetSel"></select>
         </label>
+        <button id="restartBtn" class="play-only" title="Restart (R)">Restart</button>
+        <button id="exitBtn" class="play-only" title="Exit (Esc)">Exit</button>
         <span id="dirty"></span>
       </div>
       <div class="canvas-wrap">
@@ -420,6 +422,10 @@ function renderProblems(issues) {
 let firstGridLine = 1;
 
 function run() {
+  // v18: PlaytestScene drives the canvas during play mode; the editor's
+  // per-frame editorDraw would fight it (alternating frames). Gate the
+  // whole pipeline; exitPlaytest() calls run() once on exit to repaint.
+  if (editorMode === 'play') return;
   const text = src.value;
   const parsed = parse(text);
   firstGridLine = parsed.rows[0]?.line ?? 1;
@@ -603,14 +609,20 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = '';
   }
 });
+// v18: edit / play mode state machine. In `'play'`, the editor's
+// run() is suppressed (PlaytestScene's rAF loop owns the canvas), the
+// marquee overlay is detached, the toolbar swaps `.edit-only` buttons
+// for `.play-only` (Restart / Exit), and Esc exits.
+let editorMode = 'edit';
+let playController = null;
+
 // Playtest the LIVE buffer (unsaved edits included). If the launch gate
-// blocks (validation error, or no exit to reach), keep the editor open and
-// surface the blocking reasons in the existing problems panel — no overlay.
+// blocks (validation error, or no exit to reach), keep the editor open
+// and surface the blocking reasons in the problems panel — no play mode.
 function tryPlaytest() {
+  if (editorMode === 'play') return; // already playing — no-op
   const parsed = parse(src.value);
-  // v14: hand the active tileset to playtest so it renders with the
-  // same art the editor preview uses, not the play-assets sprites.
-  const r = launchPlaytest(parsed, legend, tileset);
+  const r = launchPlaytest(parsed, legend, tileset, previewCanvas);
   if (!r.ok) {
     const issues = validate(parsed, legend);
     if (tilesetWarn) issues.push(tilesetWarn);
@@ -621,6 +633,36 @@ function tryPlaytest() {
     problemsEl.classList.remove('flash');
     void problemsEl.offsetWidth; // restart the CSS animation
     problemsEl.classList.add('flash');
+    return;
+  }
+  // Enter play mode. The launcher's rAF loop now drives the canvas;
+  // the editor's run() is gated on editorMode === 'edit' (see below).
+  editorMode = 'play';
+  playController = r;
+  document.body.classList.add('playmode');
+  // Belt-and-braces: clear any stray marquee selection rect.
+  octx.clearRect(0, 0, overlay.width, overlay.height);
+  // Capture-phase Esc so it wins over textarea / dropdown handlers.
+  document.addEventListener('keydown', onPlayEsc, true);
+}
+
+function exitPlaytest() {
+  if (editorMode !== 'play') return;
+  if (playController?.exit) playController.exit();
+  playController = null;
+  editorMode = 'edit';
+  document.body.classList.remove('playmode');
+  document.removeEventListener('keydown', onPlayEsc, true);
+  // Repaint the editor preview — resizes the canvas back to TILE size
+  // and re-renders the buffer with the tileset's editor pass.
+  run();
+}
+
+function onPlayEsc(e) {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    exitPlaytest();
   }
 }
 
@@ -630,6 +672,11 @@ function tryPlaytest() {
 // "switch level" entry as the primary path.
 document.querySelector('#newBtn').addEventListener('click', openDialog);
 document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
+// v18: play-mode toolbar (visible only via .play-only / .playmode CSS).
+document.querySelector('#restartBtn').addEventListener('click', () => {
+  if (playController?.restart) playController.restart();
+});
+document.querySelector('#exitBtn').addEventListener('click', exitPlaytest);
 document.querySelector('#playBtn').addEventListener('click', tryPlaytest);
 levelSel.addEventListener('change', () => {
   const next = levelSel.value;

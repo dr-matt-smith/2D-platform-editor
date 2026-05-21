@@ -54,7 +54,8 @@ test('playtest sprite frames animate over time (Pixel Adventure 1)', async ({ pa
 
   // Launch playtest.
   await page.keyboard.press('Control+Enter');
-  await page.waitForSelector('.playtest canvas', { state: 'visible' });
+  // v18: play-in-place — no modal. body.playmode signals play mode.
+  await page.waitForFunction(() => document.body.classList.contains('playmode'));
   // Settle: ensure first frame is rendered.
   await page.waitForTimeout(60);
 
@@ -67,13 +68,13 @@ test('playtest sprite frames animate over time (Pixel Adventure 1)', async ({ pa
   // confirms the playtest pipeline is dynamic.
   const s0 = join(OUT, 'animation-s0.png');
   const s1 = join(OUT, 'animation-s1.png');
-  await page.locator('.playtest canvas').screenshot({ path: s0 });
+  await page.locator('#preview').screenshot({ path: s0 });
   await page.waitForTimeout(400);
-  await page.locator('.playtest canvas').screenshot({ path: s1 });
+  await page.locator('#preview').screenshot({ path: s1 });
 
   // Close.
   await page.keyboard.press('Escape');
-  await page.waitForSelector('.playtest', { state: 'detached' });
+  await page.waitForFunction(() => !document.body.classList.contains('playmode'));
 
   const h0 = md5(s0);
   const h1 = md5(s1);

@@ -42,17 +42,19 @@ async function launchAndScreenshot(page, slug) {
   await page.keyboard.press('Control+Enter');
 
   // Wait for the overlay canvas to mount.
-  await page.waitForSelector('.playtest canvas', { state: 'visible' });
+  // v18: play-in-place — no modal. PlaytestScene mounts on the
+  // editor's #preview; body.playmode signals we're in play mode.
+  await page.waitForFunction(() => document.body.classList.contains('playmode'));
   // Settle: tileset sprites already loaded by the editor on the
   // previous reflow, so a short tick is enough for the first frame.
   await page.waitForTimeout(300);
 
   const path = join(OUT, `playtest-${slug}.png`);
-  await page.locator('.playtest canvas').screenshot({ path });
+  await page.locator('#preview').screenshot({ path });
 
   // Esc closes the overlay (launcher owns the capture-phase Escape).
   await page.keyboard.press('Escape');
-  await page.waitForSelector('.playtest', { state: 'detached' });
+  await page.waitForFunction(() => !document.body.classList.contains('playmode'));
 
   return path;
 }
