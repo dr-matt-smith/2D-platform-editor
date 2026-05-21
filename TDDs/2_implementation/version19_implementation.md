@@ -1,7 +1,31 @@
 # Version 19 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-21 · Design:
-[../1_design/version19_design.md](../1_design/version19_design.md)
+Status: **Delivered (M1–M6)** · Date: 2026-05-21 · Design:
+[../1_design/version19_design.md](../1_design/version19_design.md) ·
+Transcript: [../3_transcripts/version19_build.md](../3_transcripts/version19_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` /
+`__temp/wish_list.md` stayed out throughout; M4 inadvertently
+bundled the user's IncaTiles tileset draft (5 files) which the IDE
+had pre-staged — user chose to leave the bundle as-is; M5 caught a
+similar SynnyLand pre-stage and un-staged it cleanly — see the
+v19 transcript for the post-mortem):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `5bd8145` | `level.js`: `meta.viewport` field, `# viewport: WxH \| fit` parse/serialize with [4, 200] clamp; `setViewportDirective` pure helper; 19 new unit cases including coexistence with the v18 directives |
+| 2 | `5b8edce` | new pure `src/playtestCamera.js` — `centerCamera()` + `computeCamera()` (40% × 33% dead-zone defaults, world-edge clamp); 14 unit cases including a purity assertion |
+| 3 | `b560b10` | `renderer.js` `draw()` gains optional trailing `camera` arg; camera=null is byte-identical to v18; when set: canvas → viewport, `ctx.save/translate/restore` brackets world drawing, 6 cell loops cull to visible band + 1-cell bleed; 6 new test cases |
+| 4 | `6e2937e` | `launcher.js` sizes canvas to viewport when set; `playtestScene.js` adds `camX/camY` + spawn-init + per-frame `computeCamera` + player-overlay shift; `#banner` reads canvas dims; `main.js` CSS-pin reads viewport.w when set |
+| 5 | `06bfac1` | `openPlaySettings()` gains a Viewport group above the Pickup group; save returns `{ pickupRequired, viewport }`; `main.js` chains both setters through one `applyEdit` (single undo step) |
+| 6 | _this commit_ | `tests/playtest-scroll.spec.js` (40-wide world, 16x10 viewport, walk right, intrinsic stable + hash changes); v19 transcript; design + impl Delivered |
+
+Outcome: 178 → 217 unit tests (+39: 19 schema, 14 camera, 6
+renderer-camera), Playwright 5 → 6 (new scroll spec; the v18 size-
+probe + the four pre-v19 specs unchanged). Both builds clean. The
+v9 §7 byte-identical-to-upstream invariant for `src/play/`
+vendored files preserved across all six commits.
 
 Six small path-scoped commits. The two design changes — scrolling
 playtest + Viewport Play Setting — split cleanly along

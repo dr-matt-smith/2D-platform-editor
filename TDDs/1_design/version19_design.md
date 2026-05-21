@@ -1,9 +1,12 @@
 # 2D Level Designer — Version 19 Design Document
 
-Status: Proposed · Date: 2026-05-21 · Builds on:
+Status: **Delivered** · Date: 2026-05-21 · Builds on:
 [version18_design.md](version18_design.md) (legend cleanup,
-background/decoration images, play-in-place, Play Settings)
-· Implementation: *to follow once this scope is approved*.
+background/decoration images, play-in-place, Play Settings) ·
+Implementation:
+[../2_implementation/version19_implementation.md](../2_implementation/version19_implementation.md) ·
+Transcript:
+[../3_transcripts/version19_build.md](../3_transcripts/version19_build.md)
 
 ## 1. Purpose
 
