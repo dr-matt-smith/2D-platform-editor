@@ -1,7 +1,25 @@
 # Version 18 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-21 · Design:
-[../1_design/version18_design.md](../1_design/version18_design.md)
+Status: **Delivered (M1–M6)** · Date: 2026-05-21 · Design:
+[../1_design/version18_design.md](../1_design/version18_design.md) ·
+Transcript: [../3_transcripts/version18_build.md](../3_transcripts/version18_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's
+in-flight `fred.txt` / `above_ground2.txt` / `manifest.json` /
+`__temp/wish_list.md` stayed out throughout):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `2c3c697` | `level.js`: `V11_ROLES` adds `"foreground"`; `parse`/`serialize` round-trip `# background-image:` + `# pickup-required:`; `setBackgroundImageDirective` + `setPickupRequiredDirective`; PWYP `tile_lookup.json` normalised (duplicate keys + Cloud3 path + "Happy point" → "Pickup"); 14 new schema cases |
+| 2 | `930d229` | `tileset.js` parses `lookup.images`, exposes `backgroundImage(id)` / `decorationImage(id)` / `foregroundFor(char, now)`; `renderer.js` Pass 0a (background image stretched) + Pass 4c (foreground decorations); renderer tests extended |
+| 3 | `09186d0` | `renderLegend()` groups by role with headers + no char prefix; Background dropdown writes `# background-image:` via setter + `applyEdit`; decoration-image entries listed inert; CSS for `.legend-group` / `.bg-pick` / `.glyph.inert` |
+| 4 | `740a52f` | `launcher.js` rewritten — no `.playtest` modal; `PlaytestScene` mounts on `#preview`. `editorMode = 'edit'\|'play'` + `body.playmode` class; `.edit-only` / `.play-only` toolbar swap; Playwright specs updated |
+| 5 | `6a29d02` | `playSettings.js` pure helper `meetsPickupRequirement` (8 cases); `openPlaySettings()` modal; `[Play Settings]` toolbar button writes `# pickup-required:`; `playtestScene.js` win check + HUD cue use the helper |
+| 6 | _this commit_ | v18 transcript; design + impl Delivered |
+
+Outcome: 170 → 178 unit tests, Playwright 4/4 unchanged. Both
+builds clean. All six UX changes from design §1 land on the live
+deploy.
 
 Six small path-scoped commits. The six UX upgrades in design §1 split
 cleanly along schema → renderer → editor-UI → playtest-mode → settings

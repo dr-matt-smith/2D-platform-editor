@@ -1,8 +1,11 @@
 # 2D Level Designer — Version 18 Design Document
 
-Status: Proposed · Date: 2026-05-21 · Builds on:
+Status: **Delivered** · Date: 2026-05-21 · Builds on:
 [version17_design.md](version17_design.md) (graphical-only editing
-surface) · Implementation: *to follow once this scope is approved*.
+surface) · Implementation:
+[../2_implementation/version18_implementation.md](../2_implementation/version18_implementation.md) ·
+Transcript:
+[../3_transcripts/version18_build.md](../3_transcripts/version18_build.md)
 
 ## 1. Purpose
 
