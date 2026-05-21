@@ -118,11 +118,21 @@ const blitImage = (ctx, spec, x, y, t) =>
  *   sprite frames (TDD v16). Omitted → animated entries resolve to frame 0,
  *   making the editor preview deterministic / static. Playtest passes
  *   `performance.now()` to drive multi-frame playback.
+ * @param {{camX:number,camY:number,viewW:number,viewH:number}|null} [camera]
+ *   v19: when non-null, the canvas is sized to the viewport (not the
+ *   world), the context is translated by -cam BEFORE world drawing, and
+ *   the per-cell loops are *cell-culled* to the visible band (with 1
+ *   cell of bleed on each side so partial-tile edges + neighbour-aware
+ *   decor passes still paint correctly). When null (the editor preview
+ *   + fit-mode playtest paths), behaviour is byte-identical to v18.
  */
-export function draw(ctx, parsed, tileset, tile = 24, now) {
+export function draw(ctx, parsed, tileset, tile = 24, now, camera = null) {
   const { grid, meta } = parsed;
-  const w = meta.width * tile;
-  const h = meta.height * tile;
+  const worldW = meta.width * tile;
+  const worldH = meta.height * tile;
+  // v19: canvas sized to viewport when scrolling, to world otherwise.
+  const w = camera ? camera.viewW : worldW;
+  const h = camera ? camera.viewH : worldH;
   if (ctx.canvas.width !== w) ctx.canvas.width = w;
   if (ctx.canvas.height !== h) ctx.canvas.height = h;
 
@@ -131,8 +141,34 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
   const px = (c) => c * tile;
   const py = (r) => r * tile;
 
+  // v19: cell-iteration range. When camera is null, this spans the
+  // whole grid (= the v18 loops, byte-identical). When set, only the
+  // visible band plus 1 cell of bleed on each side — the bleed lets
+  // partial-tile edges paint cleanly AND lets the neighbour-aware
+  // Pass 3 (atlas decor) seed grass/drips from `#` cells just past
+  // the viewport edge.
+  let r0 = 0;
+  let r1 = grid.length;
+  let c0 = 0;
+  let c1 = meta.width;
+  if (camera) {
+    c0 = Math.max(0, Math.floor(camera.camX / tile) - 1);
+    r0 = Math.max(0, Math.floor(camera.camY / tile) - 1);
+    c1 = Math.min(meta.width, Math.ceil((camera.camX + camera.viewW) / tile) + 1);
+    r1 = Math.min(grid.length, Math.ceil((camera.camY + camera.viewH) / tile) + 1);
+  }
+
   ctx.fillStyle = SKY;
   ctx.fillRect(0, 0, w || 1, h || 1);
+
+  // v19: shift world coords into viewport space. All subsequent world-
+  // coord draws (Pass 0a … 4c) are translated by -cam; the SKY fill
+  // above stays in screen space (it fills the canvas, including any
+  // area outside the world when viewport > world).
+  if (camera) {
+    ctx.save();
+    ctx.translate(-Math.round(camera.camX), -Math.round(camera.camY));
+  }
 
   // Pass 0a (v18): whole-rectangle background image, stretched to fill
   // the level area, painted OVER the SKY fillRect so the rect is the
@@ -141,14 +177,14 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
   // unknown IDs degrade silently to the SKY fillRect.
   if (meta.backgroundImage && tileset?.backgroundImage) {
     const bg = tileset.backgroundImage(meta.backgroundImage);
-    if (bg) ctx.drawImage(bg, 0, 0, w, h);
+    if (bg) ctx.drawImage(bg, 0, 0, worldW, worldH);
   }
 
   // Pass 1: background sky-tile blit (atlas-driven; Dirt-only).
   if (atlasReady) {
     const bg = cave ? T.caveBg : T.sky;
-    for (let r = 0; r < grid.length; r++)
-      for (let c = 0; c < grid[r].length; c++) tileset.drawTile(ctx, bg, px(c), py(r), tile);
+    for (let r = r0; r < r1; r++)
+      for (let c = c0; c < c1; c++) tileset.drawTile(ctx, bg, px(c), py(r), tile);
   }
 
   // Pass 2: terrain (#). Per-cell: tileset.terrainFor(mask) → image, else
@@ -156,8 +192,8 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
   // regardless of source — the pass only reads `thinCells` when atlas-
   // driven, so non-atlas tilesets pay only a Set.add cost.
   const thinCells = new Set();
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[r].length; c++) {
+  for (let r = r0; r < r1; r++) {
+    for (let c = c0; c < c1; c++) {
       if (grid[r][c] !== '#') continue;
       const m = tileMask(grid, r, c);
       const im = tileset?.terrainFor?.(m, now);
@@ -177,8 +213,8 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
     const rows = grid.length;
     const blit = (idx, c, r) => tileset.drawTile(ctx, idx, px(c), py(r), tile);
     let mooned = false;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < grid[r].length; c++) {
+    for (let r = r0; r < r1; r++) {
+      for (let c = c0; c < c1; c++) {
         const g = grid[r][c];
         if (g === '#') {
           if (thinCells.has(r * meta.width + c)) continue; // finished art
@@ -203,8 +239,8 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
   // chars are inert at the playtest level (the adapter ignores them);
   // here we just place their sprite. `decorationFor` returns null for
   // non-decoration chars so this loop is cheap on tilesets without any.
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[r].length; c++) {
+  for (let r = r0; r < r1; r++) {
+    for (let c = c0; c < c1; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
       const spec = tileset?.decorationFor?.(g, now);
@@ -216,8 +252,8 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
   // spec, else colour-shape fallback. entityFor returns null for any
   // char that's a decoration OR foreground (v18), so Pass 4a / 4c's
   // cells aren't double-drawn here.
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[r].length; c++) {
+  for (let r = r0; r < r1; r++) {
+    for (let c = c0; c < c1; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
       const spec = tileset?.entityFor?.(g, now);
@@ -239,12 +275,18 @@ export function draw(ctx, parsed, tileset, tile = 24, now) {
   // of the cell's interactable tile + any entity that occupies it.
   // `foregroundFor` returns null for non-foreground chars so this
   // loop is cheap on tilesets without any.
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[r].length; c++) {
+  for (let r = r0; r < r1; r++) {
+    for (let c = c0; c < c1; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
       const spec = tileset?.foregroundFor?.(g, now);
       if (spec) blitImage(ctx, spec, px(c), py(r), tile);
     }
   }
+
+  // v19: restore the pre-translate matrix so callers can overlay HUD /
+  // banner / player sprite in screen coords (PlaytestScene applies its
+  // own translate to the player overlay; the banner + HUD then paint
+  // in viewport coords once the world translate is gone).
+  if (camera) ctx.restore();
 }

@@ -396,6 +396,147 @@ test('v18: Pass 4b shape-fallback skipped when char is a foreground decoration',
   assert.equal(ctx.calls.arc, 0);
 });
 
+// --- v19: optional camera param (translate + cell-cull) ------------
+
+// Richer fake ctx that records translate / save / restore for the
+// camera-mode tests. Behaves like fakeCtx otherwise.
+function cameraCtx() {
+  const calls = {
+    fillRect: 0,
+    arc: 0,
+    drawImage: 0,
+    translate: [], // {x, y}
+    save: 0,
+    restore: 0,
+  };
+  return {
+    canvas: { width: 0, height: 0 },
+    set fillStyle(_) {},
+    fillRect: () => calls.fillRect++,
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    closePath() {},
+    arc: () => calls.arc++,
+    fill() {},
+    drawImage: () => calls.drawImage++,
+    translate: (x, y) => calls.translate.push({ x, y }),
+    save: () => calls.save++,
+    restore: () => calls.restore++,
+    calls,
+  };
+}
+
+test('v19: camera=null path makes ZERO translate/save/restore calls (back-compat)', () => {
+  const ctx = cameraCtx();
+  const ts = fakeTileset();
+  draw(ctx, parse('###\n#P#\n###'), ts, 10);
+  assert.equal(ctx.calls.translate.length, 0);
+  assert.equal(ctx.calls.save, 0);
+  assert.equal(ctx.calls.restore, 0);
+});
+
+test('v19: camera sized canvas to viewport (not world)', () => {
+  // 8x4 world @ 10 px/cell = 80x40. Viewport 50x30.
+  const ctx = cameraCtx();
+  const ts = fakeTileset();
+  draw(
+    ctx,
+    parse('########\n#......#\n#..P..E#\n########'),
+    ts,
+    10,
+    0,
+    { camX: 0, camY: 0, viewW: 50, viewH: 30 },
+  );
+  assert.equal(ctx.canvas.width, 50);
+  assert.equal(ctx.canvas.height, 30);
+});
+
+test('v19: camera applies translate(-round(camX), -round(camY))', () => {
+  const ctx = cameraCtx();
+  const ts = fakeTileset();
+  draw(
+    ctx,
+    parse('########\n#......#\n#..P..E#\n########'),
+    ts,
+    10,
+    0,
+    { camX: 20.4, camY: 5.7, viewW: 50, viewH: 30 },
+  );
+  // One save() + one matching restore() bracket the world drawing.
+  assert.equal(ctx.calls.save, 1);
+  assert.equal(ctx.calls.restore, 1);
+  // Exactly one translate, rounded.
+  assert.equal(ctx.calls.translate.length, 1);
+  assert.deepEqual(ctx.calls.translate[0], { x: -20, y: -6 });
+});
+
+test('v19: cell-cull cuts drawImage calls for big worlds', () => {
+  // 40-wide x 4-tall world; viewport 10 wide × 4 tall. We expect the
+  // total draw-call count to be roughly proportional to 12 columns (10
+  // visible + bleed of 1 each side, clamped at world edges), not 40.
+  const wideRow = '#' + '.'.repeat(38) + '#';
+  const topBottomRow = '#'.repeat(40);
+  const grid = [topBottomRow, wideRow, wideRow, topBottomRow].join('\n');
+  const parsed = parse(grid);
+
+  // Non-atlas tileset to keep the call count tight (Pass 1 + Pass 3 off).
+  const ts = { ...fakeTileset({ atlasReady: false }) };
+
+  const ctxFull = cameraCtx();
+  draw(ctxFull, parsed, ts, 10); // no camera = whole world
+  const fullCalls = ctxFull.calls.drawImage;
+
+  const ctxView = cameraCtx();
+  draw(ctxView, parsed, ts, 10, 0, { camX: 0, camY: 0, viewW: 100, viewH: 40 });
+  const viewCalls = ctxView.calls.drawImage;
+
+  // The cull must save a measurable amount: at least a 50% reduction
+  // for this 40-wide-vs-10-wide setup. (Loose threshold so tweaking
+  // the bleed-by-1 detail doesn't break the spec.)
+  assert.ok(
+    viewCalls < fullCalls * 0.5,
+    `expected viewCalls (${viewCalls}) < 50% of fullCalls (${fullCalls})`,
+  );
+});
+
+test('v19: cell-cull respects world bounds (no out-of-range reads)', () => {
+  // 4×4 world; viewport much larger than world; bleed-extension should
+  // clamp at grid bounds, not throw or read past the end.
+  const ctx = cameraCtx();
+  const ts = fakeTileset();
+  assert.doesNotThrow(() =>
+    draw(ctx, parse('####\n#PE#\n#..#\n####'), ts, 10, 0, {
+      camX: 0,
+      camY: 0,
+      viewW: 200,
+      viewH: 200,
+    }),
+  );
+});
+
+test('v19: camera=null + camera={camX:0,camY:0,viewW:worldW,viewH:worldH} have identical drawImage counts', () => {
+  // The cell-cull range covers the whole grid at camX=0/camY=0 and
+  // viewport == world, so the windowed path should match the world
+  // path exactly. This is the fit-mode "byte-identical" guarantee at
+  // the call-count level.
+  const grid = '######\n#....#\n#.PE.#\n######';
+  const parsed = parse(grid);
+  const ts1 = fakeTileset();
+  const ts2 = fakeTileset();
+
+  const ctx1 = cameraCtx();
+  draw(ctx1, parsed, ts1, 10);
+  const ctx2 = cameraCtx();
+  draw(ctx2, parsed, ts2, 10, 0, {
+    camX: 0,
+    camY: 0,
+    viewW: 60,
+    viewH: 40,
+  });
+  assert.equal(ctx2.calls.drawImage, ctx1.calls.drawImage);
+});
+
 // Regression gate: the Dirt tile_lookup.json must map every mask to the same
 // tile v6 drew (design §4 table). With the tileMask test above, this proves
 // the v7 render is byte-identical to v6 without rendering.
