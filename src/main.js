@@ -649,7 +649,14 @@ function tryPlaytest() {
   // canvas's width/height attributes (height: auto). Pixel-perfect
   // 1.2× upscale courtesy of `image-rendering: pixelated`. Engine
   // physics (in world units) stays byte-identical to upstream.
-  previewCanvas.style.width = `${parsed.meta.width * TILE}px`;
+  //
+  // v19: when `# viewport: WxH` is set, the launcher resizes the
+  // canvas to (viewport.w * engineTILE, viewport.h * engineTILE)
+  // instead of the whole world. The CSS pin tracks that — using the
+  // viewport's width when present so the visible canvas keeps a
+  // sensible on-screen size whether the world is bigger or smaller.
+  const pinCells = parsed.meta.viewport?.w ?? parsed.meta.width;
+  previewCanvas.style.width = `${pinCells * TILE}px`;
   document.body.classList.add('playmode');
   // Belt-and-braces: clear any stray marquee selection rect.
   octx.clearRect(0, 0, overlay.width, overlay.height);

@@ -10,6 +10,7 @@
 import { Game } from './core/game.js';
 import { Input } from './core/input.js';
 import { AssetLoader } from './core/assets.js';
+import { TILE } from './constants.js';
 import { toWorld } from './adapter.js';
 import { playtestGate } from './playtestGate.js';
 import { PlaytestScene } from './playtestScene.js';
@@ -36,12 +37,22 @@ export function launchPlaytest(parsed, legend, tileset, canvas) {
   const gate = playtestGate(parsed, legend);
   if (!gate.ok) return gate;
 
-  // Resize the editor's canvas to the world dims. The editor's run()
+  // Resize the editor's canvas to the play surface. The editor's run()
   // (called by main.js on exit) will resize it back to the preview
   // TILE size when play mode ends.
-  const dims = toWorld(parsed, legend);
-  canvas.width = dims.worldW;
-  canvas.height = dims.worldH;
+  //
+  // v19: when `# viewport: WxH` is set, the canvas sizes to the viewport
+  // (the camera scrolls a window across the world). Pre-v19 levels
+  // (viewport = null) keep sizing to the whole world (v18 behaviour).
+  const vp = parsed.meta?.viewport;
+  if (vp) {
+    canvas.width = vp.w * TILE;
+    canvas.height = vp.h * TILE;
+  } else {
+    const dims = toWorld(parsed, legend);
+    canvas.width = dims.worldW;
+    canvas.height = dims.worldH;
+  }
 
   const input = new Input();
   // AssetLoader retained for `assets.play('coin', …)` — the coin pickup

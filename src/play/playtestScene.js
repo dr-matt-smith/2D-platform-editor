@@ -3,6 +3,7 @@ import { rectsOverlap } from './core/aabb.js';
 import { COLOURS, TILE } from './constants.js';
 import { toWorld } from './adapter.js';
 import { meetsPickupRequirement } from '../playSettings.js';
+import { centerCamera, computeCamera } from '../playtestCamera.js';
 import { draw as editorDraw, drawFallback } from '../renderer.js';
 import { roleOf } from '../level.js';
 
@@ -79,6 +80,12 @@ export class PlaytestScene extends Scene {
     this.requiredPickups = this.parsed?.meta?.pickupRequired ?? 'all';
     this.phase = 'play'; // 'play' | 'won' | 'dead'
 
+    // v19: viewport dims (pixels). Null → fit mode (no scrolling; the
+    // v18 behaviour). Non-null → camera scrolls a window across the
+    // world.
+    const vp = this.parsed?.meta?.viewport;
+    this.viewport = vp ? { w: vp.w * TILE, h: vp.h * TILE } : null;
+
     // v14: locate the player's spawn cell + glyph char in the parsed
     // grid. The editor renderer needs the cell blanked so it doesn't
     // draw the player at its static spawn position underneath the
@@ -97,6 +104,25 @@ export class PlaytestScene extends Scene {
         }
       }
     }
+
+    // v19: initialise the camera to centre the player at spawn (clamped
+    // to world edges). Fit mode keeps camX/Y at 0 — the renderer's
+    // camera-null path ignores them entirely.
+    this.camX = 0;
+    this.camY = 0;
+    if (this.viewport) {
+      const c = centerCamera(this.#playerCenter(), this.viewport, {
+        w: this.worldW,
+        h: this.worldH,
+      });
+      this.camX = c.camX;
+      this.camY = c.camY;
+    }
+  }
+
+  /** Player centre in world pixels — small helper so camera math is one-liner. */
+  #playerCenter() {
+    return { x: this.player.x + this.player.w / 2, y: this.player.y + this.player.h / 2 };
   }
 
   update(dt) {
@@ -140,6 +166,19 @@ export class PlaytestScene extends Scene {
       }
     }
 
+    // v19: dead-zone camera follow (no-op in fit mode — viewport is
+    // null, so we skip the math entirely and camX/Y stay at 0).
+    if (this.viewport) {
+      const c = computeCamera(
+        this.#playerCenter(),
+        { camX: this.camX, camY: this.camY },
+        this.viewport,
+        { w: this.worldW, h: this.worldH },
+      );
+      this.camX = c.camX;
+      this.camY = c.camY;
+    }
+
     if (input.wasPressed('r')) this.restart();
   }
 
@@ -164,12 +203,24 @@ export class PlaytestScene extends Scene {
     // no explicit frame) cycle from this clock; static sprites ignore
     // it. The editor preview path omits `now` and stays deterministic.
     const now = performance.now();
+    // v19: pass the camera to the renderer when in windowed mode. The
+    // renderer's camera-null path stays byte-identical for fit-mode
+    // levels (the v18 + pre-v18 behaviour).
+    const camera = this.viewport
+      ? {
+          camX: this.camX,
+          camY: this.camY,
+          viewW: this.viewport.w,
+          viewH: this.viewport.h,
+        }
+      : null;
     editorDraw(
       ctx,
       { grid: viewGrid, meta: this.parsed.meta, rows: this.parsed.rows },
       this.tileset,
       TILE,
       now,
+      camera,
     );
 
     // Overlay the moving player at its physics-driven float position
@@ -177,9 +228,14 @@ export class PlaytestScene extends Scene {
     // motion). Tileset sprite if authored; the editor's exact same
     // shape fallback otherwise — keeping Dirt's blue disc identical
     // between preview and playtest.
+    //
+    // v19: shift the overlay into viewport coords by subtracting the
+    // (rounded) camera origin — matches the renderer's
+    // `ctx.translate(-Math.round(camX), -Math.round(camY))`. In fit
+    // mode camX/Y are 0, so the math is the v18 path exactly.
     const spec = this.tileset?.entityFor?.(this.playerChar, now);
-    const px = Math.round(this.player.x);
-    const py = Math.round(this.player.y);
+    const px = Math.round(this.player.x) - Math.round(this.camX);
+    const py = Math.round(this.player.y) - Math.round(this.camY);
     if (spec) {
       ctx.drawImage(spec.image, spec.sx, spec.sy, spec.sw, spec.sh, px, py, TILE, TILE);
     } else {
@@ -202,10 +258,16 @@ export class PlaytestScene extends Scene {
   }
 
   #banner(ctx) {
-    const cx = this.worldW / 2;
-    const cy = this.worldH / 2;
+    // v19: banner centres on the canvas (= the viewport in windowed
+    // mode, = the world in fit mode), not the world. The HUD + this
+    // banner paint AFTER the renderer's `ctx.restore()`, so we're in
+    // screen-space already — read dims from the canvas.
+    const W = ctx.canvas.width;
+    const H = ctx.canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
     ctx.fillStyle = 'rgba(10,11,14,0.78)';
-    ctx.fillRect(0, cy - 46, this.worldW, 92);
+    ctx.fillRect(0, cy - 46, W, 92);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = this.phase === 'won' ? COLOURS.accent : COLOURS.text;
