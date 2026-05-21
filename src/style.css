@@ -34,6 +34,17 @@ body {
 .pane.left { width: var(--left-pct, 50%); min-width: 220px; }
 .pane.right { flex: 1; min-width: 220px; }
 
+/* v17: hide the text-file representation entirely; authoring is now
+   graphical-only (legend + drag-rectangle + toolbar). The textarea
+   stays in the DOM (display:none) so every src.value consumer keeps
+   working. Both v12/v13 splitters also hide — they have nothing left
+   to resize. A future "Show text pane" toggle would just lift these
+   display:none rules. */
+.pane.left,
+.splitter,
+.splitter-h { display: none !important; }
+.pane.right { width: 100%; }
+
 /* v12: draggable vertical splitter between text + canvas panes. */
 .splitter {
   flex: 0 0 6px;
@@ -190,15 +201,25 @@ body {
 .legend .glyph b { color: var(--fg); }
 
 .problems {
-  /* v13: height-driven by a CSS variable (set by the user dragging
-     the horizontal splitter); the 25vh fallback matches the v0–v12
-     default so a fresh user sees no change. The visible top border
-     is now the .splitter-h element rather than this rule. */
-  height: var(--problems-h, 25vh);
-  overflow: auto;
+  /* v17: a fixed single-line message bar. The v13 height-driven
+     resize is retired (the splitter is hidden; the panel is no
+     longer a multi-row list). Text is summarised by the pure
+     `summariseIssues` helper and ellipsis-clipped if it ever
+     overflows; the colour is keyed off `data-severity` set by
+     `renderProblems`. */
+  height: auto;
+  line-height: 1.8em;
+  padding: 4px 12px;
   background: var(--panel);
-  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--dim);
 }
+.problems[data-severity="ok"]    { color: var(--dim); }
+.problems[data-severity="warn"]  { color: var(--warn); }
+.problems[data-severity="error"] { color: var(--err); }
 
 /* v13: draggable horizontal splitter between the editor area and
    the problems panel. Symmetric to v12's .splitter, rotated 90°. */

@@ -18,6 +18,7 @@ import { downloadText } from './download.js';
 import { createHistory } from './history.js';
 import { launchPlaytest } from './play/launcher.js';
 import { setupSplitter, setupProblemsSplitter } from './splitter.js';
+import { summariseIssues } from './summarise.js';
 
 const TILE = 24;
 const DEBOUNCE_MS = 120;
@@ -253,27 +254,14 @@ function renderGutter(lineCount) {
   gutter.textContent = s;
 }
 
+// v17: the problems panel is a single-line, fixed-height summary bar.
+// Click-to-jump is retired (the textarea is hidden); errors take
+// priority over warnings; a `+N more` suffix surfaces additional
+// issues without listing them. CSS keys off `data-severity` for tint.
 function renderProblems(issues) {
-  if (!issues.length) {
-    problemsEl.innerHTML = `<div class="ok">No problems.</div>`;
-    return;
-  }
-  problemsEl.innerHTML = issues
-    .map(
-      (p, i) =>
-        `<div class="row" data-i="${i}"><span class="loc">${p.line}:${p.col}</span> ` +
-        `<span class="${p.severity}">${p.severity}</span> ${p.message}</div>`,
-    )
-    .join('');
-  problemsEl.querySelectorAll('.row').forEach((row) => {
-    row.addEventListener('click', () => {
-      const p = issues[Number(row.dataset.i)];
-      src.focus();
-      const pos = lineColToCaret(src.value, p.line, p.col - 1);
-      src.setSelectionRange(pos, pos);
-      updateCursor();
-    });
-  });
+  const { text, severity } = summariseIssues(issues);
+  problemsEl.textContent = text;
+  problemsEl.dataset.severity = severity;
 }
 
 let firstGridLine = 1;
