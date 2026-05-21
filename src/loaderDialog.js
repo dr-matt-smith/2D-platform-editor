@@ -179,3 +179,78 @@ export function openConfirm({ message, actions, onChoice }) {
   document.addEventListener('keydown', onKey);
   document.body.appendChild(backdrop);
 }
+
+/**
+ * v18 — Play Settings popup. v18 ships ONE row: pickup requirement.
+ * `pickupRequired` is 'all' | 0 | positive integer; `total` is the
+ * level's current pickup count (informational). Save invokes onSave
+ * with the chosen value; Cancel calls onCancel (or just closes).
+ */
+export function openPlaySettings({ pickupRequired = 'all', total = 0, onSave, onCancel }) {
+  // Map the input value to one of the three rows + a numeric input.
+  const initialMode =
+    pickupRequired === 'all' ? 'all' : pickupRequired === 0 ? 'none' : 'min';
+  const initialN =
+    typeof pickupRequired === 'number' && pickupRequired > 0
+      ? pickupRequired
+      : Math.max(1, Math.min(total, 1));
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal confirm play-settings" role="dialog" aria-modal="true" aria-label="Play settings">
+      <p class="cf-msg"><strong>Pickup requirement</strong> — what does the player need to collect before the exit ends the level?</p>
+      <div class="ps-rows">
+        <label class="ps-row">
+          <input type="radio" name="ps-pickups" value="all" ${initialMode === 'all' ? 'checked' : ''}>
+          <span>All pickups required (default)</span>
+        </label>
+        <label class="ps-row">
+          <input type="radio" name="ps-pickups" value="min" ${initialMode === 'min' ? 'checked' : ''}>
+          <span>At least</span>
+          <input type="number" id="ps-n" min="1" max="${Math.max(1, total)}" value="${initialN}">
+          <span>pickups</span>
+        </label>
+        <label class="ps-row">
+          <input type="radio" name="ps-pickups" value="none" ${initialMode === 'none' ? 'checked' : ''}>
+          <span>No minimum — touching the exit wins</span>
+        </label>
+      </div>
+      <p class="cf-msg" style="opacity:0.7"><small>This level has ${total} pickup${total === 1 ? '' : 's'}.</small></p>
+      <div class="cf-actions">
+        <button class="cf-btn" data-act="cancel">Cancel</button>
+        <button class="cf-btn primary" data-act="save">Save</button>
+      </div>
+    </div>`;
+
+  function close() {
+    document.removeEventListener('keydown', onKey);
+    backdrop.remove();
+  }
+  function readValue() {
+    const mode = backdrop.querySelector('input[name="ps-pickups"]:checked')?.value || 'all';
+    if (mode === 'all') return 'all';
+    if (mode === 'none') return 0;
+    const n = Number(backdrop.querySelector('#ps-n').value);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
+  }
+  function save() { close(); onSave?.(readValue()); }
+  function cancel() { close(); onCancel?.(); }
+  function onKey(e) { if (e.key === 'Escape') cancel(); }
+
+  backdrop.addEventListener('click', (e) => {
+    const btn = e.target.closest('.cf-btn');
+    if (btn) {
+      if (btn.dataset.act === 'save') save();
+      else cancel();
+    } else if (e.target === backdrop) cancel();
+  });
+  // Selecting the "At least N" radio focuses the number input for
+  // immediate keyboard entry; typing into the input also auto-selects
+  // that radio so the user doesn't need a second click.
+  backdrop.querySelector('#ps-n').addEventListener('focus', () => {
+    backdrop.querySelector('input[value="min"]').checked = true;
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(backdrop);
+}

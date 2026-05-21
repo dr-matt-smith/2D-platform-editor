@@ -6,6 +6,7 @@ import {
   buildLegend,
   setTilesetDirective,
   setBackgroundImageDirective,
+  setPickupRequiredDirective,
   BACKGROUND_GLYPH,
   DEFAULT_LEGEND,
   DEFAULT_TILESET,
@@ -14,7 +15,7 @@ import { validate } from './validate.js';
 import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
-import { openLevelDialog, openConfirm } from './loaderDialog.js';
+import { openLevelDialog, openConfirm, openPlaySettings } from './loaderDialog.js';
 import { downloadText } from './download.js';
 import { createHistory } from './history.js';
 import { launchPlaytest } from './play/launcher.js';
@@ -54,6 +55,7 @@ document.querySelector('#app').innerHTML = `
       <div class="status">
         <button id="dlBtn" class="edit-only" title="Download current level as .txt">Download</button>
         <button id="playBtn" class="edit-only" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
+        <button id="playSettingsBtn" class="edit-only" title="Play settings (pickup requirement, etc.)">Play Settings</button>
         <button id="newBtn" class="edit-only" title="New level (opens the levels dialog)">New</button>
         <label class="level-pick edit-only" title="Switch level (unsaved drafts are guarded)">
           <span>Level:</span>
@@ -672,6 +674,24 @@ function onPlayEsc(e) {
 // "switch level" entry as the primary path.
 document.querySelector('#newBtn').addEventListener('click', openDialog);
 document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
+// v18: Play Settings dialog → writes # pickup-required: into the buffer
+// (as a real undo step via applyEdit). `total` is the level's current
+// pickup count, shown for context inside the dialog.
+document.querySelector('#playSettingsBtn').addEventListener('click', () => {
+  const parsed = parse(src.value);
+  const total = parsed.grid.reduce(
+    (n, row) => n + [...row].filter((ch) => parsed.meta && legend[ch]?.role === 'pickup').length,
+    0,
+  );
+  openPlaySettings({
+    pickupRequired: parsed.meta.pickupRequired ?? 'all',
+    total,
+    onSave: (value) => {
+      const updated = setPickupRequiredDirective(src.value, value);
+      if (updated !== src.value) applyEdit(updated);
+    },
+  });
+});
 // v18: play-mode toolbar (visible only via .play-only / .playmode CSS).
 document.querySelector('#restartBtn').addEventListener('click', () => {
   if (playController?.restart) playController.restart();

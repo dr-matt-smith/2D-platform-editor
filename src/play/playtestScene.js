@@ -2,6 +2,7 @@ import { Scene } from './core/scene.js';
 import { rectsOverlap } from './core/aabb.js';
 import { COLOURS, TILE } from './constants.js';
 import { toWorld } from './adapter.js';
+import { meetsPickupRequirement } from '../playSettings.js';
 import { draw as editorDraw, drawFallback } from '../renderer.js';
 import { roleOf } from '../level.js';
 
@@ -73,6 +74,9 @@ export class PlaytestScene extends Scene {
     this.worldH = w.worldH;
     this.score = 0;
     this.total = this.coins.length;
+    // v18: per-level pickup requirement (`# pickup-required:`); default
+    // 'all' preserves the pre-v18 win rule.
+    this.requiredPickups = this.parsed?.meta?.pickupRequired ?? 'all';
     this.phase = 'play'; // 'play' | 'won' | 'dead'
 
     // v14: locate the player's spawn cell + glyph char in the parsed
@@ -125,7 +129,9 @@ export class PlaytestScene extends Scene {
       return;
     }
 
-    if (this.score === this.total) {
+    // v18: honour the level's # pickup-required: directive
+    // ("all" | 0 | N). Default behaviour ("all") is identical to v17.
+    if (meetsPickupRequirement(this.score, this.total, this.requiredPickups)) {
       for (const g of this.goals) {
         if (rectsOverlap(this.player, g)) {
           this.phase = 'won';
@@ -186,7 +192,8 @@ export class PlaytestScene extends Scene {
     ctx.textBaseline = 'top';
     ctx.font = 'bold 16px monospace';
     const hud =
-      this.phase === 'play' && this.score === this.total && this.total >= 0
+      this.phase === 'play' &&
+      meetsPickupRequirement(this.score, this.total, this.requiredPickups)
         ? `coins: ${this.score} / ${this.total}   →  find the exit`
         : `coins: ${this.score} / ${this.total}`;
     ctx.fillText(hud, 8, 8);

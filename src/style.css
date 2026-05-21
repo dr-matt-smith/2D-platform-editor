@@ -112,7 +112,8 @@ body {
 }
 #newBtn,
 #dlBtn,
-#playBtn {
+#playBtn,
+#playSettingsBtn {
   font: inherit;
   color: var(--fg);
   background: #333;
@@ -123,7 +124,32 @@ body {
 }
 #newBtn:hover,
 #dlBtn:hover,
-#playBtn:hover { background: #3d3d40; }
+#playBtn:hover,
+#playSettingsBtn:hover { background: #3d3d40; }
+
+/* v18: Play Settings dialog rows — radio + label, with an inline
+   number input on the "minimum N" row. */
+.play-settings .ps-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+.play-settings .ps-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg);
+}
+.play-settings #ps-n {
+  font: inherit;
+  color: var(--fg);
+  background: #1d1d20;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 6px;
+  width: 4.5em;
+}
 
 /* Toolbar pickers (v9+/v17): "Level:" + "Tileset:" labelled native
    <select>s styled to match the toolbar buttons. */
