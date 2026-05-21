@@ -90,6 +90,15 @@ export const THEMES = new Set(['sky', 'cave']);
 const DIRECTIVE = /^#\s*([\w-]+)\s*:\s*(.+?)\s*$/;
 const SIZE = /^(\d+)\s*x\s*(\d+)$/i;
 
+// v19: viewport directive clamp. Matches the v8 level-size clamp shape
+// (the New-level dialog clamps to [4, 200]). Out-of-range values are
+// silently coerced rather than dropped — better authoring UX than a
+// directive that gets silently removed because someone typed `300`.
+export const VIEWPORT_MIN = 4;
+export const VIEWPORT_MAX = 200;
+const clampViewport = (n) =>
+  Math.max(VIEWPORT_MIN, Math.min(VIEWPORT_MAX, Math.round(Number(n) || 0) || VIEWPORT_MIN));
+
 const isComment = (line) => line.trimStart().startsWith('//');
 
 /**
@@ -113,6 +122,10 @@ export function parse(text) {
     // behaviour: no background image, all pickups required to win.
     backgroundImage: null,
     pickupRequired: 'all',
+    // v19 addition. Absent / `fit` → null → playtest shows the whole
+    // world (the v18 behaviour). `{w, h}` → playtest mounts a
+    // viewport-sized canvas and the camera scrolls.
+    viewport: null,
   };
   const rawRows = []; // { text, line }
   let inGrid = false;
@@ -148,6 +161,20 @@ export function parse(text) {
           const trimmed = value.trim().toLowerCase();
           if (trimmed === 'all') meta.pickupRequired = 'all';
           else if (/^\d+$/.test(trimmed)) meta.pickupRequired = Number(trimmed);
+        } else if (key === 'viewport') {
+          // v19: 'fit' (or unparseable) → null (= whole world, v18
+          // default). 'WxH' (case-insensitive `x`) → {w, h} clamped
+          // to [VIEWPORT_MIN, VIEWPORT_MAX]. Anything else → null.
+          const trimmed = value.trim().toLowerCase();
+          if (trimmed === 'fit') meta.viewport = null;
+          else {
+            const m2 = value.match(SIZE);
+            if (m2) {
+              const w = clampViewport(Number(m2[1]));
+              const h = clampViewport(Number(m2[2]));
+              meta.viewport = { w, h };
+            }
+          }
         }
         continue;
       }
@@ -266,6 +293,26 @@ export function setBackgroundImageDirective(text, id) {
 }
 
 /**
+ * v19: set/replace/remove the `# viewport:` directive. Accepted
+ * values: `null` / `'fit'` (default — removed from the buffer when
+ * set), or `{w, h}` (clamped to [VIEWPORT_MIN, VIEWPORT_MAX]).
+ */
+export function setViewportDirective(text, value) {
+  const normalised =
+    value == null || value === 'fit'
+      ? null
+      : value && typeof value === 'object' && 'w' in value && 'h' in value
+        ? `${clampViewport(value.w)}x${clampViewport(value.h)}`
+        : null;
+  return setHeaderDirective(
+    text,
+    /^#\s*viewport\s*:/i,
+    normalised,
+    (v) => `# viewport: ${v}`,
+  );
+}
+
+/**
  * v18: set/replace/remove the `# pickup-required:` directive.
  * Accepted values: `'all'` (default — removed from the buffer when
  * set), `0` (no minimum, touch exit to win), or a positive integer
@@ -322,5 +369,7 @@ export function serialize({ meta, grid }) {
   if (meta?.backgroundImage) header.push(`# background-image: ${meta.backgroundImage}`);
   if (meta?.pickupRequired != null && meta.pickupRequired !== 'all')
     header.push(`# pickup-required: ${meta.pickupRequired}`);
+  if (meta?.viewport && typeof meta.viewport === 'object')
+    header.push(`# viewport: ${meta.viewport.w}x${meta.viewport.h}`);
   return [...header, ...grid].join('\n');
 }
