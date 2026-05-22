@@ -1,11 +1,24 @@
 # Version 24 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-22 · Design:
+Status: **Delivered (2026-05-22)** · Design:
 [../1_design/version24_design.md](../1_design/version24_design.md)
+· Transcript:
+[../3_transcripts/version24_build.md](../3_transcripts/version24_build.md)
 
 Six small path-scoped commits. The two threads — editor (M1-M3) and
-agent (M4-M6) — interleave so each polish item lands before the
+agent (M4-M6) — interleaved so each polish item landed before the
 larger agent investigations.
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `48295f9` | LOAD button |
+| 2 | `75679d6` | prefers-color-scheme |
+| 3 | `b3fe638` | multi-coloured overlay |
+| 4 | `598fe47` | tutorial.txt fix |
+| 5 | `38062f7` | below_ground investigation (carry-over to v25) |
+| 6 | _this commit_ | acceptance + transcript + Delivered |
+
+Tests at delivery: 295 unit / 67 Playwright. v9 §7 invariant preserved.
 
 ## Process (same discipline as v8–v23)
 

@@ -1,9 +1,31 @@
 # 2D Level Designer — Version 24 Design Document
 
-Status: Proposed (scope confirmed 2026-05-22) · Builds on:
+Status: **Delivered (2026-05-22)** · Builds on:
 [version23_design.md](version23_design.md) (editor polish + agent
 action-graph extensions) · Implementation:
 [version24_implementation.md](../2_implementation/version24_implementation.md)
+· Transcript:
+[version24_build.md](../3_transcripts/version24_build.md)
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `48295f9` | LOAD button — paste level text into a new local entry |
+| 2 | `75679d6` | prefers-color-scheme first-load theme default |
+| 3 | `b3fe638` | multi-coloured path overlay for ≥ 2 solutions |
+| 4 | `598fe47` | tutorial.txt — add row-3 platform so the level is solvable |
+| 5 | `38062f7` | investigation — below_ground.txt diagnosis (carry-over to v25) |
+| 6 | _this commit_ | acceptance + transcript; design + impl Delivered |
+
+Tests: 295 unit / 67 Playwright pass. Bundle 74.90 kB JS (gzip 26.07 kB).
+v9 §7 byte-identical engine invariant preserved across all six commits.
+
+Carry-over to v25: the agent's cell-resolved edge model is the
+wrong abstraction for tight-tolerance multi-jump levels. M5
+documented the diagnosis (edges carry CELL endpoints, physics
+moves the player by SUB-CELL pixels, multi-step plans accumulate
+sub-pixel drift). v25 must choose between sub-pixel edge
+endpoints or per-frame-trajectory planning; below_ground.txt and
+`precision_landing` ship together under the new model.
 
 ## 1. Purpose
 
