@@ -63,6 +63,27 @@ export class PlaytestScene extends Scene {
     this.restart();
   }
 
+  /**
+   * v21: override the player's pose + velocity. Used only by the v21
+   * per-action simulator (src/agent/simAction.js) which mints a
+   * PlaytestScene then forces the player to a specific (xPx, yPx,
+   * vx, vy, onGround) start state before stepping through one
+   * action's recording. The live launcher path does NOT call this;
+   * v17/v18/v19/v20 playtest behaviour is byte-unchanged.
+   *
+   * v9 §7 invariant note: this method lives on PlaytestScene, which
+   * is v9-original glue (not vendored upstream); vendored Player
+   * (which owns the x/y/vx/vy/onGround fields) is untouched.
+   */
+  setPlayerState({ x, y, vx = 0, vy = 0, onGround = false }) {
+    if (!this.player) return;
+    this.player.x = x;
+    this.player.y = y;
+    this.player.vx = vx;
+    this.player.vy = vy;
+    this.player.onGround = onGround;
+  }
+
   /** Rebuild fresh entities from the snapshot — deterministic (design §11). */
   restart() {
     const w = toWorld(this.parsed, this.legend);
