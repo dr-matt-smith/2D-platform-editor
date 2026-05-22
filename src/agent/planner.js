@@ -255,7 +255,13 @@ export function plan(parsed, legend, opts = {}) {
     recording: [],
     trace: [],
     stats: { steps: 0, jumps: 0, walks: 0, drops: 0 },
-    frame: 0,
+    // Frame 1, not 0 — the player spawns mid-air at the P cell and
+    // needs one update tick to settle onto the floor (set onGround =
+    // true). A space press emitted at frame 0 is silently ignored by
+    // the engine (`if (wantsJump && this.onGround)`); a 1-frame
+    // settle delay makes jumps-as-first-action work without any
+    // special-case code in the emitter.
+    frame: 1,
     currentDir: null,
     position: cellKey(graph.start.r, graph.start.c),
   };
