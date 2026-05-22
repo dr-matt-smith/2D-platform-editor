@@ -1,0 +1,15 @@
+{
+  "name": "Kenney New Platformer Pack",
+  "notes": "Kenney.nl CC0 platformer asset pack (see tiles/LICENSE.txt). v20 curated subset: dirt-block terrain, beige-character player, gold coin pickup, red flag exit, block_spikes hazard, hills-pattern background image. Full pack (Spritesheets, Sounds, Vector variants) not included — pull from kenney.nl if needed.",
+  "glyphs": {
+    "empty":  { "name": "Empty",       "char": ".", "role": "background", "image": null,                       "color": "#7ec8e3" },
+    "filled": { "name": "Dirt block",  "char": "#", "role": "terrain",    "image": "tiles/terrain_dirt.png",   "color": null },
+    "player": { "name": "Character",   "char": "P", "role": "entity",     "image": "tiles/character_idle.png", "color": null },
+    "exit":   { "name": "Flag",        "char": "E", "role": "entity",     "image": "tiles/flag_red.png",       "color": null },
+    "hazard": { "name": "Spike block", "char": "^", "role": "terrain",    "image": "tiles/block_spikes.png",   "color": null },
+    "pickup": { "name": "Gold coin",   "char": "o", "role": "entity",     "image": "tiles/coin_gold.png",      "color": null }
+  },
+  "images": {
+    "bg-hills": { "name": "Hills (pattern)", "role": "background", "image": "tiles/background_hills.png" }
+  }
+}

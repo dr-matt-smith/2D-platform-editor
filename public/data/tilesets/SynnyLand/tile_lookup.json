@@ -1,0 +1,15 @@
+{
+  "name": "Sunny Land",
+  "notes": "Pixel-art pack by ansimuz (CC0; see src.txt). v20: curated tile set — block + door + spikes from environment Props, frog from the Characters set (4-frame idle), cherry from Misc/Sunnyland items, back.png for the parallax sky.",
+  "glyphs": {
+    "empty":  { "name": "Empty",      "char": ".", "role": "background", "image": null,              "color": "#1b2a3a" },
+    "filled": { "name": "Block",      "char": "#", "role": "terrain",    "image": "tiles/block.png", "color": null },
+    "player": { "name": "Frog",       "char": "P", "role": "entity",     "image": "tiles/frog-idle.png", "color": null, "frames": 4 },
+    "exit":   { "name": "Door",       "char": "E", "role": "entity",     "image": "tiles/door.png",  "color": null },
+    "hazard": { "name": "Spikes",     "char": "^", "role": "terrain",    "image": "tiles/spikes.png","color": null },
+    "pickup": { "name": "Cherry",     "char": "o", "role": "entity",     "image": "tiles/cherry.png","color": null }
+  },
+  "images": {
+    "bg-sunny-back": { "name": "Sky (parallax back)", "role": "background", "image": "tiles/back.png" }
+  }
+}
