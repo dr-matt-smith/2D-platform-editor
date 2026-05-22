@@ -1,9 +1,32 @@
 # 2D Level Designer — Version 23 Design Document
 
-Status: Proposed · Date: 2026-05-22 · Builds on:
+Status: **Delivered (2026-05-22)** · Builds on:
 [version22_design.md](version22_design.md) (TSP-optimal agent + legend
 layout + locked-exit sprite via `imageLocked`) · Implementation:
-*to follow once this scope is approved*.
+[version23_implementation.md](../2_implementation/version23_implementation.md)
+· Transcript:
+[version23_build.md](../3_transcripts/version23_build.md)
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `fa9a723` | toolbar height pin + Play Settings popup title/HR |
+| 2 | `8887b09` | light/dark mode toggle (🌗 button, localStorage-persisted) |
+| 3 | `e1902f0` | viewport bounding rectangle in Design mode |
+| 4 | `efe0a60` | honour fit-to-screen in Play and Test modes |
+| 5 | `c4326e4` | minimisable solutions panel (keep path overlay visible) |
+| 6 | `beb041c` | agent action-graph completeness — drop_release + run_off |
+| 7 | _this commit_ | acceptance e2e + transcript; design + impl Delivered |
+
+Tests: 295 unit / 50 Playwright pass. Bundle 71.16 kB JS (gzip 24.74 kB).
+v9 §7 byte-identical engine invariant preserved across all seven commits.
+
+Carry-over to v24: `tutorial.txt` still reports "Exit unreachable
+from spawn" — the v23 trajectory probe diagnosed this as a
+**level-geometry** issue, not an action-graph gap. Fix is either
+level-redesign (intermediate platform between rows 4 and 2 on the
+right side) or engine extension (double-jump / wall-climb, which
+would break v9 §7 byte-identical invariant). `below_ground.txt`
+still dies at frame 49 — spawn-fall hazard touch.
 
 ## 1. Purpose
 

@@ -1,12 +1,26 @@
 # Version 23 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-22 · Design:
+Status: **Delivered (2026-05-22)** · Design:
 [../1_design/version23_design.md](../1_design/version23_design.md)
+· Transcript:
+[../3_transcripts/version23_build.md](../3_transcripts/version23_build.md)
 
 Seven small path-scoped commits. The two threads — editor / play
-polish (M1–M5) and agent action-graph completeness (M6) — interleave
-in low-risk order: tiny CSS / template changes land first, the
-larger agent work lands as the acceptance-gated finale, then docs.
+polish (M1–M5) and agent action-graph completeness (M6) — interleaved
+in low-risk order: tiny CSS / template changes landed first, the
+larger agent work landed as the acceptance-gated finale, then docs.
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `fa9a723` | toolbar height pin + popup title/HR |
+| 2 | `8887b09` | light/dark mode toggle |
+| 3 | `e1902f0` | viewport bounding rectangle |
+| 4 | `efe0a60` | honour fit-to-screen in Play / Test |
+| 5 | `c4326e4` | minimisable solutions panel |
+| 6 | `beb041c` | drop_release + run_off action types |
+| 7 | _this commit_ | acceptance e2e + transcript + Delivered |
+
+Tests at delivery: 295 unit / 50 Playwright. v9 §7 invariant preserved.
 
 ## Process (same discipline as v8–v22)
 
