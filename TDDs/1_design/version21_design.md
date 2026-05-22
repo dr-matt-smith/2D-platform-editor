@@ -144,18 +144,49 @@ recording validation) is unchanged — but used differently:
 The runner's replan logic survives as a safety net for edge cases
 (e.g. floating-point quirks), but should fire rarely.
 
-## 4. UX — no changes
+## 4. UX — countdown timer + tiered budget escalation
 
-v21 changes **planning internals only**. The Test toolbar button,
-dialog, trace list, Demo button, path overlay — all unchanged.
+v21 keeps the v20 surface (one `[Test]` toolbar button, same dialog
+shape, same path overlay) but adds a **visible time budget**:
 
-What the user sees:
+1. Clicking `[Test]` immediately opens a "Searching for a solution"
+   dialog with a **live countdown timer**. The default initial
+   budget is **5 seconds**.
+2. While the countdown is live, the agent works in chunks (graph
+   build per cell, A* expansion per ~50 nodes, replan attempts).
+   The timer ticks down by `0.1s` increments.
+3. **On success**: the dialog transitions to the v20 success state
+   (badge + stats + Demo button + trace) immediately.
+4. **On failure** (no solution within budget): the dialog shows
+   `✗ No solution within Ns` plus three escalation buttons:
+   **[Try 10s] [Try 15s] [Try 20s]**. Clicking any restarts the
+   agent with that budget; the countdown resumes.
+5. Esc/backdrop/Close cancel; the agent's async loop notices and
+   bails on the next yield point.
+
+What the user sees on the trace + overlay (unchanged structure,
+richer content):
 - More levels return `✓ Level completable` where v20 returned
   `✗ No solution found`.
 - The dialog's trace entries may show new `kind` values: `walk`,
   `jump` (with release-frame info in `why:`), `drop`, `wait`.
 - The path overlay's polyline traces the true parabolic arcs
   (sub-cell accuracy), not just cell-center linear segments.
+
+### 4.1  How more time helps
+
+The v21 agent is **deterministic per (level, graph, goal-ordering)**.
+Longer budgets unlock extra work in three places:
+
+| Extra time spent on… | What it buys |
+|---|---|
+| Larger candidate set per cell | More release-frame choices in the jump-action enumeration (e.g. `{2, 4, …, 42}` extended to `{1, 2, 3, …, 42}` — finer landing precision) |
+| Goal-ordering search | When `# pickup-required: K of N`, try multiple subsets/orderings (combinatorial); greedy nearest-first runs first, alternatives if time permits |
+| Replan budget | More attempts to recover from floating-point edge cases; cheap insurance against rare drift |
+
+The 5s default fits most v21-scope levels comfortably. The 10/15/20s
+ramps exist for tricky levels where the agent needs to try multiple
+goal orderings before finding one that satisfies physics.
 
 ## 5. Architecture / impact
 

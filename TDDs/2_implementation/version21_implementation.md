@@ -55,9 +55,11 @@ A* planner → UI polish → docs lines.
 | `src/agent/grid.test.js` | Existing tests reviewed: walk-edge / jump-edge / drop-edge assertions checked against the new model; tests asserting cell-pair edge counts may need update; new cases for action-edges (each edge has recording + endPos + endVel) | M3 |
 | `src/agent/planner.js` | A* node identifier extended from `"r,c"` to `"r,c|vyBucket"` where vyBucket = 0 (grounded) or 1 (mid-fall). Trace entries' `target` becomes `endCell`; new fields `endPos` + `release` (release-frame for jumps); recording concatenation uses each edge's pre-built `recording` instead of synthesizing from kind. `replan` semantics unchanged | M4 |
 | `src/agent/planner.test.js` | Existing tests reviewed; some may need expected-trace updates (richer entries); new cases for release-frame planning (a level requiring release-at-N picks the right N) | M4 |
-| `src/agent/runner.js` | `replanBudget` default returns to 3 (edges are correct-by-construction; replans should fire only on floating-point edge cases). `maxFrames` stays at 1200 | M4 |
+| `src/agent/runner.js` | Becomes async: yields periodically so the UI countdown can repaint. New `maxRuntimeMs` option (default 5000); replaces the v20.1 hard `replanBudget=10` cap with an elapsed-time check. `onProgress(elapsed, totalMs)` callback fires at each yield point. When time permits, retries with alternate goal-ordering variants. `maxFrames` (per-sim) stays at 1200 | M4 |
 | `src/agent/overlay.js` | Polyline uses each trace entry's `endPos` (pixel-precise). Jump segments interpolate the parabola at 6 intermediate frames (smooth arc instead of straight line). Numbered markers unchanged | M5 |
-| `src/agentDialog.js` | Trace renderer's `why:` string formatting reads action params: e.g. "jump right (release at frame 26) toward pickup #2 at (5,8)". No structural change | M5 |
+| `src/agentDialog.js` | New "searching" state: opens immediately with countdown `<output>` + cancel; transitions to success/failure when the runner resolves. Failure renders three escalation buttons (`[Try 10s] [Try 15s] [Try 20s]`) below the diagnostic, each re-invoking `testLevel` with the new budget. Trace renderer's `why:` string formatting reads action params: e.g. "jump right (release at frame 26) toward pickup #2 at (5,8)". | M5 |
+| `src/main.js` | `#testBtn` handler updates: opens the dialog in `searching` state immediately, then awaits `testLevel(..., {maxRuntimeMs: 5000, onProgress})` and updates the dialog. The onProgress callback ticks the countdown. Escalation callbacks rerun with 10/15/20s budgets | M5 |
+| `src/style.css` | New `.agent-dialog .countdown` (big monospace number), `.agent-dialog .escalation-row` (three side-by-side buttons), and a faint progress-bar `.agent-dialog .countdown-bar` rendered as a `<progress>` element | M5 |
 | `tests/agent-test-button.spec.js` | Existing 4 cases unchanged. New cases: tutorial.txt solves end-to-end; the user's tower-cherry level solves; demo replay reaches `phase=won` within predicted frame ±2 | M6 |
 | `TDDs/3_transcripts/version21_build.md` (new) | narrative, v8–v20 style | M6 |
 
@@ -151,7 +153,7 @@ Commit: `v21 m2: per-action simulator + PlaytestScene.setPlayerState`.
 
 Commit: `v21 m3: action-graph builder — edges correct-by-construction via simAction`.
 
-## Milestone 4 — A* over the action-graph
+## Milestone 4 — A* over the action-graph + async runner
 
 1. `src/agent/planner.js`:
    - A* node identifier becomes `"r,c|vyBucket"`. Walks +
@@ -172,16 +174,56 @@ Commit: `v21 m3: action-graph builder — edges correct-by-construction via simA
      (assert the plan's jump trace entry has the expected
      `release` field).
 3. `src/agent/runner.js`:
-   - `replanBudget` default → 3.
-   - `maxFrames` default stays at 1200.
+   - **Becomes `async`**. New signature: `await testLevel(parsed,
+     legend, tileset, { maxRuntimeMs = 5000, onProgress, signal })`.
+   - Internal yield helper `await new Promise(r => setTimeout(r,
+     0))` between chunks (graph-build-per-cell, A*-per-50-nodes,
+     replan attempts). `onProgress(elapsedMs, totalMs)` fires at
+     each yield.
+   - Termination: `(Date.now() - startTime) >= maxRuntimeMs`
+     OR `signal?.aborted` (Esc → cancel). `replanBudget` becomes
+     a SECONDARY safety cap (default 10) used only to protect
+     against runaway loops; primary cap is wall-clock.
+   - Goal-ordering search: greedy nearest-first runs first; if
+     time remains, tries alternative orderings (random subsets
+     for pickup-required = K of N; permutations for K = 'all').
+   - `maxFrames` (per-sim) stays at 1200.
 4. **Visible after this commit**: `[Test]` on `tutorial.txt`
-   should now return a solution.
+   should now return a solution within the 5s default. UI is
+   not yet wired to show the countdown — that lands in M5.
 
-Commit: `v21 m4: planner — A* over the action-graph; sub-cell endPos tracking`.
+Commit: `v21 m4: planner A* over action-graph + async runner with time budget`.
 
-## Milestone 5 — UI polish (overlay arcs + richer trace text)
+## Milestone 5 — UI: countdown timer + escalation + overlay arcs
 
-1. `src/agent/overlay.js`:
+1. `src/agentDialog.js`:
+   - New `openAgentDialog({ runAgent, initialBudgetMs, ... })`
+     shape — opens immediately in **searching** state with a
+     countdown display (`<output class="countdown">5.0s</output>`)
+     + a `<progress class="countdown-bar">` element.
+   - The `runAgent(maxRuntimeMs, onProgress)` callback (passed
+     in from `main.js`) is awaited; while it runs, `onProgress
+     (elapsedMs, totalMs)` updates the countdown.
+   - On resolve, dialog transitions to **success** or **failure**
+     state.
+   - Failure state renders three escalation buttons:
+     ```
+     ✗ No solution found within 5s.
+     The agent ran out of replan attempts.
+     Last simulation: timeout at frame 1200…
+                              [Try 10s] [Try 15s] [Try 20s] [Close]
+     ```
+     Each `[Try Ns]` re-invokes `runAgent(N*1000)`, transitions
+     back to searching state, repeats.
+   - Esc / backdrop close → aborts via `AbortController`
+     (passed into runAgent's `signal`).
+2. `src/main.js`:
+   - `#testBtn` click handler rewritten: opens the dialog in
+     searching state immediately; `runAgent` wrapper calls
+     `testLevel(parsed, legend, tileset, { maxRuntimeMs,
+     onProgress, signal })`. On success, paints overlay +
+     transitions dialog. On failure, dialog renders escalation.
+3. `src/agent/overlay.js`:
    - `renderSolutionOverlay` polyline construction extended: for
      `jump` trace entries, interpolate 6 intermediate
      `{xPx, yPx}` samples along the parabola between `startPos`
@@ -189,21 +231,15 @@ Commit: `v21 m4: planner — A* over the action-graph; sub-cell endPos tracking`
      of being a single straight line between cell centers.
    - Walk + drop edges still use endpoint pairs (linear).
    - Numbered markers unchanged.
-2. `src/agentDialog.js`:
-   - Trace renderer formats jump `why:` strings to include
-     release-frame info: "jump right (release at frame 26)
-     toward pickup #2 at (5,8)".
-   - No DOM structural change.
-3. `src/style.css`:
-   - No changes expected — the existing trace-list + path-
-     overlay styles cover the new behaviour. (If the longer
-     jump-with-release text overflows, a small CSS tweak
-     for `.trace-list li` may be needed.)
-4. **Visible after this commit**: agent dialog shows richer
-   trace; canvas overlay shows curved jump arcs; everything
-   else unchanged.
+4. `src/style.css`:
+   - `.agent-dialog .countdown` — large monospace timer.
+   - `.agent-dialog .countdown-bar` — `<progress>` styling.
+   - `.agent-dialog .escalation-row` — three buttons in a row.
+5. **Visible after this commit**: clicking `[Test]` immediately
+   shows a live 5-second countdown; on failure, three "Try N
+   seconds" buttons appear; canvas overlay shows curved jump arcs.
 
-Commit: `v21 m5: UI — parabolic arc overlay + release-frame trace text`.
+Commit: `v21 m5: UI — countdown timer + escalation flow + curved arc overlay`.
 
 ## Milestone 6 — e2e + transcript + Delivered
 
