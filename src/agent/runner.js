@@ -29,8 +29,13 @@ import { plan, replan } from './planner.js';
  * overlay's numbered markers.
  */
 export function testLevel(parsed, legend, tileset, opts = {}) {
-  const budget = opts.replanBudget ?? 3;
-  const maxFrames = opts.maxFrames ?? 600;
+  // v20.1 bumped: more replan headroom + a longer per-sim frame
+  // budget. Big walks-only levels (e.g. a 40+ cell flat traverse)
+  // need 200+ frames to walk; 1200 = 20 simulated seconds covers any
+  // sensible v20-scope level. Replan 10 lets the agent try several
+  // alternate route variants before declaring "no solution".
+  const budget = opts.replanBudget ?? 10;
+  const maxFrames = opts.maxFrames ?? 1200;
 
   let currentPlan = plan(parsed, legend);
   let lastSim = null;

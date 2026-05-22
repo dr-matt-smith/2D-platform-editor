@@ -27,10 +27,43 @@ const JUMP_FULL_TIME = (2 * JUMP_FORCE) / GRAVITY;
 const MAX_HORIZ_PX = SPEED * JUMP_FULL_TIME;
 const MAX_VERT_PX = (JUMP_FORCE * JUMP_FORCE) / (2 * GRAVITY);
 
-/** Max horizontal jump distance in CELLS, rounded down for safety. */
+/** Max horizontal jump distance in CELLS at start-height (full arc),
+ *  rounded down for safety. */
 export const JUMP_MAX_HORIZ_CELLS = Math.floor(MAX_HORIZ_PX / TILE);
 /** Max vertical jump height in CELLS, rounded down for safety. */
 export const JUMP_MAX_VERT_CELLS = Math.floor(MAX_VERT_PX / TILE);
+
+/**
+ * v20.1 — parabolic-envelope reach: max horizontal cell-delta the
+ * player can cover while landing at a specific vertical cell-delta
+ * `dr`. dr<0 is "above start" (jumping up), dr>0 is "below start"
+ * (dropping during the arc). dr=0 = full arc, same height.
+ *
+ * Replaces the v20 rectangular envelope check (which independently
+ * allowed |dr| ≤ 4 AND |dc| ≤ 8, accepting jumps like 8-across at
+ * 3-up that the physics cannot actually achieve — at 3 cells up, the
+ * arc has only carried the player ~6 cells, not 8).
+ *
+ * Derivation:
+ *   y(t) = -JUMP_FORCE * t + 0.5 * GRAVITY * t²       (engine convention)
+ *   x(t) = SPEED * t * sign(dir)
+ *   Land when y(t) = dr * TILE:
+ *     t = (JUMP_FORCE + sqrt(JUMP_FORCE² + 2 * GRAVITY * dr * TILE)) / GRAVITY
+ *   Max horizontal cells = floor(SPEED * t / TILE).
+ *
+ * Returns -1 when the height is unreachable (above the apex).
+ */
+export function maxDcForDr(dr) {
+  if (dr === 0) {
+    const tFull = (2 * JUMP_FORCE) / GRAVITY;
+    return Math.floor((SPEED * tFull) / TILE);
+  }
+  const drPx = dr * TILE;
+  const disc = JUMP_FORCE * JUMP_FORCE + 2 * GRAVITY * drPx;
+  if (disc < 0) return -1; // above apex — unreachable
+  const tLater = (JUMP_FORCE + Math.sqrt(disc)) / GRAVITY;
+  return Math.floor((SPEED * tLater) / TILE);
+}
 
 // Cost weights (in approximate frames) — used by A*. Walk is the cheapest;
 // jump pays the arc duration; drop is walk + 3 frames per fallen row.
@@ -95,6 +128,9 @@ function settle(grid, r, c) {
  * condition for v20. (Pathological "arc over a wall" cases are caught
  * by the runner's headless-sim validation: failed jumps trigger a
  * replan that excludes that edge.)
+ *
+ * v20.1: superseded for jump edges by isParabolaClear (below); kept
+ * for non-jump uses and as a coarse short-circuit.
  */
 function isLineClear(grid, r0, c0, r1, c1) {
   const dr = r1 - r0;
@@ -105,6 +141,51 @@ function isLineClear(grid, r0, c0, r1, c1) {
     const r = r0 + Math.round((i * dr) / steps);
     const c = c0 + Math.round((i * dc) / steps);
     if (isSolid(grid, r, c)) return false;
+  }
+  return true;
+}
+
+/**
+ * v20.1 — sample the actual parabola, not its bounding straight line,
+ * to validate that the player's AABB clears every `#` cell along the
+ * jump arc. The player launches from `(sr, sc)` with the held
+ * direction set toward `(tr, tc)`, follows the engine's physics
+ * (vy starts at -JUMP_FORCE, gravity GRAVITY downward, vx = ±SPEED),
+ * and we check the AABB at 8 evenly-spaced moments in the arc.
+ *
+ * This catches "straight line is clear but the arc dips into a wall
+ * mid-flight" cases that the v20 line-check missed. Conversely it's
+ * still an approximation — between samples the AABB could clip a
+ * wall briefly. 8 samples (a player AABB is one cell, so ~12 px per
+ * sample at full SPEED) is enough for cell-grain validation.
+ */
+function isParabolaClear(grid, sr, sc, tr, tc) {
+  const dc = tc - sc;
+  if (dc === 0) return false; // vertical-only jump goes nowhere useful
+  const dir = Math.sign(dc);
+  // Time when the arc returns to the target's y. The "+ sqrt" branch
+  // is the downward (later) crossing.
+  const drPx = (tr - sr) * TILE;
+  const disc = JUMP_FORCE * JUMP_FORCE + 2 * GRAVITY * drPx;
+  if (disc < 0) return false; // physically unreachable
+  const tLand = (JUMP_FORCE + Math.sqrt(disc)) / GRAVITY;
+  const samples = 8;
+  for (let i = 1; i < samples; i++) {
+    const t = (i / samples) * tLand;
+    const xPx = sc * TILE + dir * SPEED * t;
+    const yPx = sr * TILE + (-JUMP_FORCE * t + 0.5 * GRAVITY * t * t);
+    // AABB at (xPx, yPx, TILE, TILE) — clamp to "just inside" so a
+    // landing-precise touch on the cell-edge below isn't a collision.
+    const c0 = Math.floor(xPx / TILE);
+    const c1 = Math.floor((xPx + TILE - 0.001) / TILE);
+    const r0 = Math.floor(yPx / TILE);
+    const r1 = Math.floor((yPx + TILE - 0.001) / TILE);
+    for (let r = r0; r <= r1; r++) {
+      for (let c = c0; c <= c1; c++) {
+        if (r < 0 || c < 0 || r >= grid.length || c >= grid[r].length) continue;
+        if (grid[r][c] === '#') return false;
+      }
+    }
   }
   return true;
 }
@@ -145,21 +226,29 @@ function addDropEdges(grid, n, edges) {
 
 function addJumpEdges(grid, n, edges) {
   if (!isGrounded(grid, n.r, n.c)) return;
+  // v20.1: parabolic envelope (max |dc| varies with dr), not a
+  // rectangle. Skip dc=0 (vertical-only) entirely — those land the
+  // player back at the same cell.
   for (let dr = -JUMP_MAX_VERT_CELLS; dr <= JUMP_MAX_VERT_CELLS; dr++) {
-    for (let dc = -JUMP_MAX_HORIZ_CELLS; dc <= JUMP_MAX_HORIZ_CELLS; dc++) {
-      if (dr === 0 && dc === 0) continue;
+    const maxDc = maxDcForDr(dr);
+    if (maxDc <= 0) continue;
+    for (let dc = -maxDc; dc <= maxDc; dc++) {
+      if (dc === 0) continue;
       const r = n.r + dr;
       const c = n.c + dc;
       if (!isWalkable(grid, r, c)) continue;
       if (!isGrounded(grid, r, c)) continue; // jump targets must be landings
       // Skip cases the walk edge already covers (immediate same-row neighbour).
       if (dr === 0 && Math.abs(dc) === 1) continue;
-      if (!isLineClear(grid, n.r, n.c, r, c)) continue;
+      // v20.1: parabolic-arc clearance check replaces the v20
+      // straight-line check. Catches cases like "8-cell jump at 3-up
+      // crosses tower wall during descent" that the line-check missed.
+      if (!isParabolaClear(grid, n.r, n.c, r, c)) continue;
       edges.push({
         to: cellKey(r, c),
         kind: 'jump',
         cost: JUMP_COST,
-        dir: dc > 0 ? 'right' : dc < 0 ? 'left' : 'still',
+        dir: dc > 0 ? 'right' : 'left',
       });
     }
   }

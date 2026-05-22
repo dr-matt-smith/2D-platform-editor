@@ -132,9 +132,15 @@ test('buildNavGraph: jump edge between two platforms across a gap', () => {
   assert.ok(reachable.includes('1,6'), `jumps: ${reachable.join(', ')}`);
 });
 
-test('buildNavGraph: jump edge blocked by intervening wall', () => {
-  // Wall at row 1 col 4 blocks the straight-line check between
-  // (1, 1) and (1, 7).
+test('buildNavGraph: jump arc clears a single-column wall (v20.1 parabola check)', () => {
+  // v20 (straight-line check) used to reject this jump because the
+  // line from (1, 1) to (1, 6) crosses the wall at (1, 4). v20.1's
+  // parabola sampler instead traces the actual arc, which goes high
+  // enough to clear the wall — so the agent CAN propose the jump.
+  // (Whether the player actually lands at (1, 6) with held-direction
+  // physics is a separate question the runner's sim validates +
+  // replans against; see the v20 transcript's "release direction
+  // mid-jump" carry-forward.)
   const text = [
     '.........',
     '#P..#.E.#',
@@ -147,8 +153,7 @@ test('buildNavGraph: jump edge blocked by intervening wall', () => {
   const fromSpawn = g.edges.get(cellKey(1, 1));
   const jumps = fromSpawn.filter((e) => e.kind === 'jump');
   const reachable = jumps.map((e) => e.to);
-  // (1, 6) is on the far side of the wall; no straight path → no jump.
-  assert.equal(reachable.includes('1,6'), false);
+  assert.ok(reachable.includes('1,6'), `jumps: ${reachable.join(', ')}`);
 });
 
 test('buildNavGraph: spawn-cell node + edge map non-empty for trivial level', () => {
