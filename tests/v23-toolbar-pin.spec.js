@@ -27,6 +27,54 @@ test('v23 M1: canvas top position is identical in edit vs play', async ({ page }
   expect(Math.abs(topEdit - topPlay)).toBeLessThanOrEqual(1);
 });
 
+test('v23 fixup: toolbar height pin survives wrapped toolbar (narrow viewport)', async ({ page }) => {
+  // Force a wrapped edit-mode toolbar by setting a narrow viewport.
+  // At 700px wide the 10+ controls + selects can't all fit on one row,
+  // so the toolbar grows to 2+ rows. Entering Play (only Restart +
+  // Exit visible) must NOT shrink the toolbar — that would jump the
+  // canvas.
+  await page.setViewportSize({ width: 700, height: 900 });
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  await page.waitForTimeout(300);
+  const toolbarH0 = await page.locator('.pane.right > .status').evaluate(
+    (el) => el.getBoundingClientRect().height,
+  );
+  // Sanity check: toolbar wrapped (more than the base 40px floor).
+  expect(toolbarH0).toBeGreaterThan(48);
+  const top0 = await page.locator('#preview').evaluate(
+    (c) => c.getBoundingClientRect().top,
+  );
+  // Enter Play.
+  await page.locator('#playBtn').click();
+  await page.waitForFunction(() => document.body.classList.contains('playmode'));
+  await page.waitForTimeout(100);
+  const toolbarH1 = await page.locator('.pane.right > .status').evaluate(
+    (el) => el.getBoundingClientRect().height,
+  );
+  const top1 = await page.locator('#preview').evaluate(
+    (c) => c.getBoundingClientRect().top,
+  );
+  // The pinned height must match the recorded edit-mode height
+  // (± 1px sub-pixel rounding).
+  expect(Math.abs(toolbarH1 - toolbarH0)).toBeLessThanOrEqual(1);
+  // Canvas top must stay put.
+  expect(Math.abs(top1 - top0)).toBeLessThanOrEqual(1);
+  // Inline minHeight must be set on the toolbar.
+  const inlineMinH = await page.locator('.pane.right > .status').evaluate(
+    (el) => el.style.minHeight,
+  );
+  expect(inlineMinH).toMatch(/\d+px/);
+  // Exit → inline minHeight cleared, toolbar can re-wrap naturally.
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.body.classList.contains('playmode'));
+  await page.waitForTimeout(80);
+  const afterExitInline = await page.locator('.pane.right > .status').evaluate(
+    (el) => el.style.minHeight,
+  );
+  expect(afterExitInline).toBe('');
+});
+
 test('v23 M1: Play Settings popup has title + HR divider', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#preview');

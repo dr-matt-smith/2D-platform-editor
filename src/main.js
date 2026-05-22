@@ -315,6 +315,23 @@ function drawViewportGuide(octx, parsed, tile) {
 }
 
 const paneRight = document.querySelector('.pane.right');
+// v23 fixup: dynamic toolbar-height pin for Play / Test entry. The
+// base CSS `.status { min-height: 40px }` covers the common one-row
+// layout, but at higher browser zoom the edit-mode buttons wrap onto
+// TWO rows — at which point switching to Play (2 buttons, always
+// one row) would shrink the toolbar from ~76px to 40px and the
+// canvas-wrap below would reclaim ~36px, jumping the canvas up. So
+// we read the LIVE toolbar height at the moment of the Play / Test
+// click and pin it for the duration; unpin on exit.
+const toolbarEl = document.querySelector('.pane.right > .status');
+function pinToolbarHeight() {
+  if (!toolbarEl) return;
+  const h = toolbarEl.getBoundingClientRect().height;
+  toolbarEl.style.minHeight = `${Math.ceil(h)}px`;
+}
+function unpinToolbarHeight() {
+  if (toolbarEl) toolbarEl.style.minHeight = '';
+}
 
 function applyLegendLayout() {
   paneRight.classList.remove('layout-right', 'layout-bottom');
@@ -818,6 +835,13 @@ function tryPlaytest(opts = {}) {
     problemsEl.classList.add('flash');
     return;
   }
+  // v23 fixup: pin the toolbar at its CURRENT (edit-mode) height
+  // BEFORE we add `body.playmode` — otherwise the play-only buttons
+  // (Restart / Exit) on a single row would let the toolbar shrink.
+  // The base CSS min-height: 40px floor stays as a no-op safety
+  // net; this pin overrides it whenever the edit-mode toolbar
+  // happened to wrap to 2+ rows (e.g. browser zoomed in).
+  pinToolbarHeight();
   // Enter play (or demo) mode. The launcher's rAF loop now drives the
   // canvas; the editor's run() is gated on editorMode === 'edit'.
   // v20: demo mode is the same shape as play mode but driven by a
@@ -888,6 +912,9 @@ function exitPlaytest() {
   document.body.classList.remove('playmode');
   document.body.classList.remove('demomode');
   document.removeEventListener('keydown', onPlayEsc, true);
+  // v23 fixup: release the dynamic toolbar pin so the base CSS min-
+  // height takes over and the row re-wraps naturally if dims changed.
+  unpinToolbarHeight();
   // Release the play-mode display-size pin so the editor's run()
   // below sizes #preview from its (restored) intrinsic dims.
   previewCanvas.style.width = '';
@@ -1005,6 +1032,12 @@ document.querySelector('#testBtn').addEventListener('click', () => {
   // v22 M5: testmode hides the legend (same CSS rule as playmode /
   // demomode). Cleared in onClose; the dialog calls onClose for both
   // success-close and failure-close so we don't need a per-state hook.
+  // v23 fixup: pin the toolbar height BEFORE testmode adds. The CSS
+  // doesn't hide the toolbar in testmode, but if the user has the
+  // dialog open + the layout shifts, we want a stable height. Also
+  // covers the "user zoomed in → 2-row toolbar" case symmetrically
+  // with Play mode.
+  pinToolbarHeight();
   document.body.classList.add('testmode');
   // v22 M5 fit kicked off the re-fit synchronously; v23 M4 wraps it
   // in rAF so the layout has recalc'd post-testmode-class-add. The
@@ -1024,6 +1057,8 @@ document.querySelector('#testBtn').addEventListener('click', () => {
     onDemo: (recording) => tryPlaytest({ inputSource: recording }),
     onClose: () => {
       document.body.classList.remove('testmode');
+      // v23 fixup: release the toolbar pin so it can re-wrap naturally.
+      unpinToolbarHeight();
       requestAnimationFrame(() => applyFitToScreen()); // legend track restored → re-fit
       octx.clearRect(0, 0, overlay.width, overlay.height);
     },
