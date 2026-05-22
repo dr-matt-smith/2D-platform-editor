@@ -72,6 +72,22 @@ export function launchPlaytest(parsed, legend, tileset, canvas, opts = {}) {
   // sprite-loading; v14 made the editor renderer the source of pixel
   // truth for the playtest canvas).
   const assets = new AssetLoader();
+  // v25 M5: pre-warm the AudioContext now — we're inside a user-
+  // gesture handler (the Play / Test click), which browsers
+  // require for autoplay. AssetLoader.play() lazily creates the
+  // context on FIRST sound; without this prime, that creation +
+  // suspended→running resume happens at the same moment as the
+  // first pickup, costing ~50ms of audio↔visual desync. Poking
+  // assets.audio directly (rather than adding a method on the
+  // vendored AssetLoader) keeps v9 §7 byte-identical-to-upstream
+  // for `src/play/core/assets.js`.
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (Ctx && !assets.audio) {
+      assets.audio = new Ctx();
+      if (assets.audio.state === 'suspended') assets.audio.resume();
+    }
+  } catch { /* AudioContext unavailable — assets.play() will no-op */ }
 
   const game = new Game({ canvas, assets, input });
 
