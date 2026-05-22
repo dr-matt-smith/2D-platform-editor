@@ -35,7 +35,17 @@ export const JUMP_MAX_VERT_CELLS = Math.floor(MAX_VERT_PX / TILE);
 // Cost weights (in approximate frames) — used by A*. Walk is the cheapest;
 // jump pays the arc duration; drop is walk + 3 frames per fallen row.
 const WALK_COST = 5; // ≈ 5 frames per cell at SPEED=240, TILE=20
-const JUMP_COST = 30;
+// v20 hotfix: JUMP_COST must reflect the *real* arc duration so A*
+// doesn't prefer a jump-chain to a walk-chain over flat ground.
+// Full jump arc = 2*JUMP_FORCE/GRAVITY = 0.7s = 42 frames at 60fps;
+// +3 frames safety margin so the next emitted action lands AFTER the
+// player has touched down (onGround = true → next jump fires cleanly).
+// With cost 45, a 9-cell distance costs 45 frames as a jump or 45
+// frames as a 9-cell walk — same — but for any 8-or-fewer-cell
+// reach the walk strictly wins. Pure-jump scenarios (e.g. a gap with
+// no walkable floor between platforms) still pick the jump because
+// no walk edge exists at all.
+const JUMP_COST = 45;
 const DROP_BASE = 5;
 const DROP_PER_ROW = 3;
 
