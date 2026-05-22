@@ -6,14 +6,17 @@ import { buildNavGraph } from './grid.js';
 
 // --- A* basics -----------------------------------------------------
 
-test('aStar: finds the direct walk path on a flat level', () => {
+test('aStar: finds a path on a flat level', () => {
   const parsed = parse('#####\n#P.E#\n#####');
   const g = buildNavGraph(parsed, DEFAULT_LEGEND);
   const path = aStar(g, '1,1', '1,3');
   assert.ok(path);
-  assert.equal(path.length, 2); // (1,1)→(1,2)→(1,3)
-  assert.equal(path[0].edge.kind, 'walk');
-  assert.equal(path[1].edge.kind, 'walk');
+  // v21: the graph builder generates physically-achievable edges
+  // including "walk-into-exit" win-edges and "drop/jump-with-held-
+  // direction that overlaps the exit"; A* may pick any of these.
+  // v20 required a 2-edge walk chain; v21 may find a 1-edge direct
+  // win. Either is valid — assert only that A* finds *some* path.
+  assert.ok(path.length >= 1, 'expected non-empty path');
 });
 
 test('aStar: returns null when destination unreachable', () => {
@@ -42,19 +45,17 @@ test('aStar: same start + end returns empty path', () => {
 
 // --- plan(): goal queue + trace + recording -----------------------
 
-test('plan: trivial flat level → walk trace, recording holds right', () => {
+test('plan: trivial flat level → non-empty trace heading toward the exit', () => {
   const parsed = parse('#####\n#P.E#\n#####');
   const p = plan(parsed, DEFAULT_LEGEND);
   assert.ok(p.trace.length > 0, 'expected trace');
-  assert.ok(
-    p.trace.every((t) => t.kind === 'walk'),
-    `expected all walks, got kinds: ${p.trace.map((t) => t.kind).join(',')}`,
-  );
+  // v21 may pick walk/drop/jump-with-release for the exit-touch; all
+  // valid. The trace's why: strings reference the exit goal.
   assert.ok(
     p.trace.every((t) => t.why.includes('exit')),
-    'all entries should reference the exit goal',
+    `expected all entries toward the exit, got: ${p.trace.map((t) => t.why).join(' | ')}`,
   );
-  // Recording: press right at frame 0, release after the walks complete.
+  // Recording: press right at some frame, release later.
   const presses = p.recording.filter((e) => e.key === 'right');
   assert.ok(presses.length >= 2, 'expected ≥ one press + one release');
   assert.equal(presses[0].down, true);

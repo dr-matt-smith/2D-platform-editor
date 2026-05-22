@@ -7,7 +7,6 @@ import {
   JUMP_MAX_VERT_CELLS,
   cellKey,
   settle,
-  isLineClear,
 } from './grid.js';
 
 // --- physics constants are exposed as reach envelope --------------
@@ -34,18 +33,9 @@ test('settle: falls off the world → null', () => {
   assert.equal(cell, null);
 });
 
-test('isLineClear: passes when no `#` between cells', () => {
-  const parsed = parse('.....\n.....\n#####');
-  // Row 0 to row 0, col 0 to col 4. The straight line samples row 0
-  // cols 1..3 (all `.`), no solids.
-  assert.equal(isLineClear(parsed.grid, 0, 0, 0, 4), true);
-});
-
-test('isLineClear: rejects when a `#` is on the straight path', () => {
-  const parsed = parse('..#..\n.....\n#####');
-  // Row 0 col 0 to row 0 col 4: samples col 1 (.), col 2 (#) → blocked.
-  assert.equal(isLineClear(parsed.grid, 0, 0, 0, 4), false);
-});
+// (v21: isLineClear was a v20 helper for the straight-line jump
+// check; v21 replaced jump validation with full physics simulation
+// via simAction, so the helper is no longer exported.)
 
 // --- buildNavGraph: start / pickups / exit extraction ----------
 
@@ -83,7 +73,8 @@ test('buildNavGraph: hazard cells produce no walk edges to/from', () => {
 });
 
 test('buildNavGraph: drop edge off a ledge to lower platform', () => {
-  // Two platforms with a 1-col gap; player walks off, falls 2 rows.
+  // Player walks off the right edge of the upper platform and lands
+  // on the lower platform.
   const text = [
     '##........',
     '##........',
@@ -93,18 +84,23 @@ test('buildNavGraph: drop edge off a ledge to lower platform', () => {
   ].join('\n');
   const parsed = parse(text);
   const g = buildNavGraph(parsed, DEFAULT_LEGEND);
-  // From (2, 1) — but spawn settles to (2, 1)? Let me find a clearer
-  // ground cell with a drop. Take (2, 2): grounded by # at (3, 2).
-  // Wait (2, 2) is `.` at row 2 col 2; row 3 col 2 is `#`. Grounded.
-  // Walking right to (2, 3): row 3 col 3 is `.` → not grounded → drop.
-  // Falls to (3, 3) which is `.` → keep falling → (4, 3) which is `#` ...
-  // wait `isWalkable(4, 3)` checks grid[4][3] which is `#` (in the
-  // bottom floor row), so NOT walkable. settle stops one above:
-  // (3, 3) is walkable AND grounded (4, 3 is `#`). So drop to (3, 3).
+  // From (2, 2): grounded by row 3 col 2 = `#`. drop_right walks off
+  // the right ledge (row 3 col 3 = `.`) and falls to the lower
+  // platform (row 4 cols 3-9 = `#`).
+  //
+  // v21 drift note: the drop action holds the direction key for the
+  // full fall (not just the first cell of motion as v20's discrete
+  // edge model assumed), so the landing cell drifts further right
+  // than v20's "land directly below the ledge edge". Test only that
+  // SOME drop edge lands on row 3 (which is the row whose AABB
+  // centre sits on top of the row-4 floor at y=80).
   const edgesFromMid = g.edges.get(cellKey(2, 2));
   const drops = edgesFromMid.filter((e) => e.kind === 'drop');
-  assert.ok(drops.length > 0);
-  assert.equal(drops[0].to, '3,3');
+  assert.ok(drops.length > 0, 'expected at least one drop edge');
+  // Drop right ends somewhere on row 3 (cell centre y=70 → row 3).
+  const rightDrops = drops.filter((d) => d.dir === 'right');
+  assert.ok(rightDrops.length > 0);
+  assert.ok(rightDrops[0].to.startsWith('3,'), `expected row 3, got ${rightDrops[0].to}`);
 });
 
 test('buildNavGraph: jump edge between two platforms across a gap', () => {
