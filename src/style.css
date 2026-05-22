@@ -18,6 +18,22 @@
   color-scheme: dark;
 }
 
+/* v23 M2: light theme. `body.lightmode` re-binds the same five
+   custom properties at body scope, so everything that already
+   reads var(--bg)/--fg/--line/--dim/--accent flips automatically.
+   --panel + --guide keep the same "slightly off the base" feel
+   for textured surfaces. */
+body.lightmode {
+  --bg: #f6f6f6;
+  --panel: #ececec;
+  --line: #cccccc;
+  --guide: #dcdcdc;
+  --fg: #1a1a1a;
+  --dim: #666666;
+  --accent: #1e7e34;
+  color-scheme: light;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -117,10 +133,10 @@ body {
   /* v23 M1: pin the toolbar height so it doesn't shrink when the
      edit-mode controls (selects, multi-button row) hide and the
      play-mode pair (Restart / Exit) takes over. Value = the natural
-     edit-mode height with the shipped fonts; the canvas-wrap below
-     no longer reclaims those pixels mid-mode-switch, so the canvas
-     origin stays put. */
-  min-height: 38px;
+     edit-mode height with the shipped fonts AFTER M2's 🌗 button
+     was added; the canvas-wrap below no longer reclaims those
+     pixels mid-mode-switch, so the canvas origin stays put. */
+  min-height: 40px;
 }
 #newBtn,
 #dlBtn,
@@ -436,6 +452,74 @@ body.testmode .pane.right.layout-bottom { grid-template-rows: auto 1fr 0; }
 body.playmode #fitBtn,
 body.demomode #fitBtn,
 body.testmode #fitBtn { display: none; }
+
+/* v23 M2: theme toggle button — same shape as the rest of the
+   right-pane toolbar buttons. Single Unicode glyph (🌗) regardless
+   of state; the title attribute (set by main.js) tells the user
+   which mode they're toggling INTO. */
+#themeBtn {
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+#themeBtn:hover { background: #3d3d40; }
+body.lightmode #themeBtn {
+  background: #e0e0e0;
+  color: var(--fg);
+}
+body.lightmode #themeBtn:hover { background: #d2d2d2; }
+
+/* v23 M2: under the light theme, the rest of the toolbar buttons
+   inherit the same pale-on-pale look — the hardcoded #333 (the
+   dark-theme button bg) would otherwise stay dark and break
+   contrast. We re-bind them in one block here, matching the
+   `body.lightmode #themeBtn` look above. */
+body.lightmode #newBtn,
+body.lightmode #dlBtn,
+body.lightmode #playBtn,
+body.lightmode #playSettingsBtn,
+body.lightmode #testBtn,
+body.lightmode #fitBtn,
+body.lightmode #restartBtn,
+body.lightmode #exitBtn,
+body.lightmode .cf-btn,
+body.lightmode .legend .glyph,
+body.lightmode .legend .legend-toggle {
+  background: #e0e0e0;
+  color: var(--fg);
+}
+body.lightmode #newBtn:hover,
+body.lightmode #dlBtn:hover,
+body.lightmode #playBtn:hover,
+body.lightmode #playSettingsBtn:hover,
+body.lightmode #testBtn:hover,
+body.lightmode #fitBtn:hover,
+body.lightmode #restartBtn:hover,
+body.lightmode #exitBtn:hover,
+body.lightmode .cf-btn:hover,
+body.lightmode .legend .glyph:hover,
+body.lightmode .legend .legend-toggle:hover {
+  background: #d2d2d2;
+}
+/* The agent-dialog success/fail badge backgrounds are tuned for the
+   dark theme — re-bind their bg for light so the green/red text
+   stays readable. */
+body.lightmode .agent-dialog .badge.ok       { background: #d8f0e0; color: #1e7e34; }
+body.lightmode .agent-dialog .badge.fail     { background: #f2d0d0; color: #b22222; }
+body.lightmode .agent-dialog .badge.searching { background: #fff3cd; color: #856404; }
+body.lightmode .modal-backdrop { background: rgba(0, 0, 0, 0.3); }
+/* The textarea + select + number inputs default to dark — flip them too. */
+body.lightmode #src,
+body.lightmode select,
+body.lightmode .play-settings input[type="number"] {
+  background: #ffffff;
+  color: var(--fg);
+  border-color: var(--line);
+}
 
 /* v22: fit-to-screen button — same toolbar-button look as the rest;
    ACTIVE state gets a brighter background so the user sees it's on. */

@@ -62,6 +62,7 @@ document.querySelector('#app').innerHTML = `
         <button id="playSettingsBtn" class="edit-only" title="Play settings (pickup requirement, etc.)">Play Settings</button>
         <button id="testBtn" class="edit-only" title="AI agent: does the level have a solution?">Test</button>
         <button id="fitBtn" class="edit-only" title="Fit canvas to available space (toggle)">⛶ Fit</button>
+        <button id="themeBtn" class="edit-only" title="Toggle light/dark mode">🌗</button>
         <button id="newBtn" class="edit-only" title="New level (opens the levels dialog)">New</button>
         <label class="level-pick edit-only" title="Switch level (unsaved drafts are guarded)">
           <span>Level:</span>
@@ -249,6 +250,10 @@ let editorMode = 'edit';
 let legendLayout = readLayoutPref('v22.legendLayout', 'right'); // 'right'|'bottom'
 let legendCollapsed = readBoolPref('v22.legendCollapsed', false);
 let fitToScreen = readBoolPref('v22.fitToScreen', false);
+// v23 M2: light/dark theme — 'dark' default; `body.lightmode` re-binds
+// the CSS custom properties (--bg/--fg/--line/--dim/--accent) to a
+// pale palette. Persisted; survives reloads.
+let theme = readEnumPref('v23.theme', 'dark', ['dark', 'light']);
 
 function readLayoutPref(key, def) {
   try {
@@ -262,9 +267,20 @@ function readBoolPref(key, def) {
     return v === null ? def : v === 'true';
   } catch { return def; }
 }
+function readEnumPref(key, def, allowed) {
+  try {
+    const v = localStorage.getItem(key);
+    return allowed.includes(v) ? v : def;
+  } catch { return def; }
+}
 function writePref(key, value) {
   try { localStorage.setItem(key, String(value)); } catch { /* localStorage unavailable */ }
 }
+
+function applyTheme() {
+  document.body.classList.toggle('lightmode', theme === 'light');
+}
+applyTheme();
 
 const paneRight = document.querySelector('.pane.right');
 
@@ -869,6 +885,21 @@ fitBtn.addEventListener('click', () => {
   writePref('v22.fitToScreen', fitToScreen);
   updateFitBtnState();
   applyFitToScreen();
+});
+
+// v23 M2: light/dark theme toggle. The 🌗 button flips `body.lightmode`
+// which re-binds the CSS custom properties. Title reflects current
+// state so the user knows which mode they're toggling INTO.
+const themeBtn = document.querySelector('#themeBtn');
+function updateThemeBtnState() {
+  themeBtn.title = theme === 'light' ? 'Theme: light (click for dark)' : 'Theme: dark (click for light)';
+}
+updateThemeBtnState();
+themeBtn.addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  writePref('v23.theme', theme);
+  applyTheme();
+  updateThemeBtnState();
 });
 
 // v22: window resize re-fits (debounced 50ms; reads clientWidth/Height
