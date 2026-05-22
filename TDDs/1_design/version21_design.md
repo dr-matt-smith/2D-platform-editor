@@ -1,8 +1,11 @@
 # 2D Level Designer — Version 21 Design Document
 
-Status: Proposed · Date: 2026-05-22 · Builds on:
-[version20_design.md](version20_design.md) (AI level-tester agent)
-· Implementation: *to follow once this scope is approved*.
+Status: **Delivered** · Date: 2026-05-22 · Builds on:
+[version20_design.md](version20_design.md) (AI level-tester agent) ·
+Implementation:
+[../2_implementation/version21_implementation.md](../2_implementation/version21_implementation.md) ·
+Transcript:
+[../3_transcripts/version21_build.md](../3_transcripts/version21_build.md)
 
 ## 1. Purpose
 

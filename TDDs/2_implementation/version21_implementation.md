@@ -1,7 +1,37 @@
 # Version 21 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-22 · Design:
-[../1_design/version21_design.md](../1_design/version21_design.md)
+Status: **Delivered (M1–M6)** · Date: 2026-05-22 · Design:
+[../1_design/version21_design.md](../1_design/version21_design.md) ·
+Transcript: [../3_transcripts/version21_build.md](../3_transcripts/version21_build.md)
+
+Delivered, one path-scoped commit per milestone (the user's
+in-flight `fred.txt` / `above_ground2.txt` / `manifest.json` /
+`__temp/` files stayed out throughout; M5 caught an IDE-pre-staged
+`__temp/test_levels/` batch and un-staged it):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `bcb4e8b` | `src/agent/actions.js` — taxonomy (walk/jump-with-release/drop/wait) + `enumerateActions` (28 candidates/cell) + `actionToRecording` + `actionToWhy`; 18 unit tests |
+| 2 | `3cd338d` | `src/play/playtestScene.js` `setPlayerState` + `src/agent/simAction.js` per-action sim with reusable context; 8 unit tests including release-mid-arc proof |
+| 3 | `334e640` | `src/agent/grid.js` rewritten — edges by simulation, win-edge redirect to actual exit cell |
+| 4 | `8cba94b` | `src/agent/runner.js` async; `maxRuntimeMs` + `onProgress` + `signal`; planner.js threads tileset; +3 unit tests |
+| 5 | `4bf6388` | UI: dialog state machine (searching / success / failure-with-escalation) + countdown timer + parabolic arc overlay + wall-clock-locked `#tickScriptedInput(dt)` |
+| 6 | _this commit_ | `tests/agent-test-button.spec.js` +4 v21 cases + v21 transcript + Delivered |
+
+Outcome: 257 → 284 unit tests (+27 across the four new agent
+modules). Playwright 6 → 8 (4 v20 cases unchanged + 4 v21 cases:
+countdown visible, escalation buttons, tower-cherry solves,
+above_ground solves). Both builds clean throughout. The v9 §7
+byte-identical-to-upstream invariant for `src/play/core/*` +
+`src/play/entities/*` preserved across all six commits.
+
+**v21 acceptance criteria results** (measured on the live deploy):
+- ✓ User-reported tower-cherry level solves (the headline target)
+- ✓ `above_ground.txt` solves (3 jumps, 5 pickups, 45 ms)
+- ✗ `tutorial.txt` still fails — needs TSP-optimal pickup ordering
+  (the 4-pickup `oooo` row defeats greedy nearest-first). Becomes
+  v22's headline acceptance criterion.
+- ✗ `below_ground.txt` still fails — same class of issue.
 
 Six small path-scoped commits. The headline architectural shift —
 **action-sequence edges built by per-edge simulation** — splits

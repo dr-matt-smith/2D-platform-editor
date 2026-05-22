@@ -106,3 +106,93 @@ test('agent: unreachable level → failure dialog with red badge', async ({ page
   // Stats / Demo button must NOT be present.
   await expect(page.locator('.cf-btn[data-act="demo"]')).toHaveCount(0);
 });
+
+// --- v21 new cases ---------------------------------------------------
+
+test('v21: searching state shows live countdown + cancel button', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  await page.locator('#testBtn').click();
+  // Dialog opens IMMEDIATELY in searching state — badge + countdown
+  // + progress bar should all be present before the agent resolves.
+  await page.waitForSelector('.badge.searching', { timeout: 1000 });
+  await expect(page.locator('.countdown')).toBeVisible();
+  await expect(page.locator('.countdown-bar')).toBeVisible();
+  // Searching dialog shows the initial 5s budget.
+  const text = await page.locator('.countdown').innerText();
+  expect(text).toMatch(/\d+\.\ds/);
+  // A Cancel button is available.
+  await expect(page.locator('.cf-btn[data-act="close"]')).toBeVisible();
+});
+
+test('v21: failure dialog offers Try 10s / 15s / 20s escalation buttons', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  const unreachable = [
+    '##........##',
+    '#P........E#',
+    '##........##',
+    '............',
+    '............',
+  ].join('\n');
+  await injectLevel(page, unreachable);
+  await page.waitForTimeout(400);
+
+  await page.locator('#testBtn').click();
+  await page.waitForSelector('.badge.fail', { timeout: 5000 });
+  // Escalation row with three Try Ns buttons.
+  await expect(page.locator('.cf-btn[data-act="try10"]')).toBeVisible();
+  await expect(page.locator('.cf-btn[data-act="try15"]')).toBeVisible();
+  await expect(page.locator('.cf-btn[data-act="try20"]')).toBeVisible();
+});
+
+test('v21: user-reported tower-cherry level now solves', async ({ page }) => {
+  // The level the user reported as failing in v20.1: cherry on top of
+  // a 3-wide tower; reach it then continue to the exit. v20.1's plan
+  // collected the cherry but couldn't navigate back. v21's release-
+  // direction-mid-jump unlock lets the agent land precisely on the
+  // tower top, then walk off + continue.
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  const tower = `# name: untitled
+# size: 24x14
+# pickup-required: 1
+${'.'.repeat(24)}
+${'.'.repeat(24)}
+${'.'.repeat(24)}
+${'.'.repeat(24)}
+${'.'.repeat(24)}
+${'.'.repeat(24)}
+.....o..................
+...###..................
+...###..................
+...###........P......E..
+########################
+########################
+########################
+########################`;
+  await injectLevel(page, tower);
+  await page.waitForTimeout(400);
+
+  await page.locator('#testBtn').click();
+  await page.waitForSelector('.badge.ok', { timeout: 8000 });
+  // Stats should show 1 pickup collected (the cherry).
+  const pillsText = await page.locator('.stat-pill').allInnerTexts();
+  expect(pillsText.some((t) => /1\s*pickup/i.test(t))).toBe(true);
+});
+
+test('v21: above_ground.txt solves (v20.1 couldnt)', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  // Load the shipped above_ground level.
+  const text = await page.evaluate(async () => {
+    const r = await fetch('data/levels/above_ground.txt');
+    return r.ok ? await r.text() : null;
+  });
+  expect(text).toBeTruthy();
+  await injectLevel(page, text);
+  await page.waitForTimeout(400);
+
+  await page.locator('#testBtn').click();
+  await page.waitForSelector('.badge.ok', { timeout: 8000 });
+});
