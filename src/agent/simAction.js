@@ -38,8 +38,14 @@ export function makeSimContext(parsed, legend, tileset = null) {
  * Simulate `action` from `startState` against an existing context.
  * Same outcome shape as `simulateAction(...)`; just faster because
  * `PlaytestScene` + `toWorld()` are reused.
+ *
+ * v25 M4: optional `opts.collectTrajectory` flag. When set, the
+ * returned object carries `trajectory: [{x, y}]` — the player's
+ * AABB-top-left for every frame of the simulation. grid.js uses
+ * this for the precision_landing edge rule (±2 px target-centre
+ * passes). When unset, no trajectory work — back-compat fast path.
  */
-export function simulateActionInContext(ctx, startState, action) {
+export function simulateActionInContext(ctx, startState, action, opts = {}) {
   ctx.scene.phase = 'play';
   ctx.scene.score = 0;
   for (const c of ctx.scene.coins) c.collected = false;
@@ -58,7 +64,7 @@ export function simulateActionInContext(ctx, startState, action) {
   // in one tick.
   ctx.scene.simFrame = 0;
   ctx.scene.simTime = 0;
-  return runSimLoop(ctx.scene, ctx.fakeGame.input, action);
+  return runSimLoop(ctx.scene, ctx.fakeGame.input, action, opts);
 }
 
 /**
@@ -97,8 +103,10 @@ export function simulateAction({ parsed, legend, tileset = null, startState, act
  *    the player lands (wasInAir → onGround transition). Reports
  *    cost = actual landing frame.
  */
-function runSimLoop(scene, input, action) {
+function runSimLoop(scene, input, action, opts = {}) {
   const nominalCost = actionCost(action);
+  const collectTrajectory = opts.collectTrajectory === true;
+  const trajectory = collectTrajectory ? [] : null;
   // v23 M6: drop_release and run_off are also "air actions" — they
   // may leave the ground mid-recording; loop should early-exit on
   // landing rather than running to the recording's nominal end.
@@ -134,31 +142,35 @@ function runSimLoop(scene, input, action) {
     const prevX = scene.player.x;
     scene.update(DT);
 
+    // v25 M4: per-frame trajectory (top-left of AABB) for the
+    // precision_landing edge rule.
+    if (trajectory) trajectory.push({ x: scene.player.x, y: scene.player.y });
+
     if (Math.abs(scene.player.vx) > 0 && Math.abs(scene.player.x - prevX) < 0.1 && frame > 0) {
       collided = true;
     }
     if (scene.phase === 'dead') {
-      return finalise(scene, frame + 1, 'dead', collided);
+      return finalise(scene, frame + 1, 'dead', collided, trajectory);
     }
     if (scene.phase === 'won') {
-      return finalise(scene, frame + 1, 'won', collided);
+      return finalise(scene, frame + 1, 'won', collided, trajectory);
     }
     if (!scene.player.onGround) {
       wasInAir = true;
     } else if (wasInAir && isAirAction) {
-      return finalise(scene, frame + 1, 'ok', collided);
+      return finalise(scene, frame + 1, 'ok', collided, trajectory);
     }
   }
-  // Walks completing normally: nominalCost is the canonical cost
+  // ↓ Walks completing normally: nominalCost is the canonical cost
   // (the extra +1 loop iteration was to process the release event;
   // the action's duration from the live engine's POV is exactly
   // nominalCost frames of motion).
   const cost = isAirAction ? maxFrames : nominalCost;
   const outcome = scene.player.onGround ? 'ok' : 'mid-air';
-  return finalise(scene, cost, outcome, collided);
+  return finalise(scene, cost, outcome, collided, trajectory);
 }
 
-function finalise(scene, cost, outcome, collided) {
+function finalise(scene, cost, outcome, collided, trajectory = null) {
   const px = scene.player.x;
   const py = scene.player.y;
   const cx = px + scene.player.w / 2;
@@ -180,6 +192,8 @@ function finalise(scene, cost, outcome, collided) {
       vy: scene.player.vy,
       onGround: scene.player.onGround,
     },
+    // v25 M4: per-frame trajectory (only when caller asked).
+    trajectory,
     collided,
     cost,
   };

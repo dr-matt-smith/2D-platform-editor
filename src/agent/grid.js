@@ -126,11 +126,20 @@ export function buildNavGraph(parsed, legend = null, tileset = null) {
     ? makeSimContext(parsed, legend, tileset)
     : null;
 
+  // v25 M4: precision-landing targets — pickup cells + exit cells.
+  // When non-empty, addActionEdges requests per-frame trajectories
+  // from simAction and emits additional edges to targets the
+  // trajectory passes within ±2 px of (centre-to-centre). Lets the
+  // agent reach 1-tile pickups that the cell-resolved edge model
+  // misses. When empty (level has no pickups + no exit, rare),
+  // trajectory collection is skipped — back-compat fast path.
+  const precisionTargets = [...pickupCells, ...exitCells];
+
   for (const [k, n] of nodes) {
     edges.set(k, []);
     if (!isGrounded(grid, n.r, n.c)) continue;
     if (!ctx) continue;
-    addActionEdges(ctx, parsed, n, edges.get(k), exitCells);
+    addActionEdges(ctx, parsed, n, edges.get(k), exitCells, precisionTargets);
   }
 
   return {
@@ -155,7 +164,7 @@ function canBuildSimContext(parsed) {
   return false;
 }
 
-function addActionEdges(ctx, parsed, cell, edgesArr, exitCells) {
+function addActionEdges(ctx, parsed, cell, edgesArr, exitCells, precisionTargets = []) {
   const startState = {
     x: cell.c * TILE,
     y: cell.r * TILE,
@@ -164,8 +173,15 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells) {
     onGround: true,
   };
 
+  // v25 M4: request trajectory when we have targets to check
+  // against. Each precision-landing target = a cell where landing
+  // would otherwise not be detected by cell-resolved end position.
+  const wantsTrajectory = precisionTargets.length > 0;
+
   for (const action of enumerateActions()) {
-    const result = simulateActionInContext(ctx, startState, action);
+    const result = simulateActionInContext(ctx, startState, action, {
+      collectTrajectory: wantsTrajectory,
+    });
 
     let targetR = result.endCell.r;
     let targetC = result.endCell.c;
@@ -212,6 +228,49 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells) {
       endState: result.endState,
       isWinEdge,
     });
+
+    // v25 M4: precision_landing. For each precisionTarget the
+    // trajectory passes within ±2 px of (centre-to-centre) while
+    // DESCENDING (vy > 0 at the previous frame), emit an
+    // additional edge to that target's cell. AABB-vs-cell-centre
+    // is the natural test for a 1-tile target — the player's
+    // centre must be near the target's centre with some downward
+    // momentum. Skipped when result.trajectory is null (no
+    // precision targets requested).
+    if (result.trajectory && result.outcome === 'ok') {
+      for (const t of precisionTargets) {
+        const tcx = t.c * TILE + TILE / 2;
+        const tcy = t.r * TILE + TILE / 2;
+        const tk = cellKey(t.r, t.c);
+        // Skip self-loops and the regular-cell-resolved target (it
+        // already has an edge above).
+        if (tk === cellKey(targetR, targetC)) continue;
+        if (t.r === cell.r && t.c === cell.c) continue;
+        let prevY = startState.y;
+        for (const pt of result.trajectory) {
+          const pcx = pt.x + TILE / 2;
+          const pcy = pt.y + TILE / 2;
+          const descending = pt.y > prevY;
+          if (descending && Math.abs(pcx - tcx) <= 2 && Math.abs(pcy - tcy) <= 2) {
+            edgesArr.push({
+              to: tk,
+              kind: action.kind,
+              cost: result.cost,
+              dir: action.params.dir,
+              action,
+              recording: actionToRecording(action, 0),
+              endPos: result.endPos,
+              endVel: result.endVel,
+              endState: result.endState,
+              isWinEdge: false,
+              precision: true,
+            });
+            break; // one precision edge per (cell, action, target)
+          }
+          prevY = pt.y;
+        }
+      }
+    }
   }
 }
 
