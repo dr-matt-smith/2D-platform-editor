@@ -111,6 +111,17 @@ test('agent: unreachable level → failure dialog with red badge', async ({ page
 test('v21: searching state shows live countdown + cancel button', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#preview');
+  // v25 fixup: inject below_ground.txt as the test level — it takes
+  // the most planner work of any shipped level, so the searching
+  // state is reliably visible for long enough for the assertions
+  // below to land. The default level (tutorial) resolves too fast
+  // post-v25 for the searching state to be observably distinct.
+  const text = await page.evaluate(async () => {
+    const r = await fetch('data/levels/below_ground.txt');
+    return await r.text();
+  });
+  await injectLevel(page, text);
+  await page.waitForTimeout(300);
   await page.locator('#testBtn').click();
   // Dialog opens IMMEDIATELY in searching state — badge + countdown
   // + progress bar should all be present before the agent resolves.
@@ -118,8 +129,8 @@ test('v21: searching state shows live countdown + cancel button', async ({ page 
   await expect(page.locator('.countdown')).toBeVisible();
   await expect(page.locator('.countdown-bar')).toBeVisible();
   // Searching dialog shows the initial 5s budget.
-  const text = await page.locator('.countdown').innerText();
-  expect(text).toMatch(/\d+\.\ds/);
+  const countdownText = await page.locator('.countdown').innerText();
+  expect(countdownText).toMatch(/\d+\.\ds/);
   // A Cancel button is available.
   await expect(page.locator('.cf-btn[data-act="close"]')).toBeVisible();
 });

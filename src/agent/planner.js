@@ -14,6 +14,8 @@
 // list without breaking callers.
 
 import { buildNavGraph, cellKey } from './grid.js';
+import { makeSimContext, simulateActionInContext } from './simAction.js';
+import { TILE } from '../play/constants.js';
 
 // ---- A* over the nav-graph ---------------------------------------------
 
@@ -337,25 +339,54 @@ function emitLegInputs(steps, subgoalName, ctx) {
     if (edge.kind === 'jump') {
       ctx.recording.push({ frame: ctx.frame, key: 'space', down: true });
       ctx.recording.push({ frame: ctx.frame + 1, key: 'space', down: false });
+      // v25 M2: emit the action's mid-arc direction release at the
+      // build-time edge's `holdFrames` parameter. v24 M5 documented
+      // this fix in isolation as regressing above_ground.txt; v25's
+      // sub-pixel re-simulation (below) propagates the actual
+      // endState so subsequent edges' start positions track physics
+      // instead of cell-pixels, making the release-aware trajectory
+      // converge end-to-end.
+      const hf = edge.action?.params?.holdFrames;
+      if (hf != null && hf < edge.cost && ctx.currentDir) {
+        ctx.recording.push({ frame: ctx.frame + hf, key: ctx.currentDir, down: false });
+        ctx.currentDir = null;
+      }
       ctx.stats.jumps++;
     } else if (edge.kind === 'walk') {
       ctx.stats.walks++;
     } else if (edge.kind === 'drop') {
       ctx.stats.drops++;
+    } else if (edge.kind === 'drop_release') {
+      const rf = edge.action?.params?.releaseFrame;
+      if (rf != null && rf < edge.cost && ctx.currentDir) {
+        ctx.recording.push({ frame: ctx.frame + rf, key: ctx.currentDir, down: false });
+        ctx.currentDir = null;
+      }
+      ctx.stats.drops++;
+    } else if (edge.kind === 'run_off') {
+      ctx.stats.walks++;
     }
-    // v24 M5 investigation: tried emitting a mid-arc direction release
-    // here (at `startFrame + edge.action.params.holdFrames`) to match
-    // the build-time edge's predicted trajectory — fixes the surface
-    // diagnostic on below_ground.txt (player no longer dies at frame
-    // 49 in the hazard pit) BUT regresses above_ground.txt because
-    // that level's existing solve relied on the held-dir-throughout
-    // trajectory landing on a coincidentally-valid platform. The
-    // deeper root cause is the cell-resolved edge model vs the
-    // continuous-x simulation; a v25 architectural fix is needed.
-    // Reverted to v23 behaviour pending that work.
+
+    // v25 M2: re-simulate the action from the previous step's
+    // actual endState so the cost we advance `ctx.frame` by matches
+    // what the live engine will produce. Without this, the
+    // recording's event timings diverge from physics for any
+    // multi-step plan with sub-pixel drift. Falls back to the
+    // build-time `edge.cost` when simContext is unavailable (e.g.
+    // levels with no spawn — test fixtures).
+    let stepCost = edge.cost;
+    if (ctx.simContext && ctx.prevEndState && edge.action) {
+      const reSim = simulateActionInContext(
+        ctx.simContext,
+        ctx.prevEndState,
+        edge.action,
+      );
+      stepCost = reSim.cost;
+      ctx.prevEndState = reSim.endState;
+    }
 
     const startFrame = ctx.frame;
-    ctx.frame += edge.cost;
+    ctx.frame += stepCost;
     ctx.trace.push({
       kind: edge.kind,
       target: { r: tr, c: tc },
@@ -406,6 +437,24 @@ export function plan(parsed, legend, opts = {}) {
   const goals = resolveGoals(graph, requiredPickups);
   if (goals.length === 0) return emptyPlan(graph);
 
+  // v25 M2: sub-pixel-aware planner. Re-simulate each step's action
+  // from the PREVIOUS step's actual endState (not the cell-pixel
+  // start the build-time edge assumed). The cell-resolved graph
+  // stays for A* search; this re-sim is purely for cost +
+  // endState propagation so the recording's frame timings match
+  // what the live engine will see.
+  //
+  // canBuildSimContext gating: matches buildNavGraph — if the level
+  // has no spawn, simContext can't be created and we fall back to
+  // build-time edge costs (the v24-and-earlier behaviour, byte-
+  // identical when simContext is null).
+  let simContext = null;
+  try {
+    simContext = makeSimContext(parsed, legend, tileset);
+  } catch {
+    simContext = null;
+  }
+
   const ctx = {
     recording: [],
     trace: [],
@@ -419,6 +468,20 @@ export function plan(parsed, legend, opts = {}) {
     frame: 1,
     currentDir: null,
     position: cellKey(graph.start.r, graph.start.c),
+    // v25 M2: simContext + prevEndState carry the sub-pixel state
+    // across emit-leg calls. Initialised to the spawn cell's
+    // grounded state — matches what the live engine's spawn-fall
+    // settle leaves the player in (v22 M1).
+    simContext,
+    prevEndState: simContext
+      ? {
+          x: graph.start.c * TILE,
+          y: graph.start.r * TILE,
+          vx: 0,
+          vy: 0,
+          onGround: true,
+        }
+      : null,
   };
   const unreachable = [];
 
