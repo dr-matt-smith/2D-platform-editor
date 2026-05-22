@@ -282,6 +282,38 @@ function applyTheme() {
 }
 applyTheme();
 
+// v23 M3: dashed-rect guide for the play-time viewport. Reads
+// parsed.meta.viewport (null = fit-whole, {w,h} = scrolling-window)
+// and paints onto the editor's #overlay. Editor-only (run() in
+// playmode early-returns before reaching the draw chain that calls
+// this).
+function drawViewportGuide(octx, parsed, tile) {
+  const vp = parsed?.meta?.viewport;
+  if (!vp) return;
+  const { w: vw, h: vh } = vp;
+  // Focus cell: the player spawn (P) when present; otherwise the
+  // geometric centre of the world.
+  let cc = Math.floor(parsed.meta.width / 2);
+  let cr = Math.floor(parsed.meta.height / 2);
+  outer:
+  for (let r = 0; r < parsed.grid.length; r++) {
+    const row = parsed.grid[r];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === 'P') { cc = c; cr = r; break outer; }
+    }
+  }
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const x = clamp((cc - vw / 2) * tile, 0, Math.max(0, (parsed.meta.width  - vw)) * tile);
+  const y = clamp((cr - vh / 2) * tile, 0, Math.max(0, (parsed.meta.height - vh)) * tile);
+  octx.save();
+  octx.setLineDash([6, 4]);
+  octx.strokeStyle = 'rgba(255, 220, 100, 0.9)';
+  octx.lineWidth = 2;
+  // Inset by 1 px so the dashed stroke renders fully inside the rect.
+  octx.strokeRect(x + 1, y + 1, vw * tile - 2, vh * tile - 2);
+  octx.restore();
+}
+
 const paneRight = document.querySelector('.pane.right');
 
 function applyLegendLayout() {
@@ -551,6 +583,12 @@ function run() {
   if (overlay.width !== ctx.canvas.width) overlay.width = ctx.canvas.width;
   if (overlay.height !== ctx.canvas.height) overlay.height = ctx.canvas.height;
   octx.clearRect(0, 0, overlay.width, overlay.height);
+
+  // v23 M3: dashed-yellow guide rectangle showing where the play-time
+  // viewport (if declared via `# viewport: WxH`) will sit. Centred on
+  // the player spawn cell, clamped to world bounds. Editor-only — the
+  // guide repaints from this same chain on every reflow.
+  drawViewportGuide(octx, parsed, TILE);
 
   // v22: re-fit if the level dims changed (intrinsic dims drive the
   // scale factor).
