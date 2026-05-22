@@ -40,6 +40,28 @@ export const RELEASE_FRAMES = [2, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 42];
  *  direction for at most this long" bound. */
 const DROP_HOLD_FRAMES_BUDGET = 60;
 
+/* v23 M6: action-graph completeness. The v21 set (walk, jump with 12
+   release-frames, drop) covers the common cases but cannot enumerate:
+     - the "drop and RELEASE direction mid-fall" trajectory that lets
+       the player descend more vertically (analog of release-mid-jump,
+       but for drops)
+     - the "walk N cells THEN fall off" trajectory where the prior walk
+       builds horizontal carry into the fall
+   These add 4 + 5 + 2 + 2 = ~14 new edges per platform-edge cell. */
+
+/** v23 M6: explicit release frames for drop_release — analog of
+ *  RELEASE_FRAMES for jumps. Each value is the frame at which the held
+ *  direction key is RELEASED (vx → 0). Pre-release: vx held;
+ *  post-release: pure vertical fall. */
+export const DROP_RELEASE_FRAMES = [8, 16, 24, 32];
+
+/** v23 M6: walk-distance variants for run_off — how many cells to
+ *  walk before letting gravity take over. The walk and the fall are
+ *  one continuous held-direction recording; the simulator decides
+ *  when "walking off the edge" actually fires based on cell geometry.
+ *  Lengths 2..6 give the agent 5 distinct carry distances. */
+export const RUN_OFF_WALK_CELLS = [2, 3, 4, 5, 6];
+
 /**
  * Enumerate all candidate actions from a (grounded) cell. Returns a
  * fresh array of `{ kind, params }` objects. Cell shape: `{r, c}`.
@@ -50,8 +72,10 @@ const DROP_HOLD_FRAMES_BUDGET = 60;
  * cell with no fatal collision.
  *
  * Per cell: 2 walks + 24 jumps (12 release-frames × 2 dirs) + 2
- * drops = 28 candidates. Single-cell walks; the planner's A* chains
- * them for longer traverses.
+ * drops = 28 candidates. v23 M6 adds 8 drop_release variants
+ * (4 release-frames × 2 dirs) + 10 run_off variants (5 walk-cells
+ * × 2 dirs) = 18 new candidates → 46 total per cell. Single-cell
+ * walks; the planner's A* chains them for longer traverses.
  */
 export function enumerateActions() {
   const actions = [];
@@ -61,6 +85,20 @@ export function enumerateActions() {
       actions.push({ kind: 'jump', params: { dir, holdFrames } });
     }
     actions.push({ kind: 'drop', params: { dir } });
+    // v23 M6: drop with EXPLICIT mid-fall direction release. The held
+    // direction is released at `releaseFrame`, so vx drops to 0 and
+    // the rest of the fall is vertical. Distinct landings vs drop's
+    // held-throughout behaviour, especially across narrow gaps.
+    for (const releaseFrame of DROP_RELEASE_FRAMES) {
+      actions.push({ kind: 'drop_release', params: { dir, releaseFrame } });
+    }
+    // v23 M6: run_off — walk N cells (building vx to walk-speed), then
+    // continue holding direction through the resulting fall. Encodes
+    // "walk along this platform and step off the end" as an explicit
+    // edge. Falls back to a long-walk in the absence of a ledge.
+    for (const walkCells of RUN_OFF_WALK_CELLS) {
+      actions.push({ kind: 'run_off', params: { dir, walkCells } });
+    }
   }
   return actions;
 }
@@ -76,6 +114,15 @@ export function actionCost(action) {
   if (kind === 'walk') return params.cells * WALK_FRAMES_PER_CELL;
   if (kind === 'jump') return JUMP_ARC_FRAMES;
   if (kind === 'drop') return DROP_HOLD_FRAMES_BUDGET;
+  // v23 M6: drop_release holds direction for releaseFrame frames,
+  // then releases; budget for the post-release fall is the same as
+  // drop's standard buffer.
+  if (kind === 'drop_release') return DROP_HOLD_FRAMES_BUDGET;
+  // v23 M6: run_off — walkCells*5 frames of walking + a fall buffer
+  // (same magnitude as drop). The simulator decides actual cost.
+  if (kind === 'run_off') {
+    return params.walkCells * WALK_FRAMES_PER_CELL + DROP_HOLD_FRAMES_BUDGET;
+  }
   if (kind === 'wait') return params.frames;
   throw new Error(`unknown action kind: ${kind}`);
 }
@@ -107,6 +154,18 @@ export function actionToRecording(action, frameStart = 0) {
   } else if (kind === 'drop') {
     events.push({ frame: frameStart, key: params.dir, down: true });
     events.push({ frame: frameStart + DROP_HOLD_FRAMES_BUDGET, key: params.dir, down: false });
+  } else if (kind === 'drop_release') {
+    // v23 M6: hold dir from start; RELEASE at releaseFrame so vx
+    // drops to 0 mid-fall, yielding a more-vertical descent.
+    events.push({ frame: frameStart, key: params.dir, down: true });
+    events.push({ frame: frameStart + params.releaseFrame, key: params.dir, down: false });
+  } else if (kind === 'run_off') {
+    // v23 M6: hold dir throughout — walk along ground then carry into
+    // the fall. The "off-ledge" transition is determined by geometry,
+    // not the recording.
+    const total = params.walkCells * WALK_FRAMES_PER_CELL + DROP_HOLD_FRAMES_BUDGET;
+    events.push({ frame: frameStart, key: params.dir, down: true });
+    events.push({ frame: frameStart + total, key: params.dir, down: false });
   } else if (kind === 'wait') {
     // No key events; just elapsed time.
   } else {
@@ -133,6 +192,13 @@ export function actionToWhy(action, subgoalName = '') {
     return `jump ${params.dir} (release at frame ${params.holdFrames})${sub}`;
   }
   if (kind === 'drop') return `drop off ledge ${params.dir}${sub}`;
+  if (kind === 'drop_release') {
+    return `drop ${params.dir} (release at frame ${params.releaseFrame})${sub}`;
+  }
+  if (kind === 'run_off') {
+    const noun = params.walkCells === 1 ? 'cell' : 'cells';
+    return `walk ${params.dir} ${params.walkCells} ${noun} then carry into fall${sub}`;
+  }
   if (kind === 'wait') return `wait ${params.frames} frame${params.frames === 1 ? '' : 's'}`;
   return `${kind}${sub}`;
 }

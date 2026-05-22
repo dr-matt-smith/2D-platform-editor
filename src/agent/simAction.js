@@ -99,7 +99,13 @@ export function simulateAction({ parsed, legend, tileset = null, startState, act
  */
 function runSimLoop(scene, input, action) {
   const nominalCost = actionCost(action);
-  const isAirAction = action.kind === 'jump' || action.kind === 'drop';
+  // v23 M6: drop_release and run_off are also "air actions" — they
+  // may leave the ground mid-recording; loop should early-exit on
+  // landing rather than running to the recording's nominal end.
+  const isAirAction = action.kind === 'jump'
+    || action.kind === 'drop'
+    || action.kind === 'drop_release'
+    || action.kind === 'run_off';
   // v21: the recording is offset by 1 frame (events start at f=1);
   // the loop's first iteration applies advance(0) with no events,
   // which acts as the player's settle frame. Walks need

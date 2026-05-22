@@ -28,9 +28,29 @@ test('constants: RELEASE_FRAMES has 12 evenly-spread choices ending at the full 
 
 // --- enumerateActions -----------------------------------------------
 
-test('enumerateActions yields 28 candidates per cell (2 walks + 24 jumps + 2 drops)', () => {
+test('enumerateActions yields 46 candidates per cell (v23 = v21 28 + 18 new)', () => {
   const actions = enumerateActions();
-  assert.equal(actions.length, 28);
+  // v21: 2 walks + 24 jumps + 2 drops = 28
+  // v23 M6: + 8 drop_release (4 frames × 2 dirs) + 10 run_off (5 cells × 2 dirs) = 18
+  assert.equal(actions.length, 46);
+});
+
+test('v23 M6: enumerateActions includes drop_release for both dirs × 4 release frames', () => {
+  const actions = enumerateActions();
+  const dropRelease = actions.filter((a) => a.kind === 'drop_release');
+  assert.equal(dropRelease.length, 8);
+  const rightDR = dropRelease.filter((a) => a.params.dir === 'right');
+  const releases = rightDR.map((a) => a.params.releaseFrame).sort((a, b) => a - b);
+  assert.deepEqual(releases, [8, 16, 24, 32]);
+});
+
+test('v23 M6: enumerateActions includes run_off for both dirs × 5 walkCells', () => {
+  const actions = enumerateActions();
+  const runOff = actions.filter((a) => a.kind === 'run_off');
+  assert.equal(runOff.length, 10);
+  const rightRO = runOff.filter((a) => a.params.dir === 'right');
+  const walkCells = rightRO.map((a) => a.params.walkCells).sort((a, b) => a - b);
+  assert.deepEqual(walkCells, [2, 3, 4, 5, 6]);
 });
 
 test('enumerateActions covers both directions for every kind', () => {
@@ -83,6 +103,23 @@ test('actionToRecording: jump emits dir+space press, space release at +1, dir re
   assert.deepEqual(events[2], { frame: 101, key: 'space', down: false });
   // Frame 126 (= 100 + 26): dir release.
   assert.deepEqual(events[3], { frame: 126, key: 'left', down: false });
+});
+
+test('v23 M6: actionToRecording for drop_release releases dir at releaseFrame', () => {
+  const events = actionToRecording({ kind: 'drop_release', params: { dir: 'right', releaseFrame: 16 } }, 50);
+  assert.deepEqual(events, [
+    { frame: 50, key: 'right', down: true },
+    { frame: 66, key: 'right', down: false },
+  ]);
+});
+
+test('v23 M6: actionToRecording for run_off holds dir for walkCells*5 + 60 frames', () => {
+  const events = actionToRecording({ kind: 'run_off', params: { dir: 'left', walkCells: 3 } }, 0);
+  // 3 cells × 5 frames = 15, + 60 fall buffer = 75 total.
+  assert.deepEqual(events, [
+    { frame: 0, key: 'left', down: true },
+    { frame: 75, key: 'left', down: false },
+  ]);
 });
 
 test('actionToRecording: jump with full-arc holdFrames=42 releases at end of arc', () => {
