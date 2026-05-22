@@ -36,7 +36,7 @@ focused improvements:
    jump-release timings), each with its own `[Demo]` button and
    path-overlay colour.
 
-### Thread B — Legend layout polish
+### Thread B — Legend layout polish + fit-to-screen
 
 Per the user's wishlist:
 
@@ -50,6 +50,13 @@ Per the user's wishlist:
    for authoring; during playtest or agent-demo it's irrelevant.
    v18's `.edit-only` class infrastructure already covers Play
    mode; v22 extends to Test (the agent dialog) and Demo.
+5. **Fit-to-screen zoom button** — toggles a mode that resizes
+   the `#preview` canvas via CSS to fill the available
+   canvas-wrap area (width × height) while preserving the
+   level's aspect ratio. Reacts to legend state: minimising the
+   legend or swapping it to the bottom REVEALS more area, and
+   the canvas re-fits automatically. Off-mode = natural intrinsic
+   sizing (today's behaviour).
 
 ## 2. Current state
 
@@ -154,7 +161,49 @@ Two new buttons rendered above the legend:
 - **Right ↔ Bottom**: a small layout-swap button. Cycles
   between the two layouts.
 
-### 3.5  Hide legend in play/test/demo
+### 3.5  Fit-to-screen zoom
+
+`src/main.js` adds a `fitToScreen` state flag (persisted in
+localStorage, default `false` on first load) and a helper:
+
+```js
+function applyFitToScreen() {
+  if (!fitToScreen) {
+    previewCanvas.style.width = '';
+    previewCanvas.style.height = '';
+    return;
+  }
+  // Available area = canvas-wrap dims minus padding.
+  const wrap = document.querySelector('.canvas-wrap');
+  const availW = wrap.clientWidth - 24;  // 12px padding × 2
+  const availH = wrap.clientHeight - 24;
+  // Canvas intrinsic dims (from current parsed level).
+  const intrinsicW = previewCanvas.width;
+  const intrinsicH = previewCanvas.height;
+  const scale = Math.min(availW / intrinsicW, availH / intrinsicH);
+  previewCanvas.style.width  = `${intrinsicW * scale}px`;
+  previewCanvas.style.height = `${intrinsicH * scale}px`;
+}
+```
+
+The function is called from:
+- `[fit]` button click (toggles `fitToScreen`).
+- `setLegendLayout()` (legend right ↔ bottom changes the
+  wrap dims).
+- `setLegendCollapsed()` (collapsing reclaims ~170 px of width).
+- `run()` after each reflow (level resize → new intrinsic dims).
+- A debounced `window.resize` listener.
+
+In Play / Test / Demo modes the existing CSS-pin from v18
+(`previewCanvas.style.width = (viewport.w ?? gridW) * TILE`)
+takes over; fit-to-screen sets inline width which would
+conflict, so `tryPlaytest()` clears the fit-mode inline style
+on entry and `exitPlaytest()` restores it.
+
+`image-rendering: pixelated` (set in v18's CSS) keeps the
+upscaled rendering crisp.
+
+### 3.6  Hide legend in play/test/demo
 
 - v18's `.edit-only` CSS class covers Play mode (`body.playmode
   .edit-only { display: none; }`).
@@ -197,7 +246,26 @@ of icons; `[↕]` swaps to bottom layout.
 The v17/v21 default — legend below the canvas, role groups in a
 horizontal row.
 
-### 4.3  Test/Demo mode hides the legend
+### 4.3  Fit-to-screen button
+
+A small `[⛶]` button (or `[Fit]`) in the toolbar — proposed
+position: next to `[Play Settings]` / `[Test]`, since it's an
+editor-mode utility. Click toggles fit-mode on/off. The
+button reflects state (filled icon when on, outline when off).
+
+When fit-mode is ON:
+- Canvas scales to fill the visible wrap area.
+- Legend changes (minimise / restore / swap) trigger a re-fit
+  automatically — the user doesn't need to re-click [Fit].
+- Window resize triggers a debounced re-fit.
+
+When fit-mode is OFF:
+- Canvas displays at its intrinsic size (gridW × editorTILE),
+  clipped by `max-width: 100%` when the wrap is narrower.
+
+The persisted choice survives reloads.
+
+### 4.4  Test/Demo mode hides the legend
 
 The agent's `[Test]` flow opens a modal dialog. The legend can
 be hidden (via `body.testmode` class) so the visible area below
@@ -207,7 +275,7 @@ visible" if implementation cost is non-trivial.
 For Demo mode (recording playback), the legend hides via the
 existing `body.demomode` rule.
 
-### 4.4  Multi-solution dialog
+### 4.5  Multi-solution dialog
 
 The agent dialog's success state extends to render a list:
 
@@ -238,8 +306,8 @@ focused-one rendering).
 | `src/agent/runner.js` | Returns `solutions: []` array (up to 5); `result.solution = solutions[0]` for back-compat |
 | `src/agentDialog.js` | Multi-solution list renderer; each solution row has Demo + focus-trace |
 | `src/agent/overlay.js` | Focused-solution overlay path (single colour for v22; multi-colour as v23 candidate) |
-| `src/main.js` | Legend layout state machine (right/bottom + collapsed); body classes for test/demo modes |
-| `src/style.css` | `.legend.layout-right` + `.legend.layout-bottom` + `.legend.collapsed` rules; `body.testmode .legend { display: none; }` etc. |
+| `src/main.js` | Legend layout state machine (right/bottom + collapsed); body classes for test/demo modes; **fit-to-screen toggle + applyFitToScreen() helper called from legend changes + window resize + level reflow** |
+| `src/style.css` | `.legend.layout-right` + `.legend.layout-bottom` + `.legend.collapsed` rules; `body.testmode .legend { display: none; }` etc.; **`#fitBtn` toolbar styling (matches existing toolbar buttons)** |
 | `tests/agent-test-button.spec.js` | New cases: tutorial.txt now solves (1 case); multi-solution list shown (1 case); legend layout toggles persist (2 cases) |
 | `tests/legend-layout.spec.js` (new) | dedicated layout suite |
 
@@ -292,6 +360,10 @@ focused-one rendering).
   v18 `.edit-only` gate).
 - **Optional**: legend hidden in Test mode while the agent
   dialog is open.
+- **Fit-to-screen toggle**: clicking `[⛶]` scales the canvas
+  to fill the wrap area (preserving aspect ratio).
+  Minimising/swapping the legend grows the wrap and the
+  canvas re-fits automatically.
 
 ### Tests
 - `npm test` green; `npx playwright test` green (existing 14 +
@@ -328,6 +400,10 @@ focused-one rendering).
 - **Drag-and-drop legend reorder** — change role order.
 - **Per-tileset legend customisation persistence** —
   remember collapsed state per tileset.
+- **Fit-to-screen sub-modes** (`cover` / `contain` /
+  `fill`) — v22 ships the `contain` behaviour
+  (preserves aspect ratio + leaves padding); future
+  versions could let the author choose.
 
 Plus the long-standing v16/v17/v18/v19 carry-overs (camera damping,
 parallax, decoration-image placement, layered z-order, per-cell
@@ -359,8 +435,19 @@ dead-end `caretLineCol` helper cleanup).
   with disabled localStorage (`page.context().clearCookies()`
   etc.). Mitigation: fall back to default-right if
   localStorage throws.
+- **Fit-to-screen resize-loop**: if the canvas's CSS dims change
+  in response to a resize event, the wrap's dims could shift
+  (scrollbar appears), triggering another resize, infinite loop.
+  Mitigation: debounce the resize listener (50 ms) AND use the
+  WRAP's `clientWidth/Height` (which exclude scrollbars) — not
+  `getBoundingClientRect()`.
+- **Fit-to-screen vs Play mode CSS-pin**: v18's hotfix pinned
+  the canvas display width during Play mode. Fit-mode also
+  sets inline width. `tryPlaytest()` clears fit-mode's inline
+  style on entry; `exitPlaytest()` re-applies fit-mode.
 - **No deploy risk** — bundle grows by ~3-5KB (planner TSP +
-  multi-solution + dialog list renderer + layout CSS).
+  multi-solution + dialog list renderer + layout CSS +
+  fit-to-screen helper).
 
 ## 11. Why this scope
 

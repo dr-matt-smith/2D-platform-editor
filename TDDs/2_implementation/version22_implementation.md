@@ -55,10 +55,10 @@ then layout work lands as a polish layer, then docs.
 | `src/agent/runner.test.js` | New cases: a level with multiple valid orderings returns ≥ 2 solutions; duplicate recordings filtered | M3 |
 | `src/agentDialog.js` | Success state renders the solutions list (each row: stats + Demo button). Clicking a row focuses it (shown trace + overlay re-paint). First row is focused by default | M3 |
 | `src/agent/overlay.js` | `renderSolutionOverlay` accepts a solution-index parameter (defaults to 0 = focused). Multi-colour rendering is a v23 candidate; v22 renders the focused-one only | M3 |
-| `src/main.js` | Test handler updates: the dialog's onFocus callback re-paints the overlay with the focused solution. Legend layout state machine (initial state from localStorage; default 'right'). Toggle buttons in the legend toolbar | M3 + M4 |
-| `src/style.css` | `.legend.layout-right` + `.legend.layout-bottom` (default) + `.legend.collapsed` rules. Right layout: legend in a column on the right of the canvas-wrap, ~200px. Collapsed: a 32-px-wide strip of role-icons | M4 |
-| `src/main.js` (template) | Legend element gets `data-layout` + `data-collapsed` attributes; toolbar above legend gets `[—]` (toggle collapsed) and `[↕]` (swap right ↔ bottom) buttons | M4 |
-| `tests/legend-layout.spec.js` (new) | Playwright suite: legend defaults to right; collapse button collapses; swap button toggles to bottom; localStorage persists across reloads | M4 |
+| `src/main.js` | Test handler updates: the dialog's onFocus callback re-paints the overlay with the focused solution. Legend layout state machine (initial state from localStorage; default 'right'). Toggle buttons in the legend toolbar. **Fit-to-screen state + `applyFitToScreen()` helper called from legend changes + window resize + level reflow + play-mode entry/exit** | M3 + M4 |
+| `src/style.css` | `.legend.layout-right` + `.legend.layout-bottom` (default) + `.legend.collapsed` rules. Right layout: legend in a column on the right of the canvas-wrap, ~200px. Collapsed: a 32-px-wide strip of role-icons. **`#fitBtn` matches toolbar-button styling; `#fitBtn.active` filled-icon variant** | M4 |
+| `src/main.js` (template) | Legend element gets `data-layout` + `data-collapsed` attributes; toolbar above legend gets `[—]` (toggle collapsed) and `[↕]` (swap right ↔ bottom) buttons. **Main toolbar gains `[⛶]` (Fit) button between Play Settings and Test** | M4 |
+| `tests/legend-layout.spec.js` (new) | Playwright suite: legend defaults to right; collapse button collapses; swap button toggles to bottom; localStorage persists across reloads. **Fit-to-screen toggle scales canvas; minimising legend triggers re-fit; localStorage persists fit-mode** | M4 |
 | `src/style.css` | Add `body.playmode .legend { display: none; }` + `body.demomode .legend { display: none; }`. v22 `body.testmode` class — added by main.js when agent dialog opens, removed on close — hides the legend during agent search/results | M5 |
 | `src/main.js` | Add/remove `body.testmode` class around `openAgentDialog`. Test that the legend is hidden during agent flow | M5 |
 | `tests/agent-test-button.spec.js` | New cases: legend hidden during Test mode (when dialog is open); legend visible again after dialog closes | M5 |
@@ -150,23 +150,34 @@ Commit: `v22 m2: TSP-optimal pickup ordering (K!≤4 exhaustive + 2-opt)`.
 
 Commit: `v22 m3: multi-solution enumeration (up to 5, sorted by cost) + dialog list UI`.
 
-## Milestone 4 — Legend layout (right + min/max + bottom)
+## Milestone 4 — Legend layout + fit-to-screen
 
 1. `src/main.js`:
    - New module-level state:
      ```js
      let legendLayout = localStorage.getItem('v22.legendLayout') || 'right';
      let legendCollapsed = localStorage.getItem('v22.legendCollapsed') === 'true';
+     let fitToScreen   = localStorage.getItem('v22.fitToScreen') === 'true';
      ```
    - Apply state on first render by setting classes on the
      `.legend` element.
-   - Two new buttons in the legend's toolbar:
-     - `[—]` — toggles `legendCollapsed`; persists to
-       localStorage.
-     - `[↕]` — cycles `legendLayout` between 'right' and 'bottom';
-       persists.
-   - Each click re-applies CSS classes via `setLegendLayout()`
-     helper.
+   - Three new buttons:
+     - `[—]` in the legend toolbar — toggles `legendCollapsed`.
+     - `[↕]` in the legend toolbar — cycles `legendLayout`
+       between 'right' and 'bottom'.
+     - `[⛶]` (Fit) in the main toolbar (between Play Settings
+       and Test) — toggles `fitToScreen`. The button gets
+       `.active` class when on.
+   - Each click persists to localStorage + re-applies via
+     `setLegendLayout()` / `setLegendCollapsed()` /
+     `applyFitToScreen()`.
+   - `applyFitToScreen()` reads `.canvas-wrap` clientWidth/
+     Height, computes `min(availW/intrinsicW, availH/intrinsicH)`,
+     sets `previewCanvas.style.width/height`. Called on every
+     legend change + `run()` reflow + window resize (debounced 50ms).
+   - `tryPlaytest()` clears `previewCanvas.style.width/height`
+     before setting the v18 play-mode pin; `exitPlaytest()`
+     re-applies `applyFitToScreen()` after `run()` repaints.
 2. `src/style.css`:
    - `.legend` base styles.
    - `.legend.layout-right`: positioned on the right of the
@@ -174,13 +185,22 @@ Commit: `v22 m3: multi-solution enumeration (up to 5, sorted by cost) + dialog l
    - `.legend.layout-bottom`: positioned below (v17 default).
    - `.legend.collapsed`: width 32px (right) or height 32px
      (bottom); shows just role-icon thumbnails.
+   - `#fitBtn` matches `#playSettingsBtn` / `#testBtn` toolbar
+     buttons; `#fitBtn.active` gets a filled-icon variant
+     (slightly brighter background) so the user sees fit-mode
+     is on.
 3. `tests/legend-layout.spec.js`:
    - Default load: `.legend.layout-right` class present.
    - Click `[—]`: `.legend.collapsed` class added.
    - Click `[↕]`: layout swaps to 'bottom'.
-   - Reload page: stored choices restored.
+   - Click `[⛶]`: canvas inline `style.width` set; click again
+     clears it.
+   - Click `[⛶]` then `[—]`: canvas re-fits (inline style.width
+     grows because wrap widened by ~170 px).
+   - Reload page: all three stored choices restored (layout +
+     collapsed + fit-mode).
 
-Commit: `v22 m4: legend layout — right-side default + min/max + right ↔ bottom swap`.
+Commit: `v22 m4: legend layout — right-side default + min/max + bottom swap + fit-to-screen`.
 
 ## Milestone 5 — Hide legend in Play / Test / Demo modes
 
@@ -240,6 +260,16 @@ Commit: `v22 m6: agent e2e + v22 transcript; design + impl Delivered`.
   could cause the editor canvas to reflow and lose the user's
   scroll position. Mitigation: use CSS grid with fixed columns
   so the canvas-wrap dimensions don't change.
+- **M4 fit-to-screen resize loop**: fit-mode sets inline
+  width/height on `#preview`. If the wrap's dims change in
+  response (e.g. scrollbar appearance), the resize listener
+  fires again. Mitigation: debounce 50 ms + read `clientWidth/
+  Height` (excludes scrollbar) — never `getBoundingClientRect()`.
+- **M4 fit-mode vs Play/Demo/Test pin**: v18's hotfix sets
+  `previewCanvas.style.width` for the play-mode CSS pin; fit-
+  mode also sets inline width. `tryPlaytest()` clears fit's
+  inline styles before applying its own pin; `exitPlaytest()`
+  re-applies fit-mode after the editor's run() repaints.
 - **M5 testmode body class**: must be ADDED/REMOVED reliably
   around the agent dialog. If the dialog crashes (rare), the
   class would stick. Mitigation: also remove the class in a
