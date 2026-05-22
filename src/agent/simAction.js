@@ -168,6 +168,18 @@ function finalise(scene, cost, outcome, collided) {
     endPos: { x: px, y: py },
     endCell: { r: Math.floor(cy / TILE), c: Math.floor(cx / TILE) },
     endVel: { vx: scene.player.vx, vy: scene.player.vy },
+    // v25 M1: full physics state at the end of the action. The
+    // shape matches PlaytestScene.setPlayerState so the next step's
+    // re-simulation can begin EXACTLY where this one ended — no
+    // cell-rounded drift. Existing endPos/endCell/endVel stay for
+    // back-compat with v21-v24 callers.
+    endState: {
+      x: scene.player.x,
+      y: scene.player.y,
+      vx: scene.player.vx,
+      vy: scene.player.vy,
+      onGround: scene.player.onGround,
+    },
     collided,
     cost,
   };

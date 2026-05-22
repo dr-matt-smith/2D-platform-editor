@@ -206,6 +206,10 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells) {
       recording: actionToRecording(action, 0),
       endPos: result.endPos,
       endVel: result.endVel,
+      // v25 M1: sub-pixel + full physics endState — consumed by
+      // the v25 M2 planner re-simulation so chained edges don't
+      // drift relative to the build-time prediction.
+      endState: result.endState,
       isWinEdge,
     });
   }
