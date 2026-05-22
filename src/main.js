@@ -16,7 +16,7 @@ import { validate } from './validate.js';
 import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
-import { openLevelDialog, openConfirm, openPlaySettings } from './loaderDialog.js';
+import { openLevelDialog, openConfirm, openPlaySettings, openPasteLoadDialog } from './loaderDialog.js';
 import { testLevel } from './agent/index.js';
 import { renderSolutionOverlay } from './agent/overlay.js';
 import { openAgentDialog } from './agentDialog.js';
@@ -64,6 +64,7 @@ document.querySelector('#app').innerHTML = `
         <button id="fitBtn" class="edit-only" title="Fit canvas to available space (toggle)">⛶ Fit</button>
         <button id="themeBtn" class="edit-only" title="Toggle light/dark mode">🌗</button>
         <button id="newBtn" class="edit-only" title="New level (opens the levels dialog)">New</button>
+        <button id="loadBtn" class="edit-only" title="Load — paste level text">Load</button>
         <label class="level-pick edit-only" title="Switch level (unsaved drafts are guarded)">
           <span>Level:</span>
           <select id="levelSel"></select>
@@ -942,6 +943,39 @@ function onPlayEsc(e) {
 // "switch level" entry as the primary path.
 document.querySelector('#newBtn').addEventListener('click', openDialog);
 document.querySelector('#dlBtn').addEventListener('click', () => downloadLevel(currentId));
+
+// v24 M1: paste-text-to-load. Opens a modal with a textarea + name
+// input; on Load, parse + validate the text BEFORE saving (so
+// garbage doesn't pollute the local list). On success, creates a
+// new `local-XXXXXXXX` entry via levels.addLocal, repopulates the
+// dropdown, and switches to it. Same guardUnsaved flow as a normal
+// level switch so the user doesn't accidentally lose drafts.
+document.querySelector('#loadBtn').addEventListener('click', () => {
+  guardUnsaved(() => {
+    openPasteLoadDialog({
+      onLoad: ({ text, name }) => {
+        // Parse must succeed (returns null/throws on garbage).
+        let parsed;
+        try {
+          parsed = parse(text);
+        } catch (e) {
+          return `Could not parse the pasted text: ${e?.message || e}`;
+        }
+        if (!parsed?.grid?.length || parsed.meta.width <= 0) {
+          return 'No level grid found in the pasted text.';
+        }
+        // Surface validation errors but allow load — the user might
+        // be importing a partial draft they want to fix in-editor.
+        // (Severe ones like "no spawn" are warnings, not blockers,
+        // matching the rest of the editor's behaviour.)
+        const id = levels.addLocal(text, name);
+        loadInto(id);
+        return null; // no error — close modal
+      },
+      onCancel: () => {},
+    });
+  });
+});
 // v18: Play Settings dialog → writes # pickup-required: into the buffer
 // (as a real undo step via applyEdit). `total` is the level's current
 // pickup count, shown for context inside the dialog.

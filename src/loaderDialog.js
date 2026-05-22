@@ -320,3 +320,88 @@ export function openPlaySettings({
   document.addEventListener('keydown', onKey);
   document.body.appendChild(backdrop);
 }
+
+/**
+ * v24 M1: paste-text-to-load dialog. The user pastes a level
+ * definition, optionally names it, clicks Load → caller validates
+ * and (on success) stores via levels.addLocal().
+ *
+ * @param onLoad    ({ text, name }) => string | null     where the return
+ *                  value is null on success, or an error message string
+ *                  that will be surfaced in the dialog (modal stays open).
+ * @param onCancel  () => void
+ */
+export function openPasteLoadDialog({ onLoad, onCancel }) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal confirm paste-load-dialog" role="dialog" aria-modal="true" aria-label="Load level">
+      <header class="play-settings-header">Load Level</header>
+      <p class="cf-msg">Paste a level definition below:</p>
+      <textarea id="pl-text" class="pl-text" spellcheck="false" autocomplete="off" rows="14" placeholder="# name: my-level&#10;##########&#10;#P......E#&#10;##########"></textarea>
+      <hr class="popup-divider">
+      <label class="pl-name-row">
+        <span>Display name:</span>
+        <input type="text" id="pl-name" placeholder="untitled" maxlength="60">
+      </label>
+      <p class="cf-msg pl-error" hidden></p>
+      <div class="cf-actions">
+        <button class="cf-btn" data-act="cancel">Cancel</button>
+        <button class="cf-btn primary" data-act="load">Load</button>
+      </div>
+    </div>`;
+
+  function close() {
+    document.removeEventListener('keydown', onKey);
+    backdrop.remove();
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') { close(); onCancel?.(); }
+  }
+  document.addEventListener('keydown', onKey);
+
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) { close(); onCancel?.(); }
+  });
+
+  backdrop.querySelector('[data-act="cancel"]').addEventListener('click', () => {
+    close();
+    onCancel?.();
+  });
+
+  function showError(msg) {
+    const el = backdrop.querySelector('.pl-error');
+    el.textContent = msg;
+    el.hidden = false;
+  }
+  function clearError() {
+    const el = backdrop.querySelector('.pl-error');
+    el.textContent = '';
+    el.hidden = true;
+  }
+
+  backdrop.querySelector('[data-act="load"]').addEventListener('click', () => {
+    clearError();
+    const text = backdrop.querySelector('#pl-text').value;
+    const nameInput = backdrop.querySelector('#pl-name').value.trim();
+    const name = nameInput || extractNameDirective(text) || 'untitled';
+    const err = onLoad?.({ text, name });
+    if (err) {
+      showError(err);
+      return; // keep modal open
+    }
+    close();
+  });
+
+  // Auto-focus the textarea (the primary affordance).
+  document.body.appendChild(backdrop);
+  setTimeout(() => backdrop.querySelector('#pl-text').focus(), 0);
+}
+
+/** Try to read the `# name:` directive from the pasted text so the
+ *  Display-name input can be pre-filled — saves the user a typing
+ *  step on the common case (their .txt header already names it). */
+function extractNameDirective(text) {
+  const m = String(text || '').match(/^#\s*name\s*:\s*(\S.*?)\s*$/m);
+  return m ? m[1].trim() : null;
+}

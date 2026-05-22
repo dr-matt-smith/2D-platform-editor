@@ -16,6 +16,11 @@ const KEY = {
   draft: (id) => `ld:v3:draft:${id}`,
   lastOpen: 'ld:v3:lastOpen',
   migrated: 'ld:v3:migrated',
+  // v24 M1: paste-to-load entries — local-only, no bundled file. The
+  // list is a JSON array of {id, name} stored under one key; the text
+  // for each lives under the existing draft key (so load(id) Just
+  // Works for these too).
+  locals: 'ld:v24:locals',
 };
 const LEGACY_KEY = 'leveldesigner:v1';
 
@@ -47,11 +52,62 @@ export function createLevels({ fetch, storage }) {
 
   const entry = (id) => manifest.find((m) => m.id === id);
 
+  // v24 M1: paste-loaded local levels live alongside the manifest in
+  // the dropdown. Read on demand (cheap; localStorage parse).
+  function readLocals() {
+    try {
+      const raw = storage.getItem(KEY.locals);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+  function writeLocals(arr) {
+    storage.setItem(KEY.locals, JSON.stringify(arr));
+  }
+  const isLocalId = (id) => typeof id === 'string' && id.startsWith('local-');
+  const localEntry = (id) => readLocals().find((l) => l.id === id);
+
   function list() {
-    return manifest.map((m) => ({
+    const fromManifest = manifest.map((m) => ({
       ...m,
       modified: storage.getItem(KEY.draft(m.id)) != null,
     }));
+    const fromLocals = readLocals().map((l) => ({
+      id: l.id,
+      name: l.name,
+      file: null,
+      group: 'local',
+      modified: false, // a "draft" for a local IS the level — no baseline drift
+    }));
+    return [...fromManifest, ...fromLocals];
+  }
+
+  /**
+   * v24 M1: create a new local-only level from pasted text. Stores
+   * the text under the standard draft key so load(id) finds it the
+   * same way it finds drafts of bundled levels. Returns the new id.
+   */
+  function addLocal(text, name = 'untitled') {
+    const id = `local-${randomId(8)}`;
+    storage.setItem(KEY.draft(id), text);
+    const locals = readLocals();
+    locals.push({ id, name });
+    writeLocals(locals);
+    return id;
+  }
+  function removeLocal(id) {
+    if (!isLocalId(id)) return;
+    storage.removeItem(KEY.draft(id));
+    writeLocals(readLocals().filter((l) => l.id !== id));
+  }
+  // 8-char hex; ~10^9 combinations — collision check on call site.
+  function randomId(n) {
+    let out = '';
+    const a = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < n; i++) out += a[Math.floor(Math.random() * a.length)];
+    return out;
   }
 
   async function fetchOriginal(id) {
@@ -62,9 +118,17 @@ export function createLevels({ fetch, storage }) {
     return res.text();
   }
 
-  // Draft takes precedence over the bundled original.
+  // Draft takes precedence over the bundled original. v24 M1: local
+  // levels are draft-only (no original file) — load() returns the
+  // draft directly without attempting to fetch.
   async function load(id) {
     const draft = storage.getItem(KEY.draft(id));
+    if (isLocalId(id)) {
+      // Local-only: there is no original to fall back to.
+      const text = draft ?? '';
+      baseline = text;
+      return text;
+    }
     const text = draft != null ? draft : await fetchOriginal(id);
     baseline = text;
     return text;
@@ -119,6 +183,10 @@ export function createLevels({ fetch, storage }) {
     isDirty,
     lastOpen,
     setLastOpen,
+    // v24 M1
+    addLocal,
+    removeLocal,
+    isLocalId,
   };
   return api;
 }
