@@ -33,6 +33,11 @@ export function openAgentDialog({ runAgent, onDemo, onResult, onClose }) {
   let abortController = null;
   let progressTimer = null;
   let stopRequested = false;
+  // v23 M5: minimised state — when true, the dialog renders as a
+  // floating bar at the top of the canvas-wrap and the backdrop
+  // turns transparent + click-through so the path overlay stays
+  // visible behind. Persisted across runs.
+  let minimised = readMinimisedPref();
 
   function close() {
     stopRequested = true;
@@ -80,6 +85,21 @@ export function openAgentDialog({ runAgent, onDemo, onResult, onClose }) {
       const idx = Number(act.slice('focus-'.length));
       focusSolution(idx);
     }
+    // v23 M5: toggle minimised vs full view.
+    if (act === 'minimise' || act === 'expand') {
+      minimised = act === 'minimise';
+      writeMinimisedPref(minimised);
+      applyMinimisedClass();
+      if (currentSolutions) {
+        render(minimised
+          ? renderMinimised(currentSolutions, focusedIdx)
+          : renderSuccess(currentSolutions, focusedIdx));
+      }
+    }
+  }
+
+  function applyMinimisedClass() {
+    backdrop.classList.toggle('dialog-minimised', minimised);
   }
 
   let focusedIdx = 0;
@@ -133,7 +153,11 @@ export function openAgentDialog({ runAgent, onDemo, onResult, onClose }) {
       currentSolutions = result.solutions || [result.solution];
       focusedIdx = 0;
       backdrop._lastRecording = currentSolutions[0].recording;
-      render(renderSuccess(currentSolutions, 0));
+      // v23 M5: honour persisted minimised choice on first paint.
+      applyMinimisedClass();
+      render(minimised
+        ? renderMinimised(currentSolutions, 0)
+        : renderSuccess(currentSolutions, 0));
     } else {
       render(renderFailure(result, budgetMs));
     }
@@ -199,6 +223,7 @@ function renderSuccess(solutions, focusedIdx = 0) {
     <div class="modal confirm agent-dialog" role="dialog" aria-modal="true" aria-label="Agent test results">
       <header class="agent-header">
         <span class="badge ok">${headline}</span>
+        <button class="agent-min-btn" data-act="minimise" title="Minimise — keep the path overlay visible">—</button>
       </header>
       ${solutionRows}
       <details class="trace-section" open>
@@ -209,6 +234,43 @@ function renderSuccess(solutions, focusedIdx = 0) {
         <button class="cf-btn" data-act="close">Close</button>
       </div>
     </div>`;
+}
+
+/* v23 M5: minimised renderer — a thin floating bar pinned to the
+   top of the canvas-wrap (CSS positions it absolutely). Shows just
+   the focused solution's headline stats + Demo + Expand + Close.
+   The backdrop turns transparent in minimised mode (CSS) so the
+   path overlay behind is visible. */
+function renderMinimised(solutions, focusedIdx = 0) {
+  const list = Array.isArray(solutions) ? solutions : [solutions];
+  const focused = list[focusedIdx] || list[0];
+  const s = focused.stats;
+  const headline = list.length > 1
+    ? `✓ ${list.length} solutions`
+    : '✓ Completable';
+  return `
+    <div class="minimised-solutions" role="dialog" aria-label="Agent results (minimised)">
+      <span class="badge ok">${headline}</span>
+      <span class="min-sep">·</span>
+      <span class="stat-pill">S${focusedIdx + 1}</span>
+      <span class="stat-pill">${s.steps} step${s.steps === 1 ? '' : 's'}</span>
+      <span class="stat-pill">${s.jumps} jump${s.jumps === 1 ? '' : 's'}</span>
+      <span class="stat-pill">${s.score} pickup${s.score === 1 ? '' : 's'}</span>
+      <button class="cf-btn primary" data-act="demo" title="Demo this route">▶ Demo</button>
+      <button class="cf-btn" data-act="expand" title="Restore full dialog">↕ Expand</button>
+      <button class="cf-btn" data-act="close" title="Close">×</button>
+    </div>`;
+}
+
+// localStorage persistence — module-scoped so it survives across
+// openAgentDialog calls. Read on construction; write on toggle.
+function readMinimisedPref() {
+  try { return localStorage.getItem('v23.dialogMinimised') === 'true'; }
+  catch { return false; }
+}
+function writeMinimisedPref(value) {
+  try { localStorage.setItem('v23.dialogMinimised', String(value)); }
+  catch { /* localStorage unavailable */ }
 }
 
 function renderFailure(result, lastBudgetMs) {

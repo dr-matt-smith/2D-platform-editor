@@ -345,7 +345,10 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 #tilesetSel:hover,
 #levelSel:hover { background: #3d3d40; }
 #dirty { color: var(--warn); margin-left: auto; }
-.canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; }
+/* v23 M5: position:relative so .minimised-solutions can pin to the
+   top of the wrap via position:absolute. Doesn't affect layout in
+   any other mode. */
+.canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; position: relative; }
 .stage {
   position: relative;
   display: inline-block;
@@ -656,6 +659,53 @@ body.lightmode .play-settings input[type="number"] {
   justify-content: center;
   z-index: 100;
 }
+
+/* v23 M5: minimised agent-dialog state. The backdrop turns
+   transparent + click-through, so the path overlay behind stays
+   visible AND the canvas takes mouse events (e.g. for panning a
+   scrolling viewport). The floating .minimised-solutions bar
+   inside re-enables pointer-events on itself. */
+.modal-backdrop.dialog-minimised {
+  background: transparent;
+  pointer-events: none;
+}
+.modal-backdrop.dialog-minimised .minimised-solutions {
+  pointer-events: auto;
+}
+.minimised-solutions {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--panel);
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  z-index: 101;
+  font: inherit;
+  color: var(--fg);
+}
+.minimised-solutions .min-sep { color: var(--dim); }
+/* v23 M5: the [—] minimise button inside the agent dialog header. */
+.agent-header { display: flex; align-items: center; gap: 8px; }
+.agent-min-btn {
+  margin-left: auto;
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 8px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.agent-min-btn:hover { background: #3d3d40; }
+body.lightmode .agent-min-btn { background: #e0e0e0; }
+body.lightmode .agent-min-btn:hover { background: #d2d2d2; }
 .modal {
   background: var(--panel);
   border: 1px solid var(--line);
