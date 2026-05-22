@@ -323,7 +323,8 @@ function applyLegendLayout() {
 }
 
 function applyFitToScreen() {
-  // No-op during play/demo (the v18 CSS-pin owns the canvas size).
+  // No-op during play/demo (the v18 CSS-pin owns the canvas size,
+  // and v23's applyPlayFitToScreen() owns the optional fit there).
   if (editorMode === 'play' || editorMode === 'demo') return;
   if (!fitToScreen) {
     previewCanvas.style.width = '';
@@ -341,6 +342,33 @@ function applyFitToScreen() {
   const scale = Math.min(availW / intrinsicW, availH / intrinsicH);
   previewCanvas.style.width = `${Math.floor(intrinsicW * scale)}px`;
   previewCanvas.style.height = `${Math.floor(intrinsicH * scale)}px`;
+}
+
+// v23 M4: play-mode CSS pin with optional fit-to-screen. The base
+// pin (the v18 fix) is `pinCells * TILE` for width / `pinRows * TILE`
+// for height — keeps the canvas at the same on-screen size as the
+// editor's intrinsic dims. When fitToScreen is on, multiply both by
+// `min(availW / cssW, availH / cssH)` so the canvas grows to fill
+// the wrap. tryPlaytest() stashes the cssW/cssH on `currentPlayPin`;
+// resize listener re-scales without recomputing pinCells.
+let currentPlayPin = null;
+function applyPlayFitToScreen() {
+  if (!currentPlayPin) return;
+  if (editorMode !== 'play' && editorMode !== 'demo') return;
+  const { cssW, cssH } = currentPlayPin;
+  if (!fitToScreen) {
+    previewCanvas.style.width = `${cssW}px`;
+    previewCanvas.style.height = `${cssH}px`;
+    return;
+  }
+  const wrap = document.querySelector('.canvas-wrap');
+  if (!wrap) return;
+  const availW = wrap.clientWidth - 24;
+  const availH = wrap.clientHeight - 24;
+  if (availW <= 0 || availH <= 0) return;
+  const scale = Math.min(availW / cssW, availH / cssH);
+  previewCanvas.style.width = `${Math.floor(cssW * scale)}px`;
+  previewCanvas.style.height = `${Math.floor(cssH * scale)}px`;
 }
 
 applyLegendLayout();
@@ -811,9 +839,17 @@ function tryPlaytest(opts = {}) {
   // instead of the whole world. The CSS pin tracks that — using the
   // viewport's width when present so the visible canvas keeps a
   // sensible on-screen size whether the world is bigger or smaller.
+  //
+  // v23 M4: stash the pin's CSS dims so applyPlayFitToScreen() can
+  // re-scale on resize, and honour the editor's fitToScreen flag —
+  // when fit is on, the canvas scales to fill the available wrap
+  // (preserves aspect). Off-mode = the pinCells*TILE intrinsic
+  // (v18/v19 behaviour byte-identical).
   const pinCells = parsed.meta.viewport?.w ?? parsed.meta.width;
-  previewCanvas.style.width = `${pinCells * TILE}px`;
+  const pinRows  = parsed.meta.viewport?.h ?? parsed.meta.height;
+  currentPlayPin = { cssW: pinCells * TILE, cssH: pinRows * TILE };
   document.body.classList.add('playmode');
+  applyPlayFitToScreen();
   if (editorMode === 'demo') document.body.classList.add('demomode');
   // Belt-and-braces: clear any stray marquee selection rect.
   octx.clearRect(0, 0, overlay.width, overlay.height);
@@ -856,6 +892,7 @@ function exitPlaytest() {
   // below sizes #preview from its (restored) intrinsic dims.
   previewCanvas.style.width = '';
   previewCanvas.style.height = '';
+  currentPlayPin = null;
   // Repaint the editor preview — resizes the canvas back to TILE size
   // and re-renders the buffer with the tileset's editor pass.
   run();
@@ -923,6 +960,9 @@ fitBtn.addEventListener('click', () => {
   writePref('v22.fitToScreen', fitToScreen);
   updateFitBtnState();
   applyFitToScreen();
+  // v23 M4: if we're already in play / demo, scale the canvas now
+  // (no-op in edit mode — applyFitToScreen above handled that).
+  applyPlayFitToScreen();
 });
 
 // v23 M2: light/dark theme toggle. The 🌗 button flips `body.lightmode`
@@ -942,10 +982,16 @@ themeBtn.addEventListener('click', () => {
 
 // v22: window resize re-fits (debounced 50ms; reads clientWidth/Height
 // which exclude scrollbars, avoiding feedback loops).
+// v23 M4: also re-apply the play-mode pin so a window resize during
+// Play / Demo scales the canvas to the new wrap dims.
 let _resizeTimer = null;
 window.addEventListener('resize', () => {
   if (_resizeTimer) clearTimeout(_resizeTimer);
-  _resizeTimer = setTimeout(() => { applyFitToScreen(); _resizeTimer = null; }, 50);
+  _resizeTimer = setTimeout(() => {
+    applyFitToScreen();
+    applyPlayFitToScreen();
+    _resizeTimer = null;
+  }, 50);
 });
 
 // v21: [Test] button runs the AI agent on the current buffer.
@@ -960,7 +1006,11 @@ document.querySelector('#testBtn').addEventListener('click', () => {
   // demomode). Cleared in onClose; the dialog calls onClose for both
   // success-close and failure-close so we don't need a per-state hook.
   document.body.classList.add('testmode');
-  applyFitToScreen(); // legend column collapsed → re-fit the canvas
+  // v22 M5 fit kicked off the re-fit synchronously; v23 M4 wraps it
+  // in rAF so the layout has recalc'd post-testmode-class-add. The
+  // pre-rAF synchronous call kept the canvas "squashed" relative to
+  // the now-wider wrap; the rAF defer fixes that.
+  requestAnimationFrame(() => applyFitToScreen());
   openAgentDialog({
     runAgent: (maxRuntimeMs, onProgress, signal) =>
       testLevel(parsed, legend, tileset, { maxRuntimeMs, onProgress, signal }),
@@ -974,7 +1024,7 @@ document.querySelector('#testBtn').addEventListener('click', () => {
     onDemo: (recording) => tryPlaytest({ inputSource: recording }),
     onClose: () => {
       document.body.classList.remove('testmode');
-      applyFitToScreen(); // legend track restored → re-fit
+      requestAnimationFrame(() => applyFitToScreen()); // legend track restored → re-fit
       octx.clearRect(0, 0, overlay.width, overlay.height);
     },
   });
