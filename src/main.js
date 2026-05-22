@@ -61,6 +61,7 @@ document.querySelector('#app').innerHTML = `
         <button id="playBtn" class="edit-only" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
         <button id="playSettingsBtn" class="edit-only" title="Play settings (pickup requirement, etc.)">Play Settings</button>
         <button id="testBtn" class="edit-only" title="AI agent: does the level have a solution?">Test</button>
+        <button id="fitBtn" class="edit-only" title="Fit canvas to available space (toggle)">⛶ Fit</button>
         <button id="newBtn" class="edit-only" title="New level (opens the levels dialog)">New</button>
         <label class="level-pick edit-only" title="Switch level (unsaved drafts are guarded)">
           <span>Level:</span>
@@ -162,6 +163,19 @@ function renderLegend() {
   const lookup = tileset?.lookup;
   const parts = [];
 
+  // v22: legend-toolbar with min/max + layout-swap buttons. Placed
+  // FIRST so it's always visible (even when the body is hidden).
+  parts.push(
+    `<div class="legend-toolbar">` +
+      `<button class="legend-toggle" data-act="legend-min" ` +
+      `title="${legendCollapsed ? 'Expand legend' : 'Minimise legend'}">` +
+      `${legendCollapsed ? '▶' : '—'}</button>` +
+      `<button class="legend-toggle" data-act="legend-swap" ` +
+      `title="Swap legend to ${legendLayout === 'right' ? 'bottom' : 'right'}">↕</button>` +
+      `</div>`,
+  );
+  parts.push('<div class="legend-body">');
+
   // Background-image dropdown — appears only when the active tileset
   // declares ≥1 `images.<id>` entry with role:"background". Selecting
   // an entry rewrites # background-image: via the pure setter; the
@@ -223,11 +237,86 @@ function renderLegend() {
     }
   }
 
+  parts.push('</div>'); // close .legend-body
   legendEl.innerHTML = parts.join('');
 }
 
+// v22: legend layout state — right (default) or bottom; collapsed
+// or expanded; fit-to-screen on or off. Persisted in localStorage.
+// (editorMode is hoisted here so applyFitToScreen() can read it at
+// module init — the full play/demo wiring lives further down.)
+let editorMode = 'edit';
+let legendLayout = readLayoutPref('v22.legendLayout', 'right'); // 'right'|'bottom'
+let legendCollapsed = readBoolPref('v22.legendCollapsed', false);
+let fitToScreen = readBoolPref('v22.fitToScreen', false);
+
+function readLayoutPref(key, def) {
+  try {
+    const v = localStorage.getItem(key);
+    return v === 'right' || v === 'bottom' ? v : def;
+  } catch { return def; }
+}
+function readBoolPref(key, def) {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? def : v === 'true';
+  } catch { return def; }
+}
+function writePref(key, value) {
+  try { localStorage.setItem(key, String(value)); } catch { /* localStorage unavailable */ }
+}
+
+const paneRight = document.querySelector('.pane.right');
+
+function applyLegendLayout() {
+  paneRight.classList.remove('layout-right', 'layout-bottom');
+  paneRight.classList.add(legendLayout === 'right' ? 'layout-right' : 'layout-bottom');
+  paneRight.classList.toggle('legend-collapsed', legendCollapsed);
+}
+
+function applyFitToScreen() {
+  // No-op during play/demo (the v18 CSS-pin owns the canvas size).
+  if (editorMode === 'play' || editorMode === 'demo') return;
+  if (!fitToScreen) {
+    previewCanvas.style.width = '';
+    previewCanvas.style.height = '';
+    return;
+  }
+  const wrap = document.querySelector('.canvas-wrap');
+  if (!wrap) return;
+  const availW = wrap.clientWidth - 24; // 12px padding × 2
+  const availH = wrap.clientHeight - 24;
+  if (availW <= 0 || availH <= 0) return;
+  const intrinsicW = previewCanvas.width;
+  const intrinsicH = previewCanvas.height;
+  if (intrinsicW <= 0 || intrinsicH <= 0) return;
+  const scale = Math.min(availW / intrinsicW, availH / intrinsicH);
+  previewCanvas.style.width = `${Math.floor(intrinsicW * scale)}px`;
+  previewCanvas.style.height = `${Math.floor(intrinsicH * scale)}px`;
+}
+
+applyLegendLayout();
 renderLegend();
+applyFitToScreen();
 legendEl.addEventListener('click', (e) => {
+  // v22: layout toggle buttons inside the legend toolbar.
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'legend-min') {
+    legendCollapsed = !legendCollapsed;
+    writePref('v22.legendCollapsed', legendCollapsed);
+    applyLegendLayout();
+    renderLegend();
+    applyFitToScreen();
+    return;
+  }
+  if (act === 'legend-swap') {
+    legendLayout = legendLayout === 'right' ? 'bottom' : 'right';
+    writePref('v22.legendLayout', legendLayout);
+    applyLegendLayout();
+    renderLegend();
+    applyFitToScreen();
+    return;
+  }
   const g = e.target.closest('[data-glyph]')?.dataset.glyph;
   if (g == null) return;
   activeGlyph = g;
@@ -447,6 +536,10 @@ function run() {
   if (overlay.height !== ctx.canvas.height) overlay.height = ctx.canvas.height;
   octx.clearRect(0, 0, overlay.width, overlay.height);
 
+  // v22: re-fit if the level dims changed (intrinsic dims drive the
+  // scale factor).
+  applyFitToScreen();
+
   const lines = text.split('\n');
   renderGutter(lines.length);
   renderRuler(Math.max(40, ...lines.map((l) => l.length + 1)));
@@ -620,7 +713,8 @@ window.addEventListener('beforeunload', (e) => {
 // run() is suppressed (PlaytestScene's rAF loop owns the canvas), the
 // marquee overlay is detached, the toolbar swaps `.edit-only` buttons
 // for `.play-only` (Restart / Exit), and Esc exits.
-let editorMode = 'edit';
+// (editorMode itself is hoisted near the v22 layout state to keep
+// applyFitToScreen() out of the TDZ at module init.)
 let playController = null;
 
 // Playtest the LIVE buffer (unsaved edits included). If the launch gate
@@ -707,9 +801,13 @@ function exitPlaytest() {
   // Release the play-mode display-size pin so the editor's run()
   // below sizes #preview from its (restored) intrinsic dims.
   previewCanvas.style.width = '';
+  previewCanvas.style.height = '';
   // Repaint the editor preview — resizes the canvas back to TILE size
   // and re-renders the buffer with the tileset's editor pass.
   run();
+  // v22: re-apply fit-to-screen if enabled (run() sized the canvas to
+  // intrinsic; fit-mode may want to scale it up).
+  applyFitToScreen();
 }
 
 function onPlayEsc(e) {
@@ -755,6 +853,31 @@ document.querySelector('#restartBtn').addEventListener('click', () => {
 });
 document.querySelector('#exitBtn').addEventListener('click', exitPlaytest);
 document.querySelector('#playBtn').addEventListener('click', () => tryPlaytest());
+
+// v22: fit-to-screen toggle. Click rotates the boolean; helper applies
+// the inline canvas size based on the canvas-wrap's clientWidth/Height.
+// Re-fits automatically on legend layout / collapse changes (via the
+// legend toolbar handler) and on window resize (debounced below).
+const fitBtn = document.querySelector('#fitBtn');
+function updateFitBtnState() {
+  fitBtn.classList.toggle('active', fitToScreen);
+  fitBtn.title = fitToScreen ? 'Fit canvas to screen (currently ON)' : 'Fit canvas to screen (currently OFF)';
+}
+updateFitBtnState();
+fitBtn.addEventListener('click', () => {
+  fitToScreen = !fitToScreen;
+  writePref('v22.fitToScreen', fitToScreen);
+  updateFitBtnState();
+  applyFitToScreen();
+});
+
+// v22: window resize re-fits (debounced 50ms; reads clientWidth/Height
+// which exclude scrollbars, avoiding feedback loops).
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  if (_resizeTimer) clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => { applyFitToScreen(); _resizeTimer = null; }, 50);
+});
 
 // v21: [Test] button runs the AI agent on the current buffer.
 // The agent dialog opens IMMEDIATELY in a "searching" state with a

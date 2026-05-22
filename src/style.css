@@ -321,10 +321,90 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 .legend {
   border-top: 1px solid var(--line);
   padding: 8px 12px;
+  color: var(--dim);
+}
+.legend .legend-body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  color: var(--dim);
+}
+
+/* v22: legend layout. .pane.right uses CSS grid; .layout-right puts
+   the legend in a column to the right of the canvas, .layout-bottom
+   stacks them. Collapsed mode shrinks the legend's track. */
+.pane.right.layout-bottom {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr;
+  grid-template-areas: "status" "canvas" "legend";
+}
+.pane.right.layout-right {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr 220px;
+  grid-template-areas: "status status" "canvas legend";
+}
+.pane.right.layout-right.legend-collapsed { grid-template-columns: 1fr 36px; }
+.pane.right.layout-bottom.legend-collapsed { grid-template-rows: auto 1fr 36px; }
+.pane.right > .status { grid-area: status; }
+.pane.right > .canvas-wrap { grid-area: canvas; min-width: 0; min-height: 0; }
+.pane.right > .legend { grid-area: legend; }
+
+.pane.right.layout-right > .legend {
+  border-top: none;
+  border-left: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+/* Legend toolbar — sits at the top of the .legend body with min/max
+   + swap buttons. */
+.legend .legend-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+.legend .legend-toggle {
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 6px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.legend .legend-toggle:hover { background: #3d3d40; }
+
+/* Collapsed: hide the legend-body, keep only the toolbar (vertical or
+   horizontal narrow strip depending on layout). */
+.pane.right.legend-collapsed > .legend .legend-body { display: none; }
+.pane.right.layout-right.legend-collapsed > .legend { padding: 4px 2px; }
+.pane.right.layout-right.legend-collapsed > .legend .legend-toolbar {
+  flex-direction: column;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.pane.right.layout-bottom.legend-collapsed > .legend { padding: 4px 12px; }
+
+/* v22: fit-to-screen button — same toolbar-button look as the rest;
+   ACTIVE state gets a brighter background so the user sees it's on. */
+#fitBtn {
+  font: inherit;
+  color: var(--fg);
+  background: #333;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+#fitBtn:hover { background: #3d3d40; }
+#fitBtn.active {
+  background: #1e3b29;
+  border-color: #6cd99a;
+  color: #6cd99a;
 }
 .legend .glyph {
   font: inherit;
