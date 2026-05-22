@@ -1,9 +1,11 @@
 # 2D Level Designer — Version 20 Design Document
 
-Status: Proposed · Date: 2026-05-21 · Builds on:
+Status: **Delivered** · Date: 2026-05-21 · Builds on:
 [version19_design.md](version19_design.md) (scrolling playtest +
-viewport Play Setting) · Implementation: *to follow once this
-scope is approved*.
+viewport Play Setting) · Implementation:
+[../2_implementation/version20_implementation.md](../2_implementation/version20_implementation.md) ·
+Transcript:
+[../3_transcripts/version20_build.md](../3_transcripts/version20_build.md)
 
 ## 1. Purpose
 

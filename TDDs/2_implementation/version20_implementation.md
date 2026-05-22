@@ -1,7 +1,29 @@
 # Version 20 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-21 · Design:
-[../1_design/version20_design.md](../1_design/version20_design.md)
+Status: **Delivered (M1–M6)** · Date: 2026-05-21 · Design:
+[../1_design/version20_design.md](../1_design/version20_design.md) ·
+Transcript: [../3_transcripts/version20_build.md](../3_transcripts/version20_build.md)
+
+Delivered, one path-scoped commit per milestone (user's in-flight
+`fred.txt` / `above_ground2.txt` / `manifest.json` /
+`__temp/wish_list.md` stayed out throughout; the M5 commit caught
+an IDE-pre-staged SynnyLand draft and un-staged it cleanly — see
+the v20 transcript for the [[scoped-git-add]] discipline note):
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `75fbb58` | `src/play/scriptedInput.js` (Input look-alike) + `src/agent/sim.js` (headless PlaytestScene runner, ~50ms per 10-sim-second budget) + 11 unit cases |
+| 2 | `b5505a0` | `src/agent/grid.js` — nav-graph with walk/drop/jump edges; reach envelope (8h × 4v cells) derived from engine constants; 11 unit cases |
+| 3 | `1ba3691` | `src/agent/planner.js` — A* + greedy pickup ordering + explainable trace with `why:` strings + `replan()` for blocked-edge retry; 11 unit cases |
+| 4 | `e51783b` | `src/agent/runner.js` + `index.js` — plan/sim/replan orchestrator (budget 3); 5 unit cases; planner fix (frame starts at 1 to give player a settle tick) |
+| 5 | `200f538` | UI: `[Test]` toolbar button + `src/agentDialog.js` + `src/agent/overlay.js` polyline + launcher's optional `inputSource` for demo mode + `body.demomode` toolbar swap + warm-yellow stage glow |
+| 6 | _this commit_ | `tests/agent-test-button.spec.js` (4 e2e cases: solvable, overlay paints, Demo auto-exit, unreachable) + v20 transcript + design + impl Delivered |
+
+Outcome: 217 → 257 unit tests (+40 agent cases). Playwright 6 → 7
+(new agent-test-button spec; six pre-v20 specs unchanged). Both
+builds clean. The v9 §7 byte-identical-to-upstream invariant for
+`src/play/core/*` + `src/play/entities/*` preserved across all
+six commits.
 
 Six small path-scoped commits. The agent splits cleanly along
 simulator → grid → planner → runner → UI → docs lines, so each
