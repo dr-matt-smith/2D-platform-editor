@@ -113,7 +113,8 @@ body {
 #newBtn,
 #dlBtn,
 #playBtn,
-#playSettingsBtn {
+#playSettingsBtn,
+#testBtn {
   font: inherit;
   color: var(--fg);
   background: #333;
@@ -125,7 +126,76 @@ body {
 #newBtn:hover,
 #dlBtn:hover,
 #playBtn:hover,
-#playSettingsBtn:hover { background: #3d3d40; }
+#playSettingsBtn:hover,
+#testBtn:hover { background: #3d3d40; }
+
+/* v20: agent test dialog (mirrors .play-settings shape; the modal
+   wrapper uses .agent-dialog instead of .play-settings). */
+.agent-dialog { min-width: 420px; max-width: 720px; }
+.agent-dialog .agent-header { margin-bottom: 10px; }
+.agent-dialog .badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 0.95em;
+}
+.agent-dialog .badge.ok   { background: #1e3b29; color: #6cd99a; }
+.agent-dialog .badge.fail { background: #3b1e1e; color: #ff8c8c; }
+.agent-dialog .solution-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+.agent-dialog .solution-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.agent-dialog .stat-pill {
+  background: #1d1d20;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.85em;
+  color: var(--fg);
+}
+.agent-dialog .trace-section { margin-bottom: 10px; }
+.agent-dialog .trace-section > summary {
+  cursor: pointer;
+  color: var(--fg);
+  opacity: 0.8;
+  padding: 4px 0;
+}
+.agent-dialog .trace-list {
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 6px 0 0 0;
+  padding-left: 26px;
+  font-size: 0.9em;
+  color: var(--fg);
+}
+.agent-dialog .trace-list li { padding: 1px 0; }
+.agent-dialog .trace-frame {
+  color: var(--fg);
+  opacity: 0.6;
+  font-family: monospace;
+  margin-right: 6px;
+}
+
+/* v20: demo mode inherits play-mode toolbar swap (.edit-only hidden,
+   .play-only visible) — re-apply for the demomode class. Tinted
+   border on the canvas distinguishes demo from a human-played run. */
+body.demomode .edit-only { display: none; }
+body.demomode .play-only { display: inline-flex; }
+body.demomode #overlay { pointer-events: none; }
+body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 
 /* v18: Play Settings dialog rows — radio + label, with an inline
    number input on the "minimum N" row. */

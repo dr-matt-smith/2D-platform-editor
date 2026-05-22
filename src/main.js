@@ -17,6 +17,9 @@ import { draw } from './renderer.js';
 import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm, openPlaySettings } from './loaderDialog.js';
+import { testLevel } from './agent/index.js';
+import { renderSolutionOverlay } from './agent/overlay.js';
+import { openAgentDialog } from './agentDialog.js';
 import { downloadText } from './download.js';
 import { createHistory } from './history.js';
 import { launchPlaytest } from './play/launcher.js';
@@ -57,6 +60,7 @@ document.querySelector('#app').innerHTML = `
         <button id="dlBtn" class="edit-only" title="Download current level as .txt">Download</button>
         <button id="playBtn" class="edit-only" title="Playtest current level (Ctrl/Cmd+Enter)">Play</button>
         <button id="playSettingsBtn" class="edit-only" title="Play settings (pickup requirement, etc.)">Play Settings</button>
+        <button id="testBtn" class="edit-only" title="AI agent: does the level have a solution?">Test</button>
         <button id="newBtn" class="edit-only" title="New level (opens the levels dialog)">New</button>
         <label class="level-pick edit-only" title="Switch level (unsaved drafts are guarded)">
           <span>Level:</span>
@@ -622,10 +626,10 @@ let playController = null;
 // Playtest the LIVE buffer (unsaved edits included). If the launch gate
 // blocks (validation error, or no exit to reach), keep the editor open
 // and surface the blocking reasons in the problems panel — no play mode.
-function tryPlaytest() {
-  if (editorMode === 'play') return; // already playing — no-op
+function tryPlaytest(opts = {}) {
+  if (editorMode === 'play' || editorMode === 'demo') return; // already playing — no-op
   const parsed = parse(src.value);
-  const r = launchPlaytest(parsed, legend, tileset, previewCanvas);
+  const r = launchPlaytest(parsed, legend, tileset, previewCanvas, opts);
   if (!r.ok) {
     const issues = validate(parsed, legend);
     if (tilesetWarn) issues.push(tilesetWarn);
@@ -638,9 +642,12 @@ function tryPlaytest() {
     problemsEl.classList.add('flash');
     return;
   }
-  // Enter play mode. The launcher's rAF loop now drives the canvas;
-  // the editor's run() is gated on editorMode === 'edit' (see below).
-  editorMode = 'play';
+  // Enter play (or demo) mode. The launcher's rAF loop now drives the
+  // canvas; the editor's run() is gated on editorMode === 'edit'.
+  // v20: demo mode is the same shape as play mode but driven by a
+  // ScriptedInput recording (opts.inputSource); auto-exits when the
+  // scene's phase transitions to 'won' or 'dead'.
+  editorMode = opts.inputSource ? 'demo' : 'play';
   playController = r;
   // v18 fix: the engine's TILE (20) differs from the editor's TILE
   // (24), so the launcher's resize (gridW*20) leaves #preview ~17%
@@ -659,18 +666,43 @@ function tryPlaytest() {
   const pinCells = parsed.meta.viewport?.w ?? parsed.meta.width;
   previewCanvas.style.width = `${pinCells * TILE}px`;
   document.body.classList.add('playmode');
+  if (editorMode === 'demo') document.body.classList.add('demomode');
   // Belt-and-braces: clear any stray marquee selection rect.
   octx.clearRect(0, 0, overlay.width, overlay.height);
   // Capture-phase Esc so it wins over textarea / dropdown handlers.
   document.addEventListener('keydown', onPlayEsc, true);
+  // v20: in demo mode, auto-exit when the scene transitions to won or
+  // dead. Hold the banner for 1.5s so the user can read it.
+  if (editorMode === 'demo') startDemoAutoExitWatcher();
+}
+
+let demoExitTimer = null;
+function startDemoAutoExitWatcher() {
+  const watcher = setInterval(() => {
+    const phase = playController?.getPhase?.();
+    if (phase === 'won' || phase === 'dead') {
+      clearInterval(watcher);
+      demoExitTimer = setTimeout(() => {
+        demoExitTimer = null;
+        exitPlaytest();
+      }, 1500);
+    } else if (!playController) {
+      clearInterval(watcher);
+    }
+  }, 100);
 }
 
 function exitPlaytest() {
-  if (editorMode !== 'play') return;
+  if (editorMode !== 'play' && editorMode !== 'demo') return;
+  if (demoExitTimer) {
+    clearTimeout(demoExitTimer);
+    demoExitTimer = null;
+  }
   if (playController?.exit) playController.exit();
   playController = null;
   editorMode = 'edit';
   document.body.classList.remove('playmode');
+  document.body.classList.remove('demomode');
   document.removeEventListener('keydown', onPlayEsc, true);
   // Release the play-mode display-size pin so the editor's run()
   // below sizes #preview from its (restored) intrinsic dims.
@@ -722,7 +754,34 @@ document.querySelector('#restartBtn').addEventListener('click', () => {
   if (playController?.restart) playController.restart();
 });
 document.querySelector('#exitBtn').addEventListener('click', exitPlaytest);
-document.querySelector('#playBtn').addEventListener('click', tryPlaytest);
+document.querySelector('#playBtn').addEventListener('click', () => tryPlaytest());
+
+// v20: [Test] button runs the AI agent on the current buffer.
+// The agent's testLevel() is synchronous and typically < 100ms on the
+// default levels; for big levels we wrap in a setTimeout so the busy
+// cursor (if any) can render before the planner spins up.
+document.querySelector('#testBtn').addEventListener('click', () => {
+  const parsed = parse(src.value);
+  setTimeout(() => {
+    const result = testLevel(parsed, legend, tileset);
+    if (result.ok) {
+      // Paint the solution's path on the editor overlay. The overlay
+      // canvas is already sized to the editor preview's intrinsic
+      // dims (the run() loop keeps them in sync).
+      octx.clearRect(0, 0, overlay.width, overlay.height);
+      renderSolutionOverlay(octx, result.solution, TILE);
+    }
+    openAgentDialog({
+      result,
+      onDemo: (recording) => tryPlaytest({ inputSource: recording }),
+      onClose: () => {
+        // Clear the overlay when the dialog closes (so the editor
+        // returns to its normal marquee-only state).
+        octx.clearRect(0, 0, overlay.width, overlay.height);
+      },
+    });
+  }, 0);
+});
 levelSel.addEventListener('change', () => {
   const next = levelSel.value;
   if (next === '' || next === currentId) return; // untitled / no-op

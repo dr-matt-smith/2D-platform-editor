@@ -9,6 +9,7 @@
 // buttons are owned by main.js (separation of concerns).
 import { Game } from './core/game.js';
 import { Input } from './core/input.js';
+import { ScriptedInput } from './scriptedInput.js';
 import { AssetLoader } from './core/assets.js';
 import { TILE } from './constants.js';
 import { toWorld } from './adapter.js';
@@ -32,7 +33,7 @@ let open = false;
  *                takes over the toolbar / Esc handling and calls
  *                exit()/restart() in response to user input.
  */
-export function launchPlaytest(parsed, legend, tileset, canvas) {
+export function launchPlaytest(parsed, legend, tileset, canvas, opts = {}) {
   if (open) return { ok: true, reasons: [] };
   const gate = playtestGate(parsed, legend);
   if (!gate.ok) return gate;
@@ -54,7 +55,18 @@ export function launchPlaytest(parsed, legend, tileset, canvas) {
     canvas.height = dims.worldH;
   }
 
-  const input = new Input();
+  // v20: when `opts.inputSource` is a ScriptedInput-recording array,
+  // the player is driven by the agent's plan instead of the keyboard
+  // (Demo mode). The vendored Input + ScriptedInput share the same
+  // shape (isDown / wasPressed / endFrame / dispose), so the engine
+  // doesn't know which is in use.
+  const input = Array.isArray(opts.inputSource)
+    ? new ScriptedInput(opts.inputSource)
+    : new Input();
+  // ScriptedInput needs frame-advance ticks. We piggy-back on the Game
+  // loop by wrapping update calls; simpler is to expose a frame counter
+  // here and let PlaytestScene's update tick it. Cleanest: tick on
+  // every requestAnimationFrame via a small bridge — set up below.
   // AssetLoader retained for `assets.play('coin', …)` — the coin pickup
   // sound is synthesised at runtime by the vendored synth() (v15 dropped
   // sprite-loading; v14 made the editor renderer the source of pixel
@@ -89,6 +101,26 @@ export function launchPlaytest(parsed, legend, tileset, canvas) {
 
   open = true;
   game.setScene(new PlaytestScene(game, parsed, legend, tileset, exit));
+  // v20: drive the ScriptedInput frame counter from a parallel rAF.
+  // The vendored Game's update loop is dt-based, not frame-counted;
+  // wrapping it here keeps the engine code untouched (v9 §7) while
+  // still feeding the recording at one event-frame per rAF tick.
+  if (input.advance) {
+    let frame = 0;
+    let stopped = false;
+    const tick = () => {
+      if (stopped) return;
+      input.advance(frame++);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    // Wrap exit() to stop the ticker.
+    const innerExit = exit;
+    exit = () => {
+      stopped = true;
+      innerExit();
+    };
+  }
   game.start();
-  return { ok: true, reasons: [], exit, restart, onExit };
+  return { ok: true, reasons: [], exit, restart, onExit, getPhase: () => game.scene?.phase ?? 'idle' };
 }
