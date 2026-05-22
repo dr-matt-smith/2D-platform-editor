@@ -1,26 +1,32 @@
 # 2D Level Designer — Version 24 Design Document
 
-Status: Proposed · Date: 2026-05-22 · Builds on:
+Status: Proposed (scope confirmed 2026-05-22) · Builds on:
 [version23_design.md](version23_design.md) (editor polish + agent
-action-graph extensions) · Implementation: *to follow once this scope
-is approved*.
+action-graph extensions) · Implementation:
+[version24_implementation.md](../2_implementation/version24_implementation.md)
 
 ## 1. Purpose
 
-A polish + agent-investigation version. Three small concrete items
-the user surfaced in the v23 wishlist tidy, plus the v22→v23 agent
-carry-overs (`tutorial.txt`, `below_ground.txt`, `precision_landing`).
+Polish + paste-to-load + agent-investigation version. Five items in
+scope (user-confirmed): a new editor affordance, two small polish
+items, and the v22→v23 agent carry-overs.
 
-### Thread A — Polish
+### Thread A — Editor
 
-1. **Pickup-touch sound timing fix.** When the player touches a
-   pickup in Play / Test, the pickup disappears IMMEDIATELY but the
-   collect sound fires a beat later. The disconnect breaks the
-   audio↔visual sync the user expects.
+1. **LOAD button.** New toolbar control beside `[New]`. Opens a
+   modal with a `<textarea>`; user pastes the text of a level, the
+   editor parses + validates it, stores it via the existing
+   `levels.js` localStorage path under a new auto-generated ID,
+   adds it to the `<select>`, and switches to it. Lets a user
+   import a level from a `.txt` they didn't author through the
+   download/upload workflow.
+
 2. **`prefers-color-scheme` first-load default.** v23's 🌗 toggle
-   defaults to dark for backward compatibility, but a first-time
-   visitor on a light-mode OS should land on light. Read the media
-   query when there's no `v23.theme` localStorage entry yet.
+   defaults to dark. First-time visitor on a light-mode OS should
+   land on light. Read the media query when there's no `v23.theme`
+   localStorage entry yet; user choice via 🌗 still wins on every
+   subsequent load.
+
 3. **Multi-coloured path overlay.** When the agent finds ≥ 2
    solutions, render EACH on the overlay simultaneously in a
    distinct hue, with the focused one solid + others dimmed.
@@ -29,25 +35,33 @@ carry-overs (`tutorial.txt`, `below_ground.txt`, `precision_landing`).
 ### Thread B — Agent carry-overs
 
 4. **`tutorial.txt` solves.** v23 diagnosed this as level-geometry,
-   not action-graph. Two fix paths to weigh (see §3.4 + Open
-   Questions §6).
+   not action-graph. v24 ships the LEVEL REDESIGN — add intermediate
+   row-2/3 platforms bridging the ooo platform to the exit. User-
+   confirmed: no engine extension (no double-jump), v9 §7 invariant
+   preserved.
+
 5. **`below_ground.txt` solves.** Dies at frame 49 — re-investigate
    under the v23 action set; may share root cause with the
    spawn-fall settle.
+
 6. **`precision_landing` rule.** The third item from v23's action-
    graph plan that didn't land: accept edges where the action's
    trajectory passes within ±2 px of a 1-tile target's centre.
    Needed for cherry-on-pillar (1-tile platform) variants the
    v22 tower-cherry sidestepped by being 3 wide.
 
+### Out of scope (user-deferred from initial proposal)
+
+- **Pickup-touch sound timing fix** — user removed from v24 scope;
+  stays as a v25+ candidate in the wishlist.
+
 ## 2. Current state
 
-### Sound (v18+)
-- `scene.game.assets.play('coin')` fires from inside the player's
-  pickup-collision branch in `PlaytestScene.update()`.
-- Suspected one-frame delay: the audio context's `start()` schedules
-  asynchronously; the visual update happens this frame, the audio
-  the next render tick.
+### Editor (v23)
+- `[New]` button opens the levels-dialog → creates a blank level.
+- No paste-text-to-import flow.
+- Levels: shipped (manifest-driven, read-only) + user drafts
+  (localStorage `leveldesigner:v1:draft:<id>`).
 
 ### Theme (v23 M2)
 - `body.lightmode` re-binds five CSS custom properties.
@@ -68,30 +82,40 @@ carry-overs (`tutorial.txt`, `below_ground.txt`, `precision_landing`).
 
 ## 3. Architecture
 
-### 3.1  Pickup-touch sound timing
+### 3.1  LOAD button
 
-Hypothesis: the lag is between the pickup-collision detection
-(`scene.update`) and the audio play call (`scene.game.assets.play`),
-plus the audio context's start-time scheduling. Three potential
-fixes to investigate in order:
+`src/main.js` template gains:
 
-1. **Move the play() call EARLIER in the frame.** If it currently
-   fires after the score increment + visual-state change, move it
-   to fire BEFORE — same JS tick, but audio context gets an earlier
-   `currentTime` reference.
-2. **Pre-warm the audio context.** On first user interaction
-   (Play / Test click), call `audioContext.resume()` so the
-   first `play()` doesn't pay the resume latency.
-3. **Use a pre-decoded `AudioBuffer`** instead of an `<audio>`
-   element — `AudioBufferSourceNode.start(0)` has sub-millisecond
-   latency, whereas `<audio>.play()` can have a tens-of-ms delay.
+```html
+<button id="loadBtn" class="edit-only" title="Load — paste level text">Load</button>
+```
 
-Plan: instrument with `performance.now()` in M1; pick whichever
-the data points at; implement.
+Placed next to `[New]` so the affordance reads as "create or load".
+Handler opens a new `openPasteLoadDialog({ onLoad })` modal
+(parallel to `openPlaySettings`); the modal contains:
+
+- A `<textarea>` for the pasted text (mono font; auto-focused).
+- An optional `<input>` for the level's display name (defaults to
+  the level's `# name:` directive if present, else `untitled`).
+- `[Cancel]` + `[Load]` buttons.
+
+On Load:
+1. `parse(text)` — must yield a valid grid (rejects garbage).
+2. `validate(parsed, legend)` — surfaces errors in the modal if
+   any (does not close).
+3. Generate a unique local ID: `local-${nanoid(6)}` (or similar).
+4. `levels.saveDraft(id, text)` via the existing v8 storage API.
+5. Add the new entry to `levelSel`.
+6. `loadInto(id)` — same path as switching levels via the dropdown.
+7. Close the modal.
+
+The user can then edit + save + download as they would with any
+other level. The "ID" is invisible to the user; the dropdown shows
+the display name.
 
 ### 3.2  `prefers-color-scheme` first-load default
 
-`src/main.js`, where `theme` is initialised:
+`src/main.js`:
 
 ```js
 let theme = readEnumPref('v23.theme', defaultTheme(), ['dark', 'light']);
@@ -106,20 +130,17 @@ function defaultTheme() {
 }
 ```
 
-If the user has clicked 🌗 once (localStorage set), their choice
-wins. Otherwise the OS preference seeds the initial state. A
-`window.matchMedia(...).addEventListener('change', ...)` listener
-could update the live theme when the OS pref flips, but proposed
-default: respect the OS pref ONLY on first load — once the user has
-interacted, lock to their choice.
+If localStorage has the key, user choice wins. Otherwise OS pref
+seeds the initial state. No reactive listener — once the user
+has clicked 🌗 the value is locked.
 
 ### 3.3  Multi-coloured path overlay
 
-`src/agent/overlay.js` gains a multi-solution variant:
+`src/agent/overlay.js` gains:
 
 ```js
 export function renderAllSolutionsOverlay(ctx, solutions, focusedIdx, tile) {
-  // Draw non-focused solutions first, dimmed.
+  // Non-focused first, dimmed.
   for (let i = 0; i < solutions.length; i++) {
     if (i === focusedIdx) continue;
     renderSolutionOverlay(ctx, solutions[i], tile, {
@@ -127,7 +148,7 @@ export function renderAllSolutionsOverlay(ctx, solutions, focusedIdx, tile) {
       alpha: 0.35,
     });
   }
-  // Then the focused one, full opacity, on top.
+  // Focused on top, solid.
   renderSolutionOverlay(ctx, solutions[focusedIdx], tile, {
     colour: HUE_PALETTE[focusedIdx % HUE_PALETTE.length],
     alpha: 1.0,
@@ -135,83 +156,57 @@ export function renderAllSolutionsOverlay(ctx, solutions, focusedIdx, tile) {
 }
 ```
 
-`HUE_PALETTE` = 5 high-contrast HSL values (one per max-solutions
-cap). The existing `renderSolutionOverlay` gains an optional
+`HUE_PALETTE` = 5 high-contrast HSL values (matches MAX_SOLUTIONS).
+The existing `renderSolutionOverlay` gains an optional
 `{colour, alpha}` parameter; defaults preserve v22 behaviour.
 
 `src/main.js`'s `onResult` callback dispatches to the multi-renderer
 when `result.solutions.length > 1`, else the single renderer.
 
-### 3.4  `tutorial.txt` solves
+### 3.4  `tutorial.txt` — level redesign
 
-Two competing fixes; choose ONE for v24:
-
-#### 3.4.a — Level redesign (proposed)
-
-Add an intermediate stepping stone at row 2 or row 3, around cols
-12–17, bridging the ooo platform to the exit:
+Replace `public/data/levels/tutorial.txt` with a self-consistent
+version. Add an intermediate platform at row 2/3 to bridge the gap.
+Proposed shape:
 
 ```
-Row 0: ########################
-Row 1: #......................#
-Row 2: #...P.......##....E....#   ← NEW row-2 platform cols 12–13
-Row 3: #...........##...######    ← supports it
-Row 4: #.......oooo...........#
-Row 5: #......######..........#
-Row 6: #......................#
-Row 7: #..........^^^.........#
-Row 8: #......................#
-Row 9: ########################
+# name: tutorial
+# order: 1
+# size: 24x10
+########################
+#......................#
+#...P.......##....E....#   ← NEW row-2 platform at cols 12–13
+#...........##...######    ← supports it (row-3 wall)
+#.......oooo...........#
+#......######..........#
+#......................#
+#..........^^^.........#
+#......................#
+########################
 ```
 
-Pros: zero engine change; preserves v9 §7 invariant; level becomes
-self-consistent (player physics matches the route).
-
-Cons: changes shipped content. Users with the existing level state
-will see the new shape.
-
-#### 3.4.b — Double-jump engine extension (alternative)
-
-Add a second `wasPressed("space")` allowance per jump cycle. Player
-can press space MID-AIR once for a second vy = -JUMP_FORCE.
-
-Pros: opens many existing levels (not just tutorial); a richer
-gameplay mechanic.
-
-Cons: **breaks v9 §7 invariant** — `src/play/entities/player.js`
-is vendored byte-identical from simple-platformer-1@4c3b936.
-Modification needs explicit user approval + a transcript note.
-Agent action enumeration would also need a new `jump_double` type
-covering the two-press combinations (~50 new candidates).
-
-**Proposed default: 3.4.a.** Smaller change, no invariant breakage,
-single-level scope. The double-jump idea moves to a v25+ candidate
-list pending user decision.
+Tested before commit by running the agent — must report
+`✓ Level completable` with ≥ 4 pickups collected.
 
 ### 3.5  `below_ground.txt` re-investigation
 
-Trace the agent's failure with a diagnostic Playwright probe (same
-style as v23's _v23-graph-probe scratch tests). Two hypotheses to
-test:
+Diagnostic Playwright probe (same style as v23's scratch tests).
+Two hypotheses to test:
 
 - The spawn-fall settle (v22 M1) sends the player THROUGH a
   hazard cell during the gravity-only ticks. Fix: hazard collision
   checks in the no-input settle loop.
 - The starting cell (after settle) is adjacent to a hazard that
   the first walk/jump action steps into. Fix: planner heuristic
-  to avoid hazard cells.
+  to avoid hazard-adjacent edges.
 
-Implementation depends on which hypothesis lands. M5 ships either
-the engine-side hazard-aware settle OR the agent-side hazard-
-avoiding planner.
+Implementation depends on which hypothesis lands.
 
 ### 3.6  `precision_landing` rule
 
 `src/agent/grid.js`'s `addActionEdges` extended:
 
 ```js
-// After the cell-resolved edge is decided, also check trajectory
-// for ±2 px passes over targets.
 if (result.trajectory) {
   for (const target of precisionTargets) {
     for (const pt of result.trajectory) {
@@ -222,7 +217,7 @@ if (result.trajectory) {
       if (dx < 2 && dy < 2) {
         edgesArr.push({
           to: cellKey(target.r, target.c),
-          ...
+          ...edgeFields,
         });
         break;
       }
@@ -232,24 +227,38 @@ if (result.trajectory) {
 ```
 
 Requires `simulateActionInContext` to also return the per-frame
-trajectory (currently only end-state). Performance: each cell ×
-46 actions × ~30-60 frames per action × ~10 targets = ~10k
-distance checks per graph build for a typical level. Cheap.
-
-`precisionTargets` = `pickupCells ∪ exitCells`, computed once per
-buildNavGraph call.
+trajectory. `precisionTargets` = `pickupCells ∪ exitCells`,
+computed once per buildNavGraph call.
 
 ## 4. UX in detail
 
-### 4.1  Pickup sound
+### 4.1  LOAD modal
 
-User-visible: pickup collect feels snappier. No new UI.
+```
+┌────────────────────────────────────────┐
+│ Load Level                             │
+│ ────────────────────────────────────── │
+│                                        │
+│ Paste a level definition below:        │
+│ ┌────────────────────────────────────┐ │
+│ │ # name: my-level                   │ │
+│ │ ##########                         │ │
+│ │ #P......E#                         │ │
+│ │ ##########                         │ │
+│ └────────────────────────────────────┘ │
+│                                        │
+│ Display name: [ my-level         ]     │
+│                                        │
+│ [Cancel]         [Load]                │
+└────────────────────────────────────────┘
+```
 
-### 4.2  Theme first-load
+After Load: the new level is in the dropdown, selected, and editable.
+
+### 4.2  Theme on first load
 
 First-time visitor on a light-mode OS sees the light theme
-immediately. No flicker (the theme is applied synchronously at
-module init before first paint).
+immediately. No flicker. No user action required.
 
 ### 4.3  Multi-coloured overlay
 
@@ -259,22 +268,19 @@ module init before first paint).
                   S3 — dimmed magenta ┄┄┄◇┄┄┄◇┄┄┄
 ```
 
-Click a non-focused row in the dialog → that solution becomes the
-solid one, others fade to dim. Helps the user compare routes
-visually without flipping back and forth.
+Click a non-focused row in the dialog → that solution becomes solid,
+others fade to dim. Helps the user compare routes visually.
 
 ### 4.4  Tutorial fix
 
-Either:
-- (4.a) the shipped `tutorial.txt` now has visible row-2/3 platforms
-  bridging the gap; the agent solves it; the player can complete it.
-- (4.b) double-jump enabled — user holds space in air for a second
-  burst.
+The shipped `tutorial.txt` now has visible row-2/3 platforms
+bridging the gap. The agent solves it (≥ 4 pickups). Players who
+copied the level to a local file see the OLD shape until they
+re-load the shipped version.
 
-### 4.5  `below_ground.txt` fix
+### 4.5  below_ground.txt fix
 
-After the diagnostic + repair, the agent solves the level (or
-documents a specific further failure for v25).
+After the diagnostic + repair, the agent solves the level.
 
 ### 4.6  Precision landing
 
@@ -285,48 +291,55 @@ before. Future levels can use narrower platforms.
 
 | File | Change |
 |------|--------|
-| `src/play/playtestScene.js` (or `assets.js`) | Pickup sound timing fix per M1 investigation. Possibly switch to AudioBufferSourceNode. |
-| `src/main.js` | `prefers-color-scheme` seeds first-load theme; multi-solution onResult dispatches to renderAllSolutionsOverlay. |
-| `src/agent/overlay.js` | `renderAllSolutionsOverlay(ctx, solutions, focusedIdx, tile)`; existing `renderSolutionOverlay` gains optional `{colour, alpha}` params (back-compat). |
-| `public/data/levels/tutorial.txt` | Add intermediate platform (3.4.a route). |
-| `src/play/playtestScene.js` / `src/agent/planner.js` | `below_ground.txt` fix per M5 investigation. |
-| `src/agent/simAction.js` | Return per-frame `trajectory: [{x, y}, ...]` so grid.js can do precision-landing checks. |
+| `src/main.js` | `[Load]` button + handler; `prefers-color-scheme` seeds first-load theme; multi-solution onResult dispatches to renderAllSolutionsOverlay. |
+| `src/loaderDialog.js` (or new `src/pasteLoadDialog.js`) | `openPasteLoadDialog({onLoad})` modal. |
+| `src/agent/overlay.js` | `renderAllSolutionsOverlay`; existing `renderSolutionOverlay` gains optional `{colour, alpha}` params. |
+| `public/data/levels/tutorial.txt` | Replace with self-consistent shape (intermediate row-2/3 platforms). |
+| `src/play/playtestScene.js` or `src/agent/planner.js` | `below_ground.txt` fix per M5 investigation. |
+| `src/agent/simAction.js` | Return per-frame `trajectory: [{x, y}, ...]`. |
 | `src/agent/grid.js` | `addActionEdges` extended with precision_landing rule. |
-| `tests/v24-pickup-sound.spec.js` (new) | Asserts sound fires within N ms of pickup. |
-| `tests/v24-theme-os-default.spec.js` (new) | Mocks matchMedia; asserts theme matches OS pref on first load + localStorage wins after. |
-| `tests/v24-multi-overlay.spec.js` (new) | Snapshot the overlay with ≥ 2 solutions; assert non-focused-row alpha < focused. |
+| `src/style.css` | `.paste-load-dialog` modal styling (matches v23 popup look + lightmode overrides). |
+| `tests/v24-load-button.spec.js` (new) | Open Load modal, paste a level, assert it's now in the dropdown + selected. |
+| `tests/v24-theme-os-default.spec.js` (new) | Mock matchMedia; assert theme matches OS pref on first load + localStorage wins after. |
+| `tests/v24-multi-overlay.spec.js` (new) | Sample overlay pixels with ≥ 2 solutions; assert focused-row alpha > non-focused. |
 | `tests/v24-tutorial-solves.spec.js` (new) | The acceptance gate from v23 carried forward; tutorial.txt now solves. |
 | `tests/v24-below-ground.spec.js` (new) | Acceptance: below_ground.txt solves. |
 | `tests/v24-precision-landing.spec.js` (new) | 1-tile pickup midway between two grounded cells is reachable. |
+| `TDDs/3_transcripts/version24_build.md` (new, M-final) | narrative |
 
 ## 6. Open questions — proposed defaults
 
-- **Tutorial fix path**: proposed **3.4.a (level redesign)**.
-  Smaller change, no v9 §7 invariant breakage. 3.4.b (double-jump)
-  needs explicit user approval and moves to a separate v25 candidate.
-- **prefers-color-scheme listener**: proposed **first-load only**.
-  Once the user has clicked 🌗, lock to their choice; don't reactively
-  flip on OS-pref changes during a session.
+- **LOAD button placement**: proposed beside `[New]`. Alternative:
+  inside the levels-dialog (next to "Create new"). Beside [New] is
+  more discoverable.
+- **LOAD modal validation**: proposed reject on parse-error OR
+  validation-error; surface message in the modal. User can fix
+  the text and re-Load.
+- **LOAD level naming**: proposed default to `# name:` directive
+  if present, else `untitled`. User can edit before clicking Load.
+- **OS-pref listener**: proposed **first-load only** (no reactive
+  listener). Once the user has clicked 🌗, lock to their choice.
 - **Multi-colour palette**: proposed 5 HSL values
   `{yellow, cyan, magenta, lime, orange}` — high-contrast on both
   themes. Tunable post-ship.
-- **Pickup-sound fix mechanism**: proposed **investigate first, fix
-  the smallest thing that closes the gap**. M1 starts with the
-  cheapest fix (call-order); escalates to AudioBufferSourceNode only
-  if the gap survives.
+- **tutorial.txt fix mechanism**: **CONFIRMED level redesign**
+  (user choice). v9 §7 invariant preserved.
 - **`below_ground.txt` scope**: proposed **investigate + ship the
-  diagnosed fix in M5**, even if it requires a touch of agent
-  heuristic. If unfixable in v24 scope, document for v25.
+  diagnosed fix in M5**. If unfixable in v24, document for v25.
+- **Precision-landing tolerance**: ±2 px (matches v23 plan). Tight
+  enough for 1-tile targets.
 
 ## 7. Acceptance criteria
 
-### Polish
-- **Pickup sound** fires within 50 ms of the visual disappear (or
-  the gap is at minimum imperceptible by ear).
+### Editor
+- **LOAD modal** opens via `[Load]`; pasting valid text creates a
+  new local level, adds it to the dropdown, switches to it.
+- **Invalid text** (parse error / no grid) surfaces an error in
+  the modal — modal stays open, user can fix.
 - **Theme** matches OS pref on first load (no localStorage entry);
   user choice wins on every subsequent load.
 - **Multi-coloured overlay** paints all solutions when ≥ 2;
-  focused-row click swaps which is solid.
+  focused-row click swaps which is solid; non-focused alpha < focused.
 
 ### Agent
 - **`tutorial.txt` solves** — `.badge.ok` within 5 s; ≥ 4 pickups
@@ -336,7 +349,7 @@ before. Future levels can use narrower platforms.
   between two walls in a unit-test level.
 
 ### Tests
-- `npm test` green; `npx playwright test` green (existing 53 + ≥ 5
+- `npm test` green; `npx playwright test` green (existing 53 + ≥ 6
   new cases).
 
 ## 8. Non-impact (explicit)
@@ -344,8 +357,8 @@ before. Future levels can use narrower platforms.
 - **Tileset schema** — unchanged (v22.1's `imageLocked` ships
   as-is).
 - **Vendored `src/play/core/*` + `src/play/entities/*`** —
-  byte-identical UNLESS the user opts into 3.4.b (double-jump).
-  Proposed default is 3.4.a, which keeps the invariant.
+  byte-identical. v9 §7 invariant preserved (user-confirmed: no
+  double-jump engine extension in v24).
 - **v18+ play-mode toolbar / problems bar / legend layout** —
   unchanged.
 - **v22 multi-solution enumeration + v23 minimise** — unchanged;
@@ -355,8 +368,11 @@ before. Future levels can use narrower platforms.
 
 ## 9. v25+ candidates / deferred
 
-- **3.4.b — double-jump engine extension** (if user wants 3.4.a
-  to ship in v24, double-jump becomes a v25 candidate).
+- **Pickup-touch sound timing fix** — user-deferred from v24
+  initial scope; stays in the wishlist.
+- **Double-jump engine extension** — alternative tutorial.txt fix
+  the user passed over for v24; could return in v25+ for the
+  broader level-capability uplift it offers.
 - **Reactive theme listener** — respond to OS-pref flips
   mid-session.
 - **Viewport guide follows mouse** — drag-to-pan the v23 guide.
@@ -376,38 +392,38 @@ Plus the long-standing v16/v17/v18/v19 carry-overs.
 
 ## 10. Risks
 
-- **Pickup-sound fix lands but the perceived lag remains** — the
-  delay might be in browser audio scheduling, not in our code.
-  Mitigation: instrument with `performance.now()` in M1 to
-  characterise the gap before picking a fix; report findings even
-  if no fix lands.
-- **OS-pref listener leak** — adding the change-listener in M2
-  without removing it on (hot-)reload could leak listeners. v24
-  ships first-load-only (no listener) to avoid this.
+- **LOAD ID collision** — if two pasted levels happen to generate
+  the same `local-XXXXXX` ID. Mitigation: nanoid's 6-char IDs give
+  ~10⁹ combinations; collision check on save (regenerate if
+  collision).
+- **LOAD invalid text** — partial parses (e.g. missing grid)
+  could leave the editor in a half-loaded state. Mitigation:
+  parse + validate BEFORE saving; on error, surface in the modal
+  and leave the current level untouched.
+- **OS-pref listener leak** — v24 ships first-load-only (no
+  listener), so no leak surface.
 - **Multi-colour palette readability** — too many similar hues =
-  noisy overlay. Cap at MAX_SOLUTIONS = 5 (same as v22's runner).
+  noisy overlay. Cap at MAX_SOLUTIONS = 5.
 - **Tutorial level edit affects authored content** — users who
   copied `tutorial.txt` to a local file see the OLD shape until
   they re-load. Mitigation: edit only the shipped file; users with
   their own copies are unaffected.
 - **below_ground.txt fix touches the planner** — risk of regressing
-  v21/v22 solvable levels. Mitigation: full agent-suite Playwright
-  pass before shipping; add the new level as a passing case.
+  v21/v22/v23 solvable levels. Mitigation: full agent-suite
+  Playwright pass before shipping.
 - **Precision-landing trajectory data inflates simAction memory** —
-  each sim returns up to ~60 `{x, y}` points × 46 actions × ~300
-  cells = ~830k points per graph build. ~13 MB. Mitigation: only
-  collect trajectory when `precisionTargets` is non-empty; cap
-  point count to one sample every N frames.
+  Mitigation: only collect trajectory when `precisionTargets` is
+  non-empty; sample one frame in every 2 if budget-tight.
 
 ## 11. Why this scope
 
-v23 closed the editor-polish thread and started — but didn't finish
-— the agent-action-graph thread. v24 finishes it (`tutorial.txt`,
-`below_ground.txt`, `precision_landing`) and lands three small
-polish items the user surfaced during v23 (pickup sound, OS theme
-default, multi-colour overlay).
+v23 closed the editor-polish thread and started — but didn't
+finish — the agent-action-graph thread. v24 finishes it (tutorial,
+below_ground, precision_landing), lands one new editor affordance
+(LOAD), and ships two small polish items (OS theme default,
+multi-colour overlay).
 
-No grand new feature — same discipline as v22/v23: small, scoped,
-gated. The big-ticket items (slopes, multi-level linking, AI level
-designer) stay in the v25+ candidate pool until the agent's "can
-solve every shipped level" thread closes cleanly.
+The user explicitly chose the level-redesign route for
+tutorial.txt over the double-jump engine extension, preserving the
+v9 §7 byte-identical-to-upstream invariant. Discipline carry-over
+from v22/v23: small + scoped + gated. No grand new feature.
