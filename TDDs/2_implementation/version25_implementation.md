@@ -1,18 +1,31 @@
 # Version 25 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-22 · Design:
+Status: **Delivered (2026-05-23)** · Design:
 [../1_design/version25_design.md](../1_design/version25_design.md)
+· Transcript:
+[../3_transcripts/version25_build.md](../3_transcripts/version25_build.md)
 
-Six small path-scoped commits. The agent thread (M1–M4) lands first
+Six small path-scoped commits. The agent thread (M1–M4) landed first
 to close the v24 architectural carry-over; the polish thread (M5)
-fits alongside without conflict; M6 closes with acceptance +
+fit alongside without conflict; M6 closed with acceptance +
 transcript.
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `796a9c9` | endState on edges |
+| 2 | `8dba253` | planner re-simulation |
+| 3 | `68d3894` | below_ground progress + regression gate |
+| 4 | `9cdbc0f` | precision_landing edge rule |
+| 5 | `8d70cb3` | AudioContext pre-warm |
+| 6 | _this commit_ | acceptance + transcript + Delivered |
+
+Tests at delivery: 295 unit / 76 Playwright. v9 §7 invariant preserved.
 
 **Architectural route**: design §3.1.a (sub-pixel-aware endpoints
 + re-simulate in planner). The cell-resolved graph stays for SEARCH;
 sub-pixel re-simulation handles RECORDING emission. 3.1.b (per-frame
-planner) deferred to v26+ if the simpler approach doesn't close all
-gaps.
+planner) carries to v26+ — needed for the full `below_ground.txt`
+solve since A* doesn't yet search over sub-pixel state space.
 
 ## Process (same discipline as v8–v24)
 

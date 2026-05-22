@@ -1,9 +1,31 @@
 # 2D Level Designer — Version 25 Design Document
 
-Status: Proposed · Date: 2026-05-22 · Builds on:
+Status: **Delivered (2026-05-23)** · Builds on:
 [version24_design.md](version24_design.md) (LOAD button + OS theme +
 multi-colour overlay + tutorial fix + below_ground diagnosis) ·
-Implementation: *to follow once this scope is approved*.
+Implementation:
+[version25_implementation.md](../2_implementation/version25_implementation.md)
+· Transcript:
+[version25_build.md](../3_transcripts/version25_build.md)
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `796a9c9` | edges carry sub-pixel endState alongside endCell |
+| 2 | `8dba253` | planner re-simulates each step from prev endState |
+| 3 | `68d3894` | below_ground.txt progress + agent-suite regression gate |
+| 4 | `9cdbc0f` | precision_landing edge rule for ±2 px target passes |
+| 5 | `8d70cb3` | pre-warm AudioContext on Play / Test entry |
+| 6 | _this commit_ | acceptance + transcript; design + impl Delivered |
+
+Tests: 295 unit / 76 Playwright pass. Bundle 76.44 kB JS (gzip 26.48 kB).
+v9 §7 byte-identical engine invariant preserved across all six commits.
+
+Carry-over to v26: full `below_ground.txt` solve via approach 3.1.b
+(per-frame-trajectory planner / sub-pixel state-space A*). v25 M3
+acceptance was re-scoped to PROGRESS (past frame 49 + score > 0) —
+A* still searches over cell-resolved edges, so sub-pixel trajectory
+drift can take the player to a cell the next edge wasn't planned
+for. The deeper architectural step is the v26 task.
 
 ## 1. Purpose
 
