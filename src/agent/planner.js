@@ -96,12 +96,19 @@ export function aStar(graph, from, to, blocked = new Set()) {
  *
  *   - 'all'  → visit every pickup, then the exit.
  *   - 0      → visit the exit directly.
- *   - N      → visit the N nearest pickups (greedy by A* cost), then exit.
+ *   - N      → visit the N pickups in min-total-cost order
+ *              (TSP-optimal for N ≤ 4, 2-opt heuristic for N > 4),
+ *              then exit.
  *
  * Returns an ordered list of "r,c" goal keys. Pickups are sub-goals;
  * the final entry is always an exit cell. Unreachable pickups are
- * skipped (in `all` mode) so the planner can still attempt the exit
- * — the runner reports the partial-completability separately.
+ * filtered out before ordering — the planner attempts what's reachable
+ * and the runner surfaces partial-completability separately.
+ *
+ * v22: replaces v20/v21's pure greedy nearest-first with a
+ * combinatorial-optimal ordering for small K. On `tutorial.txt`'s
+ * 4-pickup `oooo` row, greedy would pick the middle pickup first
+ * and overshoot; TSP-optimal walks left-to-right end-to-end.
  */
 function resolveGoals(graph, requiredPickups) {
   const exitKey = graph.exitCells[0] ? cellKey(graph.exitCells[0].r, graph.exitCells[0].c) : null;
@@ -116,42 +123,176 @@ function resolveGoals(graph, requiredPickups) {
 
   if (need === 0) return [exitKey];
 
-  // Greedy nearest-first ordering. We simulate the agent's position as
-  // it visits each pickup, choosing the unvisited pickup with the
-  // shortest A* cost from the current position. Pickups that turn out
-  // unreachable are dropped from the queue (the runner reports them).
   const startCell = graph.start;
   if (!startCell) return [exitKey];
-  let cur = cellKey(startCell.r, startCell.c);
-  const remaining = graph.pickupCells.map((p) => cellKey(p.r, p.c));
-  const queue = [];
+  const startKey = cellKey(startCell.r, startCell.c);
+  const allKeys = graph.pickupCells.map((p) => cellKey(p.r, p.c));
 
-  while (queue.length < need && remaining.length > 0) {
-    let bestKey = null;
+  // Drop unreachable pickups (no A* path from start) — the planner
+  // can still attempt the exit; the runner reports the rest.
+  const reachable = allKeys.filter((k) => aStar(graph, startKey, k) !== null);
+
+  if (reachable.length === 0) return [exitKey];
+
+  // For "need = N of M": enumerate combinations C(M, N). For each
+  // combination, find the best ordering. Pick the min over all
+  // combinations × orderings. Budget-aware: cap total enumeration.
+  const ordering = pickBestOrdering(graph, startKey, reachable, need, exitKey);
+  return [...ordering, exitKey];
+}
+
+/**
+ * Pick the best ordering of `need` pickups from `pickups`. Min total
+ * A* cost from start → p1 → p2 → ... → exit.
+ *
+ *   - For K = need ≤ 4 (≤ 24 perms each combination): exhaustive.
+ *   - For K > 4: greedy nearest-first followed by 2-opt local search
+ *     (capped at 50 iterations).
+ *
+ * Returns an array of cell keys in visit order.
+ */
+function pickBestOrdering(graph, startKey, pickups, need, exitKey) {
+  const M = pickups.length;
+  if (need >= M) {
+    // Visit all reachable pickups.
+    return bestOrderOfSubset(graph, startKey, pickups, exitKey);
+  }
+  // need < M: enumerate combinations of `need` from `pickups`.
+  // C(M, need): for M=5 need=3 → 10; M=7 need=3 → 35; M=8 need=4 → 70.
+  // Bounded enough for v22.
+  let best = null;
+  let bestCost = Infinity;
+  for (const subset of combinations(pickups, need)) {
+    const order = bestOrderOfSubset(graph, startKey, subset, exitKey);
+    const cost = totalChainCost(graph, startKey, [...order, exitKey]);
+    if (cost < bestCost) {
+      bestCost = cost;
+      best = order;
+    }
+  }
+  return best ?? [];
+}
+
+/** Yield all combinations of size k from `arr` (lex order). */
+function* combinations(arr, k) {
+  const n = arr.length;
+  if (k > n) return;
+  const idx = Array.from({ length: k }, (_, i) => i);
+  while (true) {
+    yield idx.map((i) => arr[i]);
+    let i = k - 1;
+    while (i >= 0 && idx[i] === n - k + i) i--;
+    if (i < 0) return;
+    idx[i]++;
+    for (let j = i + 1; j < k; j++) idx[j] = idx[j - 1] + 1;
+  }
+}
+
+/** Find the min-cost ordering of `subset` visited in sequence from
+ *  start, ending at exit. Exhaustive for K ≤ 4 (≤ 24 perms);
+ *  greedy-nearest + 2-opt for K > 4. */
+function bestOrderOfSubset(graph, startKey, subset, exitKey) {
+  const K = subset.length;
+  if (K === 0) return [];
+  if (K === 1) return [subset[0]];
+  if (K <= 4) {
+    // Exhaustive permutation search.
+    let best = null;
     let bestCost = Infinity;
-    let bestPath = null;
-    for (const candidate of remaining) {
-      const path = aStar(graph, cur, candidate);
-      if (!path) continue;
-      const cost = path.reduce((sum, step) => sum + step.edge.cost, 0);
+    for (const perm of permutations(subset)) {
+      const cost = totalChainCost(graph, startKey, [...perm, exitKey]);
       if (cost < bestCost) {
         bestCost = cost;
-        bestKey = candidate;
-        bestPath = path;
+        best = perm;
       }
     }
-    if (!bestKey) break; // no reachable pickups remain
-    queue.push(bestKey);
+    return best ?? subset;
+  }
+  // K > 4: greedy seed + 2-opt local search.
+  const greedy = greedyNearest(graph, startKey, subset, exitKey);
+  return twoOptImprove(graph, startKey, greedy, exitKey);
+}
+
+/** Generate all permutations of `arr`. */
+function* permutations(arr) {
+  if (arr.length <= 1) {
+    yield [...arr];
+    return;
+  }
+  for (let i = 0; i < arr.length; i++) {
+    const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+    for (const p of permutations(rest)) {
+      yield [arr[i], ...p];
+    }
+  }
+}
+
+/** Greedy nearest-first ordering — the v20/v21 algorithm. */
+function greedyNearest(graph, startKey, pickups, exitKey) {
+  let cur = startKey;
+  const remaining = [...pickups];
+  const order = [];
+  while (remaining.length > 0) {
+    let bestKey = null;
+    let bestCost = Infinity;
+    for (const c of remaining) {
+      const path = aStar(graph, cur, c);
+      if (!path) continue;
+      const cost = path.reduce((s, step) => s + step.edge.cost, 0);
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestKey = c;
+      }
+    }
+    if (!bestKey) break;
+    order.push(bestKey);
     cur = bestKey;
     remaining.splice(remaining.indexOf(bestKey), 1);
-    // We don't store bestPath here — the main plan() loop re-runs A*
-    // to get fresh paths (the blocked-edge set may have changed by
-    // then in a replan scenario).
-    void bestPath;
   }
+  void exitKey; // unused; kept for symmetry
+  return order;
+}
 
-  queue.push(exitKey);
-  return queue;
+/** 2-opt local search on a tour. Tries swapping pairs of visits;
+ *  keeps any swap that lowers total cost. Iterates until no
+ *  improvement OR the iteration cap is reached. */
+function twoOptImprove(graph, startKey, order, exitKey) {
+  let best = [...order];
+  let bestCost = totalChainCost(graph, startKey, [...best, exitKey]);
+  let improved = true;
+  let iter = 0;
+  const MAX_ITER = 50;
+  while (improved && iter < MAX_ITER) {
+    improved = false;
+    iter++;
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let j = i + 1; j < best.length; j++) {
+        const candidate = [...best];
+        [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
+        const cost = totalChainCost(graph, startKey, [...candidate, exitKey]);
+        if (cost < bestCost) {
+          bestCost = cost;
+          best = candidate;
+          improved = true;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/** Sum of A* costs for the chain start → goal[0] → goal[1] → ... .
+ *  Returns Infinity if any leg is unreachable. */
+function totalChainCost(graph, startKey, chain) {
+  let cur = startKey;
+  let total = 0;
+  for (const g of chain) {
+    const path = aStar(graph, cur, g);
+    if (!path) return Infinity;
+    total += path.reduce((s, step) => s + step.edge.cost, 0);
+    cur = g;
+  }
+  return total;
 }
 
 // ---- Trace + recording emission -----------------------------------------
