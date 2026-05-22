@@ -887,6 +887,11 @@ window.addEventListener('resize', () => {
 // buttons; each re-invokes runAgent with the larger budget.
 document.querySelector('#testBtn').addEventListener('click', () => {
   const parsed = parse(src.value);
+  // v22 M5: testmode hides the legend (same CSS rule as playmode /
+  // demomode). Cleared in onClose; the dialog calls onClose for both
+  // success-close and failure-close so we don't need a per-state hook.
+  document.body.classList.add('testmode');
+  applyFitToScreen(); // legend column collapsed → re-fit the canvas
   openAgentDialog({
     runAgent: (maxRuntimeMs, onProgress, signal) =>
       testLevel(parsed, legend, tileset, { maxRuntimeMs, onProgress, signal }),
@@ -899,6 +904,8 @@ document.querySelector('#testBtn').addEventListener('click', () => {
     },
     onDemo: (recording) => tryPlaytest({ inputSource: recording }),
     onClose: () => {
+      document.body.classList.remove('testmode');
+      applyFitToScreen(); // legend track restored → re-fit
       octx.clearRect(0, 0, overlay.width, overlay.height);
     },
   });

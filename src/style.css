@@ -389,6 +389,23 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 }
 .pane.right.layout-bottom.legend-collapsed > .legend { padding: 4px 12px; }
 
+/* v22 M5: hide the legend altogether during play / demo / agent-test.
+   The grid template still reserves a track for it, so we also collapse
+   the right column / bottom row to zero — the canvas-wrap takes the
+   full pane and applyFitToScreen() picks up the extra space. */
+body.playmode .pane.right > .legend,
+body.demomode .pane.right > .legend,
+body.testmode .pane.right > .legend { display: none; }
+body.playmode .pane.right.layout-right,
+body.demomode .pane.right.layout-right,
+body.testmode .pane.right.layout-right { grid-template-columns: 1fr 0; }
+body.playmode .pane.right.layout-bottom,
+body.demomode .pane.right.layout-bottom,
+body.testmode .pane.right.layout-bottom { grid-template-rows: auto 1fr 0; }
+body.playmode #fitBtn,
+body.demomode #fitBtn,
+body.testmode #fitBtn { display: none; }
+
 /* v22: fit-to-screen button — same toolbar-button look as the rest;
    ACTIVE state gets a brighter background so the user sees it's on. */
 #fitBtn {
