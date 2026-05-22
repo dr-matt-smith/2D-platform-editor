@@ -43,18 +43,30 @@ test('v22: spawn-fall settle — player grounded immediately on Play (high-spawn
   // x=4*24+12=108, y=8*24+12=204 in editor TILE=24). The canvas
   // intrinsic dims are gridW*20 (engine TILE), so cell (8, 4) centre
   // is at canvas pixel (4*20+10, 8*20+10) = (90, 170).
-  const pixel = await page.evaluate(() => {
-    const c = document.querySelector('#preview');
-    const ctx = c.getContext('2d');
-    return [...ctx.getImageData(90, 170, 1, 1).data];
+  // Sample a 3×3 block at cell (8, 4) centre — robust to whether the
+  // player paints as a sprite or as the blue-disc fallback. The check
+  // is "this pixel is NOT sky"; if the v22 settle didn't run, the
+  // player would still be falling through rows 2–5 at t=50ms and this
+  // pixel would still show the Dirt sky colour (#1b2a3a ≈ 27,42,58).
+  const samples = await page.evaluate(() => {
+    const ctx = document.querySelector('#preview').getContext('2d');
+    const out = [];
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        out.push([...ctx.getImageData(90 + dx, 170 + dy, 1, 1).data]);
+      }
+    }
+    return out;
   });
-  // Dirt player fallback colour is #3498db = [52, 152, 219, 255].
-  // If the player is HERE at t=50ms, blue dominates. If they're
-  // still falling (mid-air at row 2-5), this pixel would be sky.
-  const [r, g, b] = pixel;
-  expect(b).toBeGreaterThan(180);
-  expect(b).toBeGreaterThan(r + 50);
-  expect(b).toBeGreaterThan(g + 30);
+  // Sky is dark blue-grey at low luminance. Any player paint (sprite
+  // or fallback disc) lifts brightness or shifts hue noticeably. Pass
+  // if ANY sample in the 5×5 patch is clearly non-sky.
+  const nonSky = samples.some(([r, g, b]) => {
+    const lum = r + g + b;
+    const skyish = Math.abs(r - 27) < 30 && Math.abs(g - 42) < 30 && Math.abs(b - 58) < 30;
+    return !skyish && lum > 200;
+  });
+  expect(nonSky).toBe(true);
 });
 
 test('v22: spawn-settle does not break levels where P is already grounded', async ({ page }) => {
