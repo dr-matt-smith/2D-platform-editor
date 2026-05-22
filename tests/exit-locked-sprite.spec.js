@@ -14,16 +14,18 @@ async function injectLevelText(page, text) {
   }, text);
 }
 
-async function setDirt(page) {
-  // Switch the active tileset to Dirt_Platformer_Tiles via the toolbar
-  // <select>. The on-disk JSON is what's under test.
-  await page.evaluate(() => {
+async function setTileset(page, id) {
+  // Switch the active tileset via the toolbar <select>. The on-disk
+  // JSON is what's under test.
+  await page.evaluate((tid) => {
     const sel = document.querySelector('#tilesetSel');
-    sel.value = 'Dirt_Platformer_Tiles';
+    sel.value = tid;
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  }, id);
   await page.waitForTimeout(300);
 }
+const setDirt = (page) => setTileset(page, 'Dirt_Platformer_Tiles');
+const setPeas = (page) => setTileset(page, 'PlayWithYourPeas');
 
 test('v22.1: exit paints RED (locked) when pickup-required not met, GREEN after', async ({ page }) => {
   await page.goto('/');
@@ -114,4 +116,53 @@ test('v22.1: editor preview always shows the UNLOCKED variant (green)', async ({
   const pixel = await sampleAtExit();
   // Green dominates in edit mode regardless of pickup-required.
   expect(pixel[1]).toBeGreaterThan(pixel[0] + 5);
+});
+
+test('v22.1: PlayWithYourPeas exit sprite swaps Bad → Good after collecting', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  await setPeas(page);
+  // Same 1-pickup level shape as the Dirt test; PWYP wires Flag-Bad
+  // (locked) and Flag-Good (unlocked) for the exit.
+  const level = [
+    '# pickup-required: 1',
+    '##########',
+    '#.P.o..E.#',
+    '##########',
+  ].join('\n');
+  await injectLevelText(page, level);
+  await page.waitForTimeout(400);
+
+  await page.locator('#playBtn').click();
+  await page.waitForFunction(() => document.body.classList.contains('playmode'));
+  await page.waitForTimeout(100);
+
+  // PNG hashing the exit-cell rectangle is the most robust signal —
+  // Flag-Bad and Flag-Good have different cloth pixels regardless of
+  // their exact RGB. (Some packs use sepia / dim tones we can't
+  // assume saturated red/green for.) The HASH MUST DIFFER pre/post.
+  const exitCellHash = () => page.evaluate(async () => {
+    const ctx = document.querySelector('#preview').getContext('2d');
+    // PWYP renders at engine TILE=20; exit cell is col 7 row 1 →
+    // canvas rect (140, 20, 20, 20).
+    const data = ctx.getImageData(140, 20, 20, 20).data;
+    // Quick FNV-1a-ish 32-bit roll over the channel bytes.
+    let h = 0x811c9dc5 >>> 0;
+    for (let i = 0; i < data.length; i++) {
+      h = (h ^ data[i]) >>> 0;
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h;
+  });
+
+  const hashLocked = await exitCellHash();
+  // Drive the player right to collect the cherry.
+  await page.keyboard.down('ArrowRight');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('ArrowRight');
+  await page.waitForTimeout(200);
+  const hashUnlocked = await exitCellHash();
+  // The two hashes must differ — proves the locked variant painted
+  // first and the primary painted after the requirement was met.
+  expect(hashLocked).not.toBe(hashUnlocked);
 });
