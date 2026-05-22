@@ -221,6 +221,7 @@ export function openPlaySettings({
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
     <div class="modal confirm play-settings" role="dialog" aria-modal="true" aria-label="Play settings">
+      <header class="play-settings-header">Play Settings</header>
       <p class="cf-msg"><strong>Viewport</strong> — camera in play mode.</p>
       <div class="ps-rows">
         <label class="ps-row">
@@ -236,6 +237,7 @@ export function openPlaySettings({
           <span>cells</span>
         </label>
       </div>
+      <hr class="popup-divider">
       <p class="cf-msg"><strong>Pickup requirement</strong> — what does the player need to collect before the exit ends the level?</p>
       <div class="ps-rows">
         <label class="ps-row">

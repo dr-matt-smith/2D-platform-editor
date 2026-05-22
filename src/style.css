@@ -10,6 +10,11 @@
   --dim: #888;
   --err: #f14c4c;
   --warn: #e2b93d;
+  /* v23 M1: accent colour for high-contrast UI separators (popup
+     dividers, focused-state borders). Same green the agent dialog
+     already uses ad-hoc — promoting it to a variable lets M2's
+     light-theme override re-bind it. */
+  --accent: #6cd99a;
   color-scheme: dark;
 }
 
@@ -109,6 +114,13 @@ body {
   padding: 5px 12px;
   color: var(--dim);
   border-bottom: 1px solid var(--line);
+  /* v23 M1: pin the toolbar height so it doesn't shrink when the
+     edit-mode controls (selects, multi-button row) hide and the
+     play-mode pair (Restart / Exit) takes over. Value = the natural
+     edit-mode height with the shipped fonts; the canvas-wrap below
+     no longer reclaims those pixels mid-mode-switch, so the canvas
+     origin stays put. */
+  min-height: 38px;
 }
 #newBtn,
 #dlBtn,
@@ -249,6 +261,25 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 
 /* v18: Play Settings dialog rows — radio + label, with an inline
    number input on the "minimum N" row. */
+/* v23 M1: title bar at the top of the popup + accent-coloured HR
+   between the Viewport and Pickup-Requirement sections. Title is
+   purely a labelling improvement; the HR adds high-contrast visual
+   separation that the two adjacent <p class="cf-msg"> headings
+   couldn't carry on their own. */
+.play-settings .play-settings-header {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--fg);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin: -4px 0 12px 0;
+}
+.play-settings .popup-divider {
+  border: none;
+  border-top: 2px solid var(--accent);
+  margin: 14px 0 6px 0;
+}
+
 .play-settings .ps-rows {
   display: flex;
   flex-direction: column;
