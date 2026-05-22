@@ -25,18 +25,30 @@ export function renderSolutionOverlay(ctx, solution, tile) {
   ctx.save();
 
   // Polyline: start point → each trace target's cell center.
+  // v21: jump entries render as parabolic arcs (6 intermediate
+  // sample points via a quadratic Bezier with a peak above the
+  // higher endpoint), so the visual path curves naturally. Walk
+  // and drop entries stay as straight segments.
   ctx.lineWidth = 3;
   ctx.strokeStyle = POLY_COLOUR;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.beginPath();
-  const sx = graph.start.c * tile + tile / 2;
-  const sy = graph.start.r * tile + tile / 2;
+  let sx = graph.start.c * tile + tile / 2;
+  let sy = graph.start.r * tile + tile / 2;
   ctx.moveTo(sx, sy);
   for (const entry of trace) {
     const tx = entry.target.c * tile + tile / 2;
     const ty = entry.target.r * tile + tile / 2;
-    ctx.lineTo(tx, ty);
+    if (entry.kind === 'jump') {
+      for (const p of jumpArcSamples(sx, sy, tx, ty, tile, 6)) {
+        ctx.lineTo(p.x, p.y);
+      }
+    } else {
+      ctx.lineTo(tx, ty);
+    }
+    sx = tx;
+    sy = ty;
   }
   ctx.stroke();
 
@@ -54,6 +66,26 @@ export function renderSolutionOverlay(ctx, solution, tile) {
   }
 
   ctx.restore();
+}
+
+/**
+ * Quadratic-Bezier samples approximating a parabolic jump arc from
+ * (x0, y0) to (x1, y1). Peak height ≈ 1 tile above the higher of the
+ * two endpoints. Returns N points (not including the start; the start
+ * is implicit via the caller's moveTo or previous lineTo).
+ */
+function jumpArcSamples(x0, y0, x1, y1, tile, samples = 6) {
+  const peakY = Math.min(y0, y1) - tile;
+  const midX = (x0 + x1) / 2;
+  const out = [];
+  for (let i = 1; i <= samples; i++) {
+    const t = i / samples;
+    const u = 1 - t;
+    const x = u * u * x0 + 2 * u * t * midX + t * t * x1;
+    const y = u * u * y0 + 2 * u * t * peakY + t * t * y1;
+    out.push({ x, y });
+  }
+  return out;
 }
 
 function drawMarker(ctx, c, r, tile, label, colour) {

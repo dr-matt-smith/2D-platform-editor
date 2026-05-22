@@ -140,8 +140,50 @@ body {
   font-weight: bold;
   font-size: 0.95em;
 }
-.agent-dialog .badge.ok   { background: #1e3b29; color: #6cd99a; }
-.agent-dialog .badge.fail { background: #3b1e1e; color: #ff8c8c; }
+.agent-dialog .badge.ok        { background: #1e3b29; color: #6cd99a; }
+.agent-dialog .badge.fail      { background: #3b1e1e; color: #ff8c8c; }
+.agent-dialog .badge.searching { background: #2a2d3a; color: #c8c8e0; }
+
+/* v21 countdown timer + progress bar. The dialog opens immediately
+   in "searching" state with these elements; they're replaced by
+   success/failure markup when the agent resolves. */
+.agent-dialog .countdown {
+  display: block;
+  font: bold 36px monospace;
+  text-align: center;
+  color: var(--fg);
+  margin: 6px 0 6px;
+  font-variant-numeric: tabular-nums;
+}
+.agent-dialog .countdown-bar {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-bottom: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: #1d1d20;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.agent-dialog .countdown-bar::-webkit-progress-bar { background: #1d1d20; border-radius: 3px; }
+.agent-dialog .countdown-bar::-webkit-progress-value { background: #ffcc00; border-radius: 3px; transition: width 0.05s; }
+.agent-dialog .countdown-bar::-moz-progress-bar { background: #ffcc00; }
+
+/* v21 escalation row: three "Try Ns" buttons on the failure dialog. */
+.agent-dialog .escalation-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin: 10px 0;
+}
+.agent-dialog .escalation-row .cf-btn {
+  white-space: nowrap;
+}
 .agent-dialog .solution-row {
   display: flex;
   align-items: center;

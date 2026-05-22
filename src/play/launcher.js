@@ -101,26 +101,13 @@ export function launchPlaytest(parsed, legend, tileset, canvas, opts = {}) {
 
   open = true;
   game.setScene(new PlaytestScene(game, parsed, legend, tileset, exit));
-  // v20: drive the ScriptedInput frame counter from a parallel rAF.
-  // The vendored Game's update loop is dt-based, not frame-counted;
-  // wrapping it here keeps the engine code untouched (v9 §7) while
-  // still feeding the recording at one event-frame per rAF tick.
-  if (input.advance) {
-    let frame = 0;
-    let stopped = false;
-    const tick = () => {
-      if (stopped) return;
-      input.advance(frame++);
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    // Wrap exit() to stop the ticker.
-    const innerExit = exit;
-    exit = () => {
-      stopped = true;
-      innerExit();
-    };
-  }
+  // v20 used a parallel rAF here to tick the ScriptedInput's frame
+  // counter; that raced with the engine's own rAF and lost the
+  // first motion frame in headless / variable-fps environments.
+  // v21: the ScriptedInput is ticked synchronously inside
+  // `PlaytestScene.update()` (see playtestScene.js #tickScriptedInput),
+  // guaranteeing the input timeline advances before `player.update`
+  // reads it. No parallel rAF needed.
   game.start();
   return { ok: true, reasons: [], exit, restart, onExit, getPhase: () => game.scene?.phase ?? 'idle' };
 }

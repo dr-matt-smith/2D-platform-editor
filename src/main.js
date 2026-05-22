@@ -757,32 +757,30 @@ document.querySelector('#exitBtn').addEventListener('click', exitPlaytest);
 document.querySelector('#playBtn').addEventListener('click', () => tryPlaytest());
 
 // v21: [Test] button runs the AI agent on the current buffer.
-// testLevel is async (yields periodically so the UI countdown timer
-// can repaint and Esc can abort). M5 wires the full searching-state
-// dialog + countdown + escalation flow; for now we just await the
-// result and open the dialog as before.
-document.querySelector('#testBtn').addEventListener('click', async () => {
+// The agent dialog opens IMMEDIATELY in a "searching" state with a
+// live 5-second countdown. The dialog drives runAgent (an async
+// callback that calls testLevel with maxRuntimeMs + onProgress +
+// signal). On failure, the dialog offers Try 10/15/20s escalation
+// buttons; each re-invokes runAgent with the larger budget.
+document.querySelector('#testBtn').addEventListener('click', () => {
   const parsed = parse(src.value);
-  const result = await testLevel(parsed, legend, tileset);
-  setTimeout(() => {
-    if (result.ok) {
-      // Paint the solution's path on the editor overlay. The overlay
-      // canvas is already sized to the editor preview's intrinsic
-      // dims (the run() loop keeps them in sync).
+  openAgentDialog({
+    runAgent: (maxRuntimeMs, onProgress, signal) =>
+      testLevel(parsed, legend, tileset, { maxRuntimeMs, onProgress, signal }),
+    onResult: (result /* , budgetMs */) => {
+      // Paint the path overlay on success; clear on failure (a
+      // previous success may have left the overlay populated and the
+      // user is now in escalation).
       octx.clearRect(0, 0, overlay.width, overlay.height);
-      renderSolutionOverlay(octx, result.solution, TILE);
-    }
-    openAgentDialog({
-      result,
-      onDemo: (recording) => tryPlaytest({ inputSource: recording }),
-      onClose: () => {
-        // Clear the overlay when the dialog closes (so the editor
-        // returns to its normal marquee-only state).
-        octx.clearRect(0, 0, overlay.width, overlay.height);
-      },
-    });
-  }, 0);
+      if (result.ok) renderSolutionOverlay(octx, result.solution, TILE);
+    },
+    onDemo: (recording) => tryPlaytest({ inputSource: recording }),
+    onClose: () => {
+      octx.clearRect(0, 0, overlay.width, overlay.height);
+    },
+  });
 });
+
 levelSel.addEventListener('change', () => {
   const next = levelSel.value;
   if (next === '' || next === currentId) return; // untitled / no-op

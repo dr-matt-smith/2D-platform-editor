@@ -43,8 +43,21 @@ export function simulateActionInContext(ctx, startState, action) {
   ctx.scene.phase = 'play';
   ctx.scene.score = 0;
   for (const c of ctx.scene.coins) c.collected = false;
-  ctx.fakeGame.input = new ScriptedInput(actionToRecording(action, 0));
+  // v21: recording starts at frame=1 (matches the planner's settle
+  // offset). PlaytestScene's #tickScriptedInput then calls advance(0)
+  // on the first update (no events fire — the player settles under
+  // gravity), then advance(1) on the next update (press fires). This
+  // mirrors what the live engine will see when the planner's
+  // recording is replayed.
+  ctx.fakeGame.input = new ScriptedInput(actionToRecording(action, 1));
   ctx.scene.setPlayerState(startState);
+  // v21: reset BOTH the input-tick counter and the wall-clock
+  // accumulator so successive simulations on the same context start
+  // fresh — otherwise simTime keeps accumulating and the second
+  // action's first update would advance through the entire recording
+  // in one tick.
+  ctx.scene.simFrame = 0;
+  ctx.scene.simTime = 0;
   return runSimLoop(ctx.scene, ctx.fakeGame.input, action);
 }
 
@@ -85,17 +98,14 @@ export function simulateAction({ parsed, legend, tileset = null, startState, act
  *    cost = actual landing frame.
  */
 function runSimLoop(scene, input, action) {
-  // v21 pre-settle: the live engine spends one frame reconciling the
-  // player's onGround flag with gravity before the agent's recording
-  // takes effect (planner emits events starting at frame 1, not 0).
-  // simAction mirrors that here so its cost numbers match what the
-  // engine will reproduce. Without this, the action's first move
-  // frame happens IMMEDIATELY here but at frame 1 in the live engine
-  // — off-by-one drift accumulates across edges.
-  scene.update(DT);
-
   const nominalCost = actionCost(action);
   const isAirAction = action.kind === 'jump' || action.kind === 'drop';
+  // v21: the recording is offset by 1 frame (events start at f=1);
+  // the loop's first iteration applies advance(0) with no events,
+  // which acts as the player's settle frame. Walks need
+  // (nominalCost + 1) iterations to cover the settle + the press
+  // + the in-motion frames + the release frame. Jumps/drops get a
+  // 30-frame buffer so the airborne arc has time to land.
   const maxFrames = isAirAction ? nominalCost + 30 : nominalCost + 1;
   let wasInAir = !scene.player.onGround;
   let collided = false;
@@ -108,8 +118,13 @@ function runSimLoop(scene, input, action) {
   // F. Without the +1, the planner would emit a release one frame
   // too early and the player would stop short of their predicted
   // landing position.
+  //
+  // v21 note: `input.advance(frame)` was called explicitly here in
+  // the v20.x model. v21 moved that into `PlaytestScene.update()`
+  // (which calls `#tickScriptedInput` synchronously before
+  // `player.update`), guaranteeing the right read-order. The loop
+  // here just calls scene.update; the scene ticks the input itself.
   for (let frame = 0; frame < maxFrames; frame++) {
-    input.advance(frame);
     const prevX = scene.player.x;
     scene.update(DT);
 

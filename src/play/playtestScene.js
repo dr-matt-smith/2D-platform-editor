@@ -84,6 +84,43 @@ export class PlaytestScene extends Scene {
     this.player.onGround = onGround;
   }
 
+  /**
+   * v21: if the scene's `game.input` is a `ScriptedInput` (advance()
+   * present), tick its frame counter HERE — synchronously before
+   * `player.update` reads input state — instead of in a separate
+   * parallel `requestAnimationFrame` callback. The parallel-rAF
+   * approach raced with the engine's own rAF (input could fire after
+   * the engine's tick had already read stale state), losing the
+   * first motion frame and putting the live demo's landing position
+   * out of sync with the simulator's prediction. Calling advance()
+   * inside update() guarantees the read order.
+   *
+   * Has no effect on the live keyboard `Input` class (no `advance`
+   * method) — the editor preview / human playtest path is byte-
+   * unchanged.
+   */
+  #tickScriptedInput(dt) {
+    const input = this.game?.input;
+    if (!input?.advance) return;
+    if (this.simFrame == null) this.simFrame = 0;
+    if (this.simTime == null) this.simTime = 0;
+    // v21: tie the input frame counter to WALL-CLOCK time (dt-driven),
+    // not to browser-tick count. Headless Chrome ran rAF at 120fps in
+    // some environments, which previously made advance() fire twice
+    // as fast as physics — recordings authored at 60fps would release
+    // their direction key before the player reached the target. By
+    // accumulating dt and advancing simFrame to floor(simTime * 60),
+    // the recording's events fire at predictable wall-clock times
+    // regardless of browser refresh rate; the simAction's cost
+    // numbers (which use dt=1/60) match the live engine's wall-clock
+    // behaviour to the frame.
+    this.simTime += dt;
+    const target = Math.floor(this.simTime * 60);
+    while (this.simFrame < target) {
+      input.advance(this.simFrame++);
+    }
+  }
+
   /** Rebuild fresh entities from the snapshot — deterministic (design §11). */
   restart() {
     const w = toWorld(this.parsed, this.legend);
@@ -139,6 +176,13 @@ export class PlaytestScene extends Scene {
       this.camX = c.camX;
       this.camY = c.camY;
     }
+
+    // v21: reset the ScriptedInput frame counter + wall-clock
+    // accumulator (no-op for keyboard Input — `advance` is absent).
+    // Demo mode reuses the same scene instance across recordings;
+    // restarting the scene rewinds the timeline.
+    this.simFrame = 0;
+    this.simTime = 0;
   }
 
   /** Player centre in world pixels — small helper so camera math is one-liner. */
@@ -147,6 +191,11 @@ export class PlaytestScene extends Scene {
   }
 
   update(dt) {
+    // v21: advance the ScriptedInput timeline BEFORE reading input
+    // state (no-op for keyboard Input). See #tickScriptedInput above
+    // for the why.
+    this.#tickScriptedInput(dt);
+
     const input = this.game.input;
 
     if (this.phase !== 'play') {
