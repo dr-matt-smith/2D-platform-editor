@@ -343,6 +343,16 @@ function emitLegInputs(steps, subgoalName, ctx) {
     } else if (edge.kind === 'drop') {
       ctx.stats.drops++;
     }
+    // v24 M5 investigation: tried emitting a mid-arc direction release
+    // here (at `startFrame + edge.action.params.holdFrames`) to match
+    // the build-time edge's predicted trajectory — fixes the surface
+    // diagnostic on below_ground.txt (player no longer dies at frame
+    // 49 in the hazard pit) BUT regresses above_ground.txt because
+    // that level's existing solve relied on the held-dir-throughout
+    // trajectory landing on a coincidentally-valid platform. The
+    // deeper root cause is the cell-resolved edge model vs the
+    // continuous-x simulation; a v25 architectural fix is needed.
+    // Reverted to v23 behaviour pending that work.
 
     const startFrame = ctx.frame;
     ctx.frame += edge.cost;
