@@ -36,8 +36,7 @@ test('agent: solvable level → success dialog with stats + trace + Demo', async
   // Stats row has at least the steps + pickups pills.
   const pills = await page.locator('.stat-pill').count();
   expect(pills).toBeGreaterThanOrEqual(3);
-  // Trace list reveals on click.
-  await page.locator('.trace-section summary').click();
+  // v22: trace list is open by default in the success dialog.
   await expect(page.locator('.trace-list li').first()).toBeVisible();
 });
 

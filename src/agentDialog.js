@@ -63,7 +63,9 @@ export function openAgentDialog({ runAgent, onDemo, onResult, onClose }) {
     if (act === 'close') return close();
     if (act === 'demo') {
       // Hand recording to main.js; close the dialog so the canvas is
-      // unobscured for the demo to play.
+      // unobscured for the demo to play. Use the FOCUSED solution's
+      // recording (defaults to solutions[0] but the user may have
+      // clicked a different row).
       const recording = backdrop._lastRecording;
       close();
       onDemo?.(recording);
@@ -73,6 +75,23 @@ export function openAgentDialog({ runAgent, onDemo, onResult, onClose }) {
       const budget = { try10: 10000, try15: 15000, try20: 20000 }[act];
       void startAgent(budget);
     }
+    // v22: focus a specific solution row.
+    if (act?.startsWith('focus-')) {
+      const idx = Number(act.slice('focus-'.length));
+      focusSolution(idx);
+    }
+  }
+
+  let focusedIdx = 0;
+  let currentSolutions = null;
+
+  function focusSolution(idx) {
+    if (!currentSolutions || idx < 0 || idx >= currentSolutions.length) return;
+    focusedIdx = idx;
+    backdrop._lastRecording = currentSolutions[idx].recording;
+    onResult?.({ ok: true, solution: currentSolutions[idx], solutions: currentSolutions, focusedIdx: idx }, null);
+    // Re-render with the new focused row highlighted + new trace.
+    render(renderSuccess(currentSolutions, idx));
   }
 
   async function startAgent(budgetMs) {
@@ -110,8 +129,11 @@ export function openAgentDialog({ runAgent, onDemo, onResult, onClose }) {
     onResult?.(result, budgetMs);
 
     if (result.ok) {
-      backdrop._lastRecording = result.solution.recording;
-      render(renderSuccess(result.solution));
+      // v22: result has `.solutions` (array). Focus the first.
+      currentSolutions = result.solutions || [result.solution];
+      focusedIdx = 0;
+      backdrop._lastRecording = currentSolutions[0].recording;
+      render(renderSuccess(currentSolutions, 0));
     } else {
       render(renderFailure(result, budgetMs));
     }
@@ -139,31 +161,48 @@ function renderSearching(budgetMs) {
     </div>`;
 }
 
-function renderSuccess(solution) {
-  const s = solution.stats;
-  const traceItems = solution.plan.trace
-    .map((e) => `<li><span class="trace-frame">${e.frameRange[0]}–${e.frameRange[1]}</span> ${escapeHtml(e.why)}</li>`)
-    .join('');
-  const replans = s.attempts > 1
-    ? `<span class="stat-pill">${s.attempts - 1} replan${s.attempts > 2 ? 's' : ''}</span>`
-    : '';
-  return `
-    <div class="modal confirm agent-dialog" role="dialog" aria-modal="true" aria-label="Agent test results">
-      <header class="agent-header">
-        <span class="badge ok">✓ Level completable</span>
-      </header>
-      <div class="solution-row">
+function renderSuccess(solutions, focusedIdx = 0) {
+  // v22 accepts an array; v20/v21 callers passing a single solution
+  // are wrapped into a one-element list for back-compat.
+  const list = Array.isArray(solutions) ? solutions : [solutions];
+  const focused = list[focusedIdx] || list[0];
+
+  const solutionRows = list.map((sol, i) => {
+    const s = sol.stats;
+    const isFocused = i === focusedIdx;
+    const replans = s.attempts > 1
+      ? `<span class="stat-pill">${s.attempts - 1} replan${s.attempts > 2 ? 's' : ''}</span>`
+      : '';
+    return `
+      <div class="solution-row${isFocused ? ' focused' : ''}" data-act="focus-${i}">
         <div class="solution-stats">
-          <strong>Solution 1</strong>
+          <strong>Solution ${i + 1}</strong>
           <span class="stat-pill">${s.steps} step${s.steps === 1 ? '' : 's'}</span>
           <span class="stat-pill">${s.jumps} jump${s.jumps === 1 ? '' : 's'}</span>
           <span class="stat-pill">${s.score} pickup${s.score === 1 ? '' : 's'}</span>
           ${replans}
         </div>
-        <button class="cf-btn primary" data-act="demo">▶ Demo this route</button>
-      </div>
-      <details class="trace-section">
-        <summary>Trace (${solution.plan.trace.length} actions)</summary>
+        ${isFocused
+          ? '<button class="cf-btn primary" data-act="demo">▶ Demo this route</button>'
+          : '<button class="cf-btn" data-act="focus-' + i + '">Focus</button>'}
+      </div>`;
+  }).join('');
+
+  const traceItems = focused.plan.trace
+    .map((e) => `<li><span class="trace-frame">${e.frameRange[0]}–${e.frameRange[1]}</span> ${escapeHtml(e.why)}</li>`)
+    .join('');
+  const headline = list.length > 1
+    ? `✓ Level completable — ${list.length} solutions`
+    : '✓ Level completable';
+
+  return `
+    <div class="modal confirm agent-dialog" role="dialog" aria-modal="true" aria-label="Agent test results">
+      <header class="agent-header">
+        <span class="badge ok">${headline}</span>
+      </header>
+      ${solutionRows}
+      <details class="trace-section" open>
+        <summary>Trace — Solution ${focusedIdx + 1} (${focused.plan.trace.length} actions)</summary>
         <ol class="trace-list">${traceItems}</ol>
       </details>
       <div class="cf-actions">

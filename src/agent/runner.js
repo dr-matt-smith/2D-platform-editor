@@ -1,42 +1,28 @@
-// Runner orchestrates the v21 agent: plan -> simulate -> (if needed)
-// replan, under a wall-clock time budget. Returns a Solution on
-// success or a structured failure when the budget is exhausted.
+// Runner orchestrates the v21/v22 agent: plan -> simulate -> replan,
+// under a wall-clock time budget. v22 returns up to K solutions (the
+// user can compare alternatives via the dialog).
 //
-// v21 changes from v20.1:
-//   - testLevel becomes `async`. It yields periodically via
-//     `setTimeout(0)` so the UI countdown timer can repaint and Esc
-//     (via opts.signal) can interrupt.
-//   - `maxRuntimeMs` (default 5000) is the primary cap; `replanBudget`
-//     becomes a secondary safety cap (10) that triggers only if the
-//     time-budget loop somehow doesn't terminate.
-//   - `onProgress(elapsedMs, totalMs)` fires at each yield point so
-//     the dialog can render "Searching… 3.7s remaining".
-//   - Tileset threaded through to plan() so the action-graph
-//     builder (M3) can run simAction.
+// v22 changes from v21:
+//   - testLevel returns a `solutions: Array<Solution>` field (up to
+//     5 unique recordings, sorted by frame cost).
+//   - `solution = solutions[0]` retained as a back-compat alias.
+//   - After the first successful plan, the runner blocks the edges
+//     in that solution one at a time and re-plans. Unique
+//     successful alternatives are added to the list. Stops at K=5
+//     OR when time/budget runs out OR when no more unique paths
+//     surface.
 
 import { simulate } from './sim.js';
 import { plan, replan } from './planner.js';
 
 const SIM_MAX_FRAMES = 1200; // 20 simulated seconds at 60fps
+const MAX_SOLUTIONS = 5;
 
 /**
  * Test a level: plan + headless-validate + replan under a time budget.
  *
- * @param parsed   level.parse() result
- * @param legend   active tileset legend
- * @param tileset  active tileset object (or null)
- * @param opts.maxRuntimeMs   wall-clock budget (default 5000)
- * @param opts.onProgress     (elapsedMs, totalMs) => void; called at
- *                            each yield point
- * @param opts.signal         AbortController.signal; Esc handlers
- *                            abort by calling .abort() on the
- *                            controller
- * @param opts.replanBudget   safety cap on number of replans
- *                            (default 10; only fires if the time
- *                            budget loop doesn't terminate)
- *
  * @returns Promise<
- *   { ok: true,  solution: {plan, recording, stats, unreachable} } |
+ *   { ok: true, solutions: Solution[], solution: Solution, ... } |
  *   { ok: false, lastPlan, lastSim, attempts, reason? }
  * >
  */
@@ -47,7 +33,6 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
   const replanBudget = opts.replanBudget ?? 10;
   const startTime = Date.now();
 
-  // Yield helper. Returns false if time's up or the caller aborted.
   async function yieldTick() {
     const elapsed = Date.now() - startTime;
     onProgress(elapsed, maxRuntimeMs);
@@ -57,8 +42,7 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
     return true;
   }
 
-  // Initial plan. Build is synchronous for now (the graph build can
-  // take ~1s for big levels; v22 candidate to yield mid-build).
+  // Initial plan.
   let currentPlan = plan(parsed, legend, { tileset });
   if (!(await yieldTick())) {
     return {
@@ -79,10 +63,14 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
     };
   }
 
+  // v22: collect solutions (up to MAX_SOLUTIONS unique recordings).
+  const solutions = [];
+  const seenRecordings = new Set();
   let lastSim = null;
   let attempt = 0;
+  const blockedAcrossSolutions = new Set();
 
-  while (attempt < replanBudget) {
+  while (attempt < replanBudget && solutions.length < MAX_SOLUTIONS) {
     attempt++;
     const sim = simulate({
       parsed,
@@ -93,9 +81,10 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
     });
     lastSim = sim;
     if (sim.outcome === 'won') {
-      return {
-        ok: true,
-        solution: {
+      const hash = recordingHash(currentPlan.recording);
+      if (!seenRecordings.has(hash)) {
+        seenRecordings.add(hash);
+        solutions.push({
           plan: currentPlan,
           recording: currentPlan.recording,
           stats: {
@@ -108,8 +97,23 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
             score: sim.score,
           },
           unreachable: currentPlan.unreachable,
-        },
-      };
+        });
+      }
+      if (solutions.length >= MAX_SOLUTIONS) break;
+      if (!(await yieldTick())) break;
+
+      // v22: find an alternative by blocking one of this solution's
+      // edges and re-planning. We pick the LONGEST edge in the trace
+      // (typically the most distinctive — a long walk or jump) so
+      // the alternative is meaningfully different.
+      const blockEdge = pickEdgeToBlock(currentPlan, blockedAcrossSolutions);
+      if (!blockEdge) break;
+      blockedAcrossSolutions.add(blockEdge);
+      const alt = plan(parsed, legend, { tileset, blocked: blockedAcrossSolutions });
+      if (!alt || alt.trace.length === 0) break;
+      if (sameRecording(currentPlan, alt)) break;
+      currentPlan = alt;
+      continue;
     }
     if (!(await yieldTick())) break;
 
@@ -121,6 +125,17 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
     if (!(await yieldTick())) break;
   }
 
+  if (solutions.length > 0) {
+    // Sort by cost (frame count) ascending. v22 doc says shortest first.
+    solutions.sort((a, b) => a.stats.frame - b.stats.frame);
+    return {
+      ok: true,
+      solutions,
+      // Back-compat: v20/v21 callers read `.solution`.
+      solution: solutions[0],
+    };
+  }
+
   return {
     ok: false,
     lastPlan: currentPlan,
@@ -129,9 +144,26 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
   };
 }
 
+/** Pick a representative edge from the plan's trace to block when
+ *  searching for alternatives. Returns the edgeId of the longest-cost
+ *  edge not already in `alreadyBlocked`. */
+function pickEdgeToBlock(plan, alreadyBlocked) {
+  let best = null;
+  let bestCost = -1;
+  for (const entry of plan.trace) {
+    if (alreadyBlocked.has(entry.edgeId)) continue;
+    const cost = entry.frameRange[1] - entry.frameRange[0];
+    if (cost > bestCost) {
+      bestCost = cost;
+      best = entry.edgeId;
+    }
+  }
+  return best;
+}
+
 /** Two recordings are "the same" if they emit the same key events in
  *  the same order at the same frames. Used to detect replan stagnation
- *  (replanning that doesn't actually change the plan). */
+ *  and to dedupe solutions. */
 function sameRecording(a, b) {
   if (!a || !b) return false;
   if (a.recording.length !== b.recording.length) return false;
@@ -141,4 +173,10 @@ function sameRecording(a, b) {
     if (ea.frame !== eb.frame || ea.key !== eb.key || ea.down !== eb.down) return false;
   }
   return true;
+}
+
+/** Short hash of a recording for deduplication. Joins all events
+ *  into a single string. */
+function recordingHash(events) {
+  return events.map((e) => `${e.frame}|${e.key}|${e.down ? 1 : 0}`).join(',');
 }
