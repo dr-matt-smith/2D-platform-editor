@@ -544,6 +544,19 @@ body.lightmode select option {
   background: #ffffff;
   color: var(--fg);
 }
+/* v23 fixup: same specificity story as the selects — the existing
+   `.play-settings #ps-n / #ps-vw / #ps-vh` rule sits at (1,1,0) and
+   beats the earlier `body.lightmode .play-settings input[type="number"]`
+   override at (0,3,2), so the inputs stayed dark in light mode (dark
+   text on dark background — unreadable). Match the ID-specificity
+   explicitly. */
+body.lightmode .play-settings #ps-n,
+body.lightmode .play-settings #ps-vw,
+body.lightmode .play-settings #ps-vh {
+  background: #ffffff;
+  color: var(--fg);
+  border-color: var(--line);
+}
 
 /* v22: fit-to-screen button — same toolbar-button look as the rest;
    ACTIVE state gets a brighter background so the user sees it's on. */

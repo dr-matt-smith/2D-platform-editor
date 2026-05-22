@@ -69,6 +69,36 @@ test('v23 M2: toolbar selects flip to light bg in lightmode (specificity fix)', 
   await page.locator('#themeBtn').click();
 });
 
+test('v23 M2: Play Settings number inputs flip to light bg in lightmode', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  // Switch to lightmode.
+  const cls0 = await page.locator('body').evaluate((b) => b.className);
+  if (!cls0.includes('lightmode')) await page.locator('#themeBtn').click();
+  // Open Play Settings; the popup mounts the three number inputs.
+  await page.locator('#playSettingsBtn').click();
+  await page.waitForSelector('.play-settings');
+  // ps-vw and ps-vh are visible by default (Viewport row); ps-n
+  // only when "At least" radio is checked. We just need them in the
+  // DOM and rendered.
+  for (const id of ['#ps-vw', '#ps-vh']) {
+    const bg = await page.locator(id).evaluate((el) =>
+      getComputedStyle(el).backgroundColor,
+    );
+    // Pale (each RGB channel > 200).
+    expect(RGB(bg)[0]).toBeGreaterThan(200);
+  }
+  // Now flip the radio so #ps-n is visible too.
+  await page.locator('input[name="ps-pickups"][value="min"]').click();
+  const psNBg = await page.locator('#ps-n').evaluate((el) =>
+    getComputedStyle(el).backgroundColor,
+  );
+  expect(RGB(psNBg)[0]).toBeGreaterThan(200);
+  // Close + reset theme.
+  await page.locator('.play-settings [data-act="cancel"]').click();
+  await page.locator('#themeBtn').click();
+});
+
 test('v23 M2: button title reflects current state', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#preview');
