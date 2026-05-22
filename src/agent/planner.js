@@ -242,7 +242,11 @@ function emitLegInputs(steps, subgoalName, ctx) {
  */
 export function plan(parsed, legend, opts = {}) {
   const blocked = opts.blocked instanceof Set ? opts.blocked : new Set();
-  const graph = buildNavGraph(parsed, legend);
+  // v21: tileset is required by the action-graph builder (simAction
+  // mints a PlaytestScene which consumes it). Callers pass it via
+  // opts.tileset; legacy callers (tests) leave it null.
+  const tileset = opts.tileset ?? null;
+  const graph = buildNavGraph(parsed, legend, tileset);
   if (!graph.start || graph.exitCells.length === 0) {
     return emptyPlan(graph);
   }
@@ -345,7 +349,7 @@ function describeGoal(graph, key) {
  * @param legend    same
  * @returns         a fresh plan or `null` if no recoverable edge
  */
-export function replan(previous, sim, parsed, legend) {
+export function replan(previous, sim, parsed, legend, opts = {}) {
   if (!previous || !previous.trace.length) return null;
   // Find the failing trace entry: the one whose frameRange brackets
   // the failure frame. If the failure happened after all trace entries
@@ -356,8 +360,7 @@ export function replan(previous, sim, parsed, legend) {
   );
   if (!failEntry) failEntry = previous.trace[previous.trace.length - 1];
   const blocked = new Set([failEntry.edgeId]);
-  // Preserve any previously-blocked edges by reading them from the
-  // previous plan's graph if needed — for v20 we trust the caller
-  // (runner) to merge blocked sets across replans.
-  return plan(parsed, legend, { blocked });
+  // v21: tileset threads through opts so replans use the same graph
+  // basis as the original plan.
+  return plan(parsed, legend, { ...opts, blocked });
 }

@@ -1,48 +1,75 @@
-// Runner orchestrates the v20 agent: plan -> simulate -> (if needed)
-// replan, up to a budget. Returns a Solution object on success or a
-// structured failure on giving up.
+// Runner orchestrates the v21 agent: plan -> simulate -> (if needed)
+// replan, under a wall-clock time budget. Returns a Solution on
+// success or a structured failure when the budget is exhausted.
 //
-// Pure: no DOM. The runner imports the simulator (which uses the
-// vendored PlaytestScene under the hood, no canvas), plus the planner.
+// v21 changes from v20.1:
+//   - testLevel becomes `async`. It yields periodically via
+//     `setTimeout(0)` so the UI countdown timer can repaint and Esc
+//     (via opts.signal) can interrupt.
+//   - `maxRuntimeMs` (default 5000) is the primary cap; `replanBudget`
+//     becomes a secondary safety cap (10) that triggers only if the
+//     time-budget loop somehow doesn't terminate.
+//   - `onProgress(elapsedMs, totalMs)` fires at each yield point so
+//     the dialog can render "Searching… 3.7s remaining".
+//   - Tileset threaded through to plan() so the action-graph
+//     builder (M3) can run simAction.
 
 import { simulate } from './sim.js';
 import { plan, replan } from './planner.js';
 
+const SIM_MAX_FRAMES = 1200; // 20 simulated seconds at 60fps
+
 /**
- * Test a level: plan + headless-validate + replan.
+ * Test a level: plan + headless-validate + replan under a time budget.
  *
  * @param parsed   level.parse() result
  * @param legend   active tileset legend
- * @param tileset  active tileset object (or null for offline / Dirt-only)
- * @param opts.replanBudget  attempts before giving up (default 3)
- * @param opts.maxFrames     simulator frame budget per attempt (default 600)
+ * @param tileset  active tileset object (or null)
+ * @param opts.maxRuntimeMs   wall-clock budget (default 5000)
+ * @param opts.onProgress     (elapsedMs, totalMs) => void; called at
+ *                            each yield point
+ * @param opts.signal         AbortController.signal; Esc handlers
+ *                            abort by calling .abort() on the
+ *                            controller
+ * @param opts.replanBudget   safety cap on number of replans
+ *                            (default 10; only fires if the time
+ *                            budget loop doesn't terminate)
  *
- * @returns
- *   On success: { ok: true, solution: {
- *     plan, recording, stats: { steps, jumps, walks, drops, attempts,
- *     frame, score }, unreachable: [] }}
- *
- *   On failure: { ok: false, lastPlan, lastSim, attempts }
- *
- * The `solution.plan` shape mirrors plan()'s return — the dialog reads
- * `.trace` for the explainable list and `.goals`/`.graph` for the
- * overlay's numbered markers.
+ * @returns Promise<
+ *   { ok: true,  solution: {plan, recording, stats, unreachable} } |
+ *   { ok: false, lastPlan, lastSim, attempts, reason? }
+ * >
  */
-export function testLevel(parsed, legend, tileset, opts = {}) {
-  // v20.1 bumped: more replan headroom + a longer per-sim frame
-  // budget. Big walks-only levels (e.g. a 40+ cell flat traverse)
-  // need 200+ frames to walk; 1200 = 20 simulated seconds covers any
-  // sensible v20-scope level. Replan 10 lets the agent try several
-  // alternate route variants before declaring "no solution".
-  const budget = opts.replanBudget ?? 10;
-  const maxFrames = opts.maxFrames ?? 1200;
+export async function testLevel(parsed, legend, tileset, opts = {}) {
+  const maxRuntimeMs = opts.maxRuntimeMs ?? 5000;
+  const onProgress = opts.onProgress ?? (() => {});
+  const signal = opts.signal;
+  const replanBudget = opts.replanBudget ?? 10;
+  const startTime = Date.now();
 
-  let currentPlan = plan(parsed, legend);
-  let lastSim = null;
+  // Yield helper. Returns false if time's up or the caller aborted.
+  async function yieldTick() {
+    const elapsed = Date.now() - startTime;
+    onProgress(elapsed, maxRuntimeMs);
+    if (signal?.aborted) return false;
+    if (elapsed >= maxRuntimeMs) return false;
+    await new Promise((r) => setTimeout(r, 0));
+    return true;
+  }
 
-  // Empty plan = exit unreachable. The runner doesn't bother simulating;
-  // there's nothing to validate. The dialog renders the unreachable list
-  // as the failure diagnostic.
+  // Initial plan. Build is synchronous for now (the graph build can
+  // take ~1s for big levels; v22 candidate to yield mid-build).
+  let currentPlan = plan(parsed, legend, { tileset });
+  if (!(await yieldTick())) {
+    return {
+      ok: false,
+      lastPlan: currentPlan,
+      lastSim: null,
+      attempts: 0,
+      reason: 'timeout-during-plan',
+    };
+  }
+
   if (currentPlan.trace.length === 0) {
     return {
       ok: false,
@@ -52,13 +79,17 @@ export function testLevel(parsed, legend, tileset, opts = {}) {
     };
   }
 
-  for (let attempt = 1; attempt <= budget; attempt++) {
+  let lastSim = null;
+  let attempt = 0;
+
+  while (attempt < replanBudget) {
+    attempt++;
     const sim = simulate({
       parsed,
       legend,
       tileset,
       recording: currentPlan.recording,
-      maxFrames,
+      maxFrames: SIM_MAX_FRAMES,
     });
     lastSim = sim;
     if (sim.outcome === 'won') {
@@ -80,21 +111,21 @@ export function testLevel(parsed, legend, tileset, opts = {}) {
         },
       };
     }
-    // 'dead' or 'timeout' — try to replan around the failing edge.
-    const next = replan(currentPlan, sim, parsed, legend);
+    if (!(await yieldTick())) break;
+
+    const next = replan(currentPlan, sim, parsed, legend, { tileset });
     if (!next || next.trace.length === 0 || sameRecording(currentPlan, next)) {
-      // Either no recoverable edge, or replan produced the same plan
-      // (no progress possible) — give up.
       break;
     }
     currentPlan = next;
+    if (!(await yieldTick())) break;
   }
 
   return {
     ok: false,
     lastPlan: currentPlan,
     lastSim,
-    attempts: budget,
+    attempts: attempt,
   };
 }
 

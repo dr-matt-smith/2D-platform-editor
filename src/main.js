@@ -756,14 +756,15 @@ document.querySelector('#restartBtn').addEventListener('click', () => {
 document.querySelector('#exitBtn').addEventListener('click', exitPlaytest);
 document.querySelector('#playBtn').addEventListener('click', () => tryPlaytest());
 
-// v20: [Test] button runs the AI agent on the current buffer.
-// The agent's testLevel() is synchronous and typically < 100ms on the
-// default levels; for big levels we wrap in a setTimeout so the busy
-// cursor (if any) can render before the planner spins up.
-document.querySelector('#testBtn').addEventListener('click', () => {
+// v21: [Test] button runs the AI agent on the current buffer.
+// testLevel is async (yields periodically so the UI countdown timer
+// can repaint and Esc can abort). M5 wires the full searching-state
+// dialog + countdown + escalation flow; for now we just await the
+// result and open the dialog as before.
+document.querySelector('#testBtn').addEventListener('click', async () => {
   const parsed = parse(src.value);
+  const result = await testLevel(parsed, legend, tileset);
   setTimeout(() => {
-    const result = testLevel(parsed, legend, tileset);
     if (result.ok) {
       // Paint the solution's path on the editor overlay. The overlay
       // canvas is already sized to the editor preview's intrinsic
