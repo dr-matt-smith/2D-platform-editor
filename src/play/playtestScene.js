@@ -177,12 +177,50 @@ export class PlaytestScene extends Scene {
       this.camY = c.camY;
     }
 
+    // v22: spawn-fall settle. Player is constructed with onGround =
+    // false (vendored Player default); if P is more than 1 row above
+    // its support cell (e.g. tutorial.txt's 6-row fall), the live
+    // engine spends ~25 frames falling AFTER the input timeline has
+    // started, so the agent's recording fires its first events while
+    // the player is still descending. Solution: run no-input gravity
+    // ticks here (max 30) until the player lands, then reset the
+    // input timeline. Affects both live engine and agent's simAction
+    // context (which calls restart() via scene.enter()).
+    //
+    // v9 §7 invariant note: we don't touch the vendored Player.
+    // Instead we temporarily swap `this.game.input` for a no-input
+    // stub so player.update(dt, this) treats all keys as released
+    // throughout the settle.
+    this.#spawnFallSettle();
+
     // v21: reset the ScriptedInput frame counter + wall-clock
     // accumulator (no-op for keyboard Input — `advance` is absent).
     // Demo mode reuses the same scene instance across recordings;
-    // restarting the scene rewinds the timeline.
+    // restarting the scene rewinds the timeline. Reset AFTER the
+    // settle so the input timeline starts at frame 0 = the moment
+    // the player is grounded.
     this.simFrame = 0;
     this.simTime = 0;
+  }
+
+  /** v22: drop the player by gravity-only physics until they land
+   *  on a platform OR the 30-frame budget is exhausted. Bounded so
+   *  pathological levels (P 30+ rows above any floor) don't hang
+   *  the game-start path. */
+  #spawnFallSettle() {
+    if (!this.player) return;
+    if (this.player.onGround) return;
+    const originalInput = this.game?.input;
+    const stub = { isDown: () => false, wasPressed: () => false, endFrame() {} };
+    if (this.game) this.game.input = stub;
+    try {
+      for (let i = 0; i < 30; i++) {
+        this.player.update(1 / 60, this);
+        if (this.player.onGround) break;
+      }
+    } finally {
+      if (this.game) this.game.input = originalInput;
+    }
   }
 
   /** Player centre in world pixels — small helper so camera math is one-liner. */
