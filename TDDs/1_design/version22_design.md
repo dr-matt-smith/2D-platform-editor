@@ -1,9 +1,28 @@
 # 2D Level Designer — Version 22 Design Document
 
-Status: Proposed · Date: 2026-05-22 · Builds on:
+Status: **Delivered (2026-05-22)** · Builds on:
 [version21_design.md](version21_design.md) (action-graph agent +
-countdown UX) · Implementation: *to follow once this scope is
-approved*.
+countdown UX) · Implementation:
+[version22_implementation.md](../2_implementation/version22_implementation.md)
+· Transcript:
+[version22_build.md](../3_transcripts/version22_build.md)
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `20c5d63` | PlaytestScene spawn-fall settle (no-input gravity until onGround) |
+| 2 | `116f149` | TSP-optimal pickup ordering (K!≤4 exhaustive + 2-opt) |
+| 3 | `bcdb659` | Multi-solution enumeration (up to 5 unique, sorted by cost) + dialog list UI |
+| 4 | `3817d1c` | Legend layout (right default, min/max, swap) + fit-to-screen |
+| 5 | `943d865` | Hide legend (and Fit button) in Play / Demo / Test modes |
+| 6 | _this commit_ | v22 acceptance e2e + transcript; design + impl Delivered |
+
+Tests: 288 unit / 28 Playwright pass. Bundle: 67.42 kB JS (gzip 23.67 kB).
+v9 §7 byte-identical engine invariant preserved across all six commits.
+
+Carry-over to v23: `tutorial.txt` still fails at "Exit unreachable"
+— diagnostic now points at action-graph completeness (missing
+run-off-platform and drop-with-horizontal-carry variants), with the
+TSP-optimal ordering already in place as a prerequisite.
 
 ## 1. Purpose
 

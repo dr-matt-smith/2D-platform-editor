@@ -1,12 +1,25 @@
 # Version 22 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-22 · Design:
+Status: **Delivered (2026-05-22)** · Design:
 [../1_design/version22_design.md](../1_design/version22_design.md)
+· Transcript:
+[../3_transcripts/version22_build.md](../3_transcripts/version22_build.md)
 
 Six small path-scoped commits. The two threads — agent improvements
 (M1–M3) and legend layout (M4–M5) — interleave cleanly: agent work
 lands first (unblocking acceptance criteria for `tutorial.txt`),
 then layout work lands as a polish layer, then docs.
+
+| M | Commit | Deliverable |
+|---|--------|-------------|
+| 1 | `20c5d63` | PlaytestScene spawn-fall settle |
+| 2 | `116f149` | TSP-optimal pickup ordering (K!≤4 + 2-opt) |
+| 3 | `bcdb659` | Multi-solution enumeration + dialog list UI |
+| 4 | `3817d1c` | Legend layout (right/min/swap) + fit-to-screen |
+| 5 | `943d865` | Hide legend + Fit button in Play / Demo / Test |
+| 6 | _this commit_ | v22 acceptance e2e + transcript + Delivered |
+
+Tests at delivery: 288 unit / 28 Playwright. v9 §7 invariant preserved.
 
 ## Process (same discipline as v8–v21)
 
