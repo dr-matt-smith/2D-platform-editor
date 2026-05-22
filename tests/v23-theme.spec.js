@@ -1,10 +1,19 @@
 // v23 M2: light/dark theme toggle. `body.lightmode` re-binds five
 // CSS custom properties (--bg/--fg/--line/--dim/--accent); the
-// 🌗 toolbar button flips it. Initial state is dark (the v22-and-
-// earlier default); user choice is persisted in localStorage and
-// restored on reload.
+// 🌗 toolbar button flips it. User choice is persisted in
+// localStorage and restored on reload.
+//
+// v24 M2: first-load default now tracks OS prefers-color-scheme.
+// Each test in this file emulates dark-OS up front so the
+// "initial state is dark" precondition holds regardless of the
+// CI host's default. The v24-theme-os-default.spec.js suite is
+// the actual coverage for the OS-tracking behaviour.
 
 import { test, expect } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+});
 
 const RGB = (s) => s.replace(/[^\d,]/g, '').split(',').map(Number);
 

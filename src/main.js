@@ -251,10 +251,22 @@ let editorMode = 'edit';
 let legendLayout = readLayoutPref('v22.legendLayout', 'right'); // 'right'|'bottom'
 let legendCollapsed = readBoolPref('v22.legendCollapsed', false);
 let fitToScreen = readBoolPref('v22.fitToScreen', false);
-// v23 M2: light/dark theme — 'dark' default; `body.lightmode` re-binds
-// the CSS custom properties (--bg/--fg/--line/--dim/--accent) to a
-// pale palette. Persisted; survives reloads.
-let theme = readEnumPref('v23.theme', 'dark', ['dark', 'light']);
+// v23 M2: light/dark theme — `body.lightmode` re-binds the CSS
+// custom properties (--bg/--fg/--line/--dim/--accent) to a pale
+// palette. Persisted; survives reloads.
+// v24 M2: first-load default reads the OS preference via
+// `matchMedia('(prefers-color-scheme: light)')`. Once the user
+// clicks 🌗, the localStorage entry locks their choice in.
+let theme = readEnumPref('v23.theme', defaultTheme(), ['dark', 'light']);
+
+function defaultTheme() {
+  try {
+    if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
+      return 'light';
+    }
+  } catch { /* matchMedia unavailable */ }
+  return 'dark';
+}
 
 function readLayoutPref(key, def) {
   try {
