@@ -18,7 +18,7 @@ import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm, openPlaySettings, openPasteLoadDialog } from './loaderDialog.js';
 import { testLevel } from './agent/index.js';
-import { renderSolutionOverlay } from './agent/overlay.js';
+import { renderSolutionOverlay, renderAllSolutionsOverlay } from './agent/overlay.js';
 import { openAgentDialog } from './agentDialog.js';
 import { downloadText } from './download.js';
 import { createHistory } from './history.js';
@@ -1097,8 +1097,19 @@ document.querySelector('#testBtn').addEventListener('click', () => {
       // Paint the path overlay on success; clear on failure (a
       // previous success may have left the overlay populated and the
       // user is now in escalation).
+      // v24 M3: when there are ≥ 2 solutions, paint them all
+      // simultaneously — non-focused dimmed, focused solid in its
+      // own palette hue. Single-solution path stays byte-identical
+      // to v22 (renderSolutionOverlay with no opts).
       octx.clearRect(0, 0, overlay.width, overlay.height);
-      if (result.ok) renderSolutionOverlay(octx, result.solution, TILE);
+      if (result.ok) {
+        const solutions = result.solutions || [result.solution];
+        if (solutions.length > 1) {
+          renderAllSolutionsOverlay(octx, solutions, result.focusedIdx ?? 0, TILE);
+        } else {
+          renderSolutionOverlay(octx, result.solution, TILE);
+        }
+      }
     },
     onDemo: (recording) => tryPlaytest({ inputSource: recording }),
     onClose: () => {

@@ -12,17 +12,37 @@ const START_COLOUR = '#3498db';        // blue (matches Dirt player disc)
 const PICKUP_COLOUR = '#ffcc00';
 const EXIT_COLOUR = '#2ecc71';        // green (matches exit)
 
+/** v24 M3: distinct hues for multi-solution display. Tuned for
+ *  contrast on both dark and light themes; first entry == the v22
+ *  POLY_COLOUR so a single-solution paint is byte-identical. */
+export const HUE_PALETTE = [
+  '#ffcc00',  // warm yellow (Solution 1 — matches v22 default)
+  '#66d9e8',  // cyan        (Solution 2)
+  '#f06292',  // magenta     (Solution 3)
+  '#aed581',  // lime        (Solution 4)
+  '#ffb84d',  // orange      (Solution 5)
+];
+
 /**
  * @param ctx       CanvasRenderingContext2D for the overlay
  * @param solution  testLevel() result's `.solution` (from runner.js)
  * @param tile      pixel size per cell (editor TILE = 24)
+ * @param opts      v24 M3: {colour, alpha} — colour overrides the
+ *                  default warm-yellow path/pickup hue; alpha scales
+ *                  the global ctx alpha for this render. When opts
+ *                  is absent, behaviour is byte-identical to v22.
  */
-export function renderSolutionOverlay(ctx, solution, tile) {
+export function renderSolutionOverlay(ctx, solution, tile, opts = {}) {
   if (!solution || !solution.plan) return;
   const { trace, graph, goals } = solution.plan;
   if (!trace.length || !graph?.start) return;
 
+  const polyColour = opts.colour ?? POLY_COLOUR;
+  const pickupColour = opts.colour ?? PICKUP_COLOUR;
+  const alpha = opts.alpha ?? 1;
+
   ctx.save();
+  ctx.globalAlpha = alpha;
 
   // Polyline: start point → each trace target's cell center.
   // v21: jump entries render as parabolic arcs (6 intermediate
@@ -30,7 +50,7 @@ export function renderSolutionOverlay(ctx, solution, tile) {
   // higher endpoint), so the visual path curves naturally. Walk
   // and drop entries stay as straight segments.
   ctx.lineWidth = 3;
-  ctx.strokeStyle = POLY_COLOUR;
+  ctx.strokeStyle = polyColour;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -60,12 +80,35 @@ export function renderSolutionOverlay(ctx, solution, tile) {
       const [r, c] = goals[i].split(',').map(Number);
       const isExit = i === goals.length - 1;
       const label = isExit ? 'E' : String(i + 1);
-      const colour = isExit ? EXIT_COLOUR : PICKUP_COLOUR;
+      const colour = isExit ? EXIT_COLOUR : pickupColour;
       drawMarker(ctx, c, r, tile, label, colour);
     }
   }
 
   ctx.restore();
+}
+
+/**
+ * v24 M3: paint EVERY solution simultaneously. Non-focused first,
+ * dimmed; focused on top, full opacity, in the focused-row's hue.
+ * The caller is responsible for clearing the overlay before calling.
+ */
+export function renderAllSolutionsOverlay(ctx, solutions, focusedIdx, tile) {
+  if (!Array.isArray(solutions) || solutions.length === 0) return;
+  const safeIdx = Math.max(0, Math.min(focusedIdx, solutions.length - 1));
+  // Non-focused first → dimmed.
+  for (let i = 0; i < solutions.length; i++) {
+    if (i === safeIdx) continue;
+    renderSolutionOverlay(ctx, solutions[i], tile, {
+      colour: HUE_PALETTE[i % HUE_PALETTE.length],
+      alpha: 0.35,
+    });
+  }
+  // Focused on top → solid, in its own hue.
+  renderSolutionOverlay(ctx, solutions[safeIdx], tile, {
+    colour: HUE_PALETTE[safeIdx % HUE_PALETTE.length],
+    alpha: 1.0,
+  });
 }
 
 /**
