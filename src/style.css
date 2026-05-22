@@ -523,6 +523,27 @@ body.lightmode .play-settings input[type="number"] {
   color: var(--fg);
   border-color: var(--line);
 }
+/* v23 fixup: the #tilesetSel / #levelSel rule above hardcodes
+   `background: #333` with ID-selector specificity (0,1,0) — that
+   beats the `body.lightmode select` rule (0,1,1) ... no wait, both
+   are 0,1,1 (one class on body + one id/tag); the order matters.
+   Match the ID specificity explicitly so light-mode wins. Also style
+   the <option>s — most browsers paint them with the OS default
+   unless given explicit colours. */
+body.lightmode #tilesetSel,
+body.lightmode #levelSel {
+  background: #ffffff;
+  color: var(--fg);
+  border-color: var(--line);
+}
+body.lightmode #tilesetSel:hover,
+body.lightmode #levelSel:hover { background: #ececec; }
+body.lightmode #tilesetSel option,
+body.lightmode #levelSel option,
+body.lightmode select option {
+  background: #ffffff;
+  color: var(--fg);
+}
 
 /* v22: fit-to-screen button — same toolbar-button look as the rest;
    ACTIVE state gets a brighter background so the user sees it's on. */

@@ -42,6 +42,33 @@ test('v23 M2: theme choice survives reload', async ({ page }) => {
   await page.locator('#themeBtn').click();
 });
 
+test('v23 M2: toolbar selects flip to light bg in lightmode (specificity fix)', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('#preview');
+  // Ensure we start dark.
+  const cls0 = await page.locator('body').evaluate((b) => b.className);
+  if (cls0.includes('lightmode')) await page.locator('#themeBtn').click();
+  // Dark mode: selects are dark.
+  const darkSelectBg = await page.locator('#tilesetSel').evaluate((el) =>
+    getComputedStyle(el).backgroundColor,
+  );
+  expect(RGB(darkSelectBg)[0]).toBeLessThan(80); // dark grey
+  // Flip to light.
+  await page.locator('#themeBtn').click();
+  const lightSelectBg = await page.locator('#tilesetSel').evaluate((el) =>
+    getComputedStyle(el).backgroundColor,
+  );
+  // Pale (each channel > 200).
+  expect(RGB(lightSelectBg)[0]).toBeGreaterThan(200);
+  // Also assert the levelSel — same rule covers both.
+  const levelBg = await page.locator('#levelSel').evaluate((el) =>
+    getComputedStyle(el).backgroundColor,
+  );
+  expect(RGB(levelBg)[0]).toBeGreaterThan(200);
+  // Reset.
+  await page.locator('#themeBtn').click();
+});
+
 test('v23 M2: button title reflects current state', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#preview');
