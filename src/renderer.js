@@ -125,8 +125,14 @@ const blitImage = (ctx, spec, x, y, t) =>
  *   cell of bleed on each side so partial-tile edges + neighbour-aware
  *   decor passes still paint correctly). When null (the editor preview
  *   + fit-mode playtest paths), behaviour is byte-identical to v18.
+ * @param {{exitLocked?:boolean}|null} [entityState]
+ *   v22.1: runtime state forwarded to `tileset.entityFor(char, now,
+ *   state)` so glyphs can swap to a LOCKED variant (currently used
+ *   by `E` when `pickup-required` isn't met). Null / absent =
+ *   primary image always — the editor preview takes this path so the
+ *   author always sees the unlocked sprite while editing.
  */
-export function draw(ctx, parsed, tileset, tile = 24, now, camera = null) {
+export function draw(ctx, parsed, tileset, tile = 24, now, camera = null, entityState = null) {
   const { grid, meta } = parsed;
   const worldW = meta.width * tile;
   const worldH = meta.height * tile;
@@ -256,7 +262,7 @@ export function draw(ctx, parsed, tileset, tile = 24, now, camera = null) {
     for (let c = c0; c < c1; c++) {
       const g = grid[r][c];
       if (g === BACKGROUND_GLYPH || g === '#') continue;
-      const spec = tileset?.entityFor?.(g, now);
+      const spec = tileset?.entityFor?.(g, now, entityState);
       if (spec) blitImage(ctx, spec, px(c), py(r), tile);
       else if (
         !tileset?.decorationFor?.(g, now) &&

@@ -169,6 +169,11 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
   // 4c (foreground-decorations, drawn OVER entities).
   const legend = buildLegend(lookup);
   const specsByChar = {};
+  // v22.1: per-glyph LOCKED variant (e.g. exit-not-yet-unlocked).
+  // Parallel to specsByChar — keyed by the same glyph char; renderer
+  // picks this one when `entityFor(char, now, {exitLocked: true})`
+  // and the variant was authored.
+  const lockedSpecsByChar = {};
   const decorationChars = new Set();
   const foregroundChars = new Set(); // v18
   for (const g of Object.values(lookup?.glyphs ?? {})) {
@@ -179,6 +184,16 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
     // animator (frames>1 with no explicit frame).
     const spec = buildSpec(im, g.frames, g.frame, g.fps);
     if (spec) specsByChar[g.char] = spec;
+    // v22.1: optional `imageLocked` — a second sprite for the same
+    // glyph used when the runtime says "this entity is in its locked
+    // state". For the exit, that's "not yet unlocked because
+    // pickup-required isn't met". Identical frame metadata to the
+    // primary `image` — multi-frame strips are honoured the same way.
+    if (g.imageLocked) {
+      const lockedIm = await loadImageFn(base + g.imageLocked);
+      const lockedSpec = buildSpec(lockedIm, g.frames, g.frame, g.fps);
+      if (lockedSpec) lockedSpecsByChar[g.char] = lockedSpec;
+    }
     const role = legend[g.char]?.role;
     if (role === 'decoration') decorationChars.add(g.char);
     else if (role === 'foreground') foregroundChars.add(g.char);
@@ -247,11 +262,20 @@ export async function loadTileset(id = DEFAULT_TILESET, opts = {}) {
      * v16: optional `now` (ms) drives multi-frame animation. Omitting
      * it resolves to frame 0 — the editor preview takes this path and
      * stays static, matching v11/v15.
+     *
+     * v22.1: optional `state` — `{exitLocked: bool}` so the runtime
+     * can ask for the LOCKED variant of a glyph (currently used by
+     * `E` when `pickup-required` isn't yet met). When state omitted /
+     * locked-flag absent / no locked-spec authored, the primary
+     * `image` resolves — fully back-compat.
      */
-    entityFor(char, now) {
+    entityFor(char, now, state) {
       // v18: foreground decorations also bypass entityFor — they get
       // drawn by Pass 4c via foregroundFor(), AFTER entities + player.
       if (decorationChars.has(char) || foregroundChars.has(char)) return null;
+      if (state?.exitLocked && char === 'E' && lockedSpecsByChar.E) {
+        return resolve(lockedSpecsByChar.E, now);
+      }
       return resolve(specsByChar[char], now);
     },
 

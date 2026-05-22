@@ -322,6 +322,15 @@ export class PlaytestScene extends Scene {
           viewH: this.viewport.h,
         }
       : null;
+    // v22.1: tell the renderer whether the exit is currently locked.
+    // The tileset's `glyphs.exit.imageLocked` (if authored) paints in
+    // place of `image` when this flag is true. `meetsPickupRequirement`
+    // is the same predicate that gates the win check at line 268.
+    const exitLocked = !meetsPickupRequirement(
+      this.score,
+      this.total,
+      this.requiredPickups,
+    );
     editorDraw(
       ctx,
       { grid: viewGrid, meta: this.parsed.meta, rows: this.parsed.rows },
@@ -329,6 +338,7 @@ export class PlaytestScene extends Scene {
       TILE,
       now,
       camera,
+      { exitLocked },
     );
 
     // Overlay the moving player at its physics-driven float position

@@ -113,6 +113,51 @@ test('entityFor: returns the per-char image from glyphs', async () => {
   assert.equal(t.entityFor('Z'), null); // unknown char
 });
 
+// v22.1: imageLocked variant for the exit glyph.
+test('entityFor: returns imageLocked for E when state.exitLocked is true', async () => {
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      glyphs: {
+        exit: { char: 'E', image: 'e_green.png', imageLocked: 'e_red.png' },
+      },
+    }),
+    loadImage: mockLoadImage(),
+  });
+  // Default (no state) → primary image.
+  assert.match(src(t.entityFor('E')), /\/x\/e_green\.png$/);
+  assert.match(src(t.entityFor('E', undefined, null)), /\/x\/e_green\.png$/);
+  assert.match(src(t.entityFor('E', undefined, {})), /\/x\/e_green\.png$/);
+  assert.match(src(t.entityFor('E', undefined, { exitLocked: false })), /\/x\/e_green\.png$/);
+  // exitLocked true → locked variant.
+  assert.match(src(t.entityFor('E', undefined, { exitLocked: true })), /\/x\/e_red\.png$/);
+});
+
+test('entityFor: exitLocked flag without imageLocked authored falls back to primary', async () => {
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      glyphs: { exit: { char: 'E', image: 'e.png' } },
+    }),
+    loadImage: mockLoadImage(),
+  });
+  // No locked variant → back-compat: primary always.
+  assert.match(src(t.entityFor('E', undefined, { exitLocked: true })), /\/x\/e\.png$/);
+});
+
+test('entityFor: exitLocked flag does NOT affect non-E chars', async () => {
+  const t = await loadTileset('x', {
+    fetch: mockFetch({
+      glyphs: {
+        player: { char: 'P', image: 'p.png', imageLocked: 'p_locked.png' },
+        exit:   { char: 'E', image: 'e.png', imageLocked: 'e_locked.png' },
+      },
+    }),
+    loadImage: mockLoadImage(),
+  });
+  // The exitLocked flag is exit-specific by design — Player ignores it.
+  assert.match(src(t.entityFor('P', undefined, { exitLocked: true })), /\/x\/p\.png$/);
+  assert.match(src(t.entityFor('E', undefined, { exitLocked: true })), /\/x\/e_locked\.png$/);
+});
+
 test('atlasReady is false when the atlas PNG fails to load', async () => {
   const t = await loadTileset('no-atlas', {
     fetch: mockFetch({ glyphs: {} }),

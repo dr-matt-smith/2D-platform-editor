@@ -27,7 +27,7 @@
     "empty":  { "name": "Empty",        "char": ".", "role": "background", "image": null,                  "color": "#1b2a3a" },
     "filled": { "name": "Filled",       "char": "#", "role": "terrain",    "image": "tiles/01_dirt_top.png", "color": null },
     "player": { "name": "Player spawn", "char": "P", "role": "entity",     "image": "tiles/30_character_idle.png", "color": "#3498db" },
-    "exit":   { "name": "Exit",         "char": "E", "role": "entity",     "image": "tiles/32_flag_green.png",     "color": "#2ecc71" },
+    "exit":   { "name": "Exit",         "char": "E", "role": "entity",     "image": "tiles/32_flag_green.png",     "imageLocked": "tiles/33_flag_red.png", "color": "#2ecc71" },
     "hazard": { "name": "Hazard",       "char": "^", "role": "terrain",    "image": "tiles/34_block_spikes.png",   "color": "#c0392b" },
     "pickup": { "name": "Pickup",       "char": "o", "role": "entity",     "image": "tiles/31_coin_gold.png",      "color": "#f1c40f" }
   }
