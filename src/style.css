@@ -180,7 +180,7 @@ body {
 #testBtn {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 10px;
@@ -190,7 +190,7 @@ body {
 #dlBtn:hover,
 #playBtn:hover,
 #playSettingsBtn:hover,
-#testBtn:hover { background: #3d3d40; }
+#testBtn:hover { background: var(--ctl-hover); }
 
 /* v20: agent test dialog (mirrors .play-settings shape; the modal
    wrapper uses .agent-dialog instead of .play-settings). */
@@ -203,9 +203,9 @@ body {
   font-weight: bold;
   font-size: 0.95em;
 }
-.agent-dialog .badge.ok        { background: #1e3b29; color: #6cd99a; }
-.agent-dialog .badge.fail      { background: #3b1e1e; color: #ff8c8c; }
-.agent-dialog .badge.searching { background: #2a2d3a; color: #c8c8e0; }
+.agent-dialog .badge.ok        { background: var(--badge-ok-bg); color: var(--badge-ok-fg); }
+.agent-dialog .badge.fail      { background: var(--badge-fail-bg); color: var(--badge-fail-fg); }
+.agent-dialog .badge.searching { background: var(--badge-search-bg); color: var(--badge-search-fg); }
 
 /* v21 countdown timer + progress bar. The dialog opens immediately
    in "searching" state with these elements; they're replaced by
@@ -226,11 +226,11 @@ body {
   appearance: none;
   -webkit-appearance: none;
   border: none;
-  background: #1d1d20;
+  background: var(--input-bg);
   border-radius: 3px;
   overflow: hidden;
 }
-.agent-dialog .countdown-bar::-webkit-progress-bar { background: #1d1d20; border-radius: 3px; }
+.agent-dialog .countdown-bar::-webkit-progress-bar { background: var(--input-bg); border-radius: 3px; }
 .agent-dialog .countdown-bar::-webkit-progress-value { background: #ffcc00; border-radius: 3px; transition: width 0.05s; }
 .agent-dialog .countdown-bar::-moz-progress-bar { background: #ffcc00; }
 
@@ -259,20 +259,25 @@ body {
   border-radius: 3px;
 }
 .agent-dialog .solution-row + .solution-row { border-top: 1px solid var(--line); }
-.agent-dialog .solution-row:hover { background: #1d1d20; }
+.agent-dialog .solution-row:hover { background: var(--input-bg); }
 .agent-dialog .solution-row.focused {
-  background: #1e3b29;
-  border-color: #6cd99a;
+  background: var(--focus-tint);
+  border-color: var(--focus-border);
 }
-.agent-dialog .solution-row.focused strong { color: #6cd99a; }
+.agent-dialog .solution-row.focused strong { color: var(--focus-border); }
 .agent-dialog .solution-stats {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
-.agent-dialog .stat-pill {
-  background: #1d1d20;
+/* v26 M2: stat-pill is used by both the .agent-dialog success state
+   AND the .minimised-solutions floating bar (which is appended to
+   body, not inside .agent-dialog). Loosen the selector so both
+   ancestors get the same chrome. */
+.agent-dialog .stat-pill,
+.minimised-solutions .stat-pill {
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 1px 8px;
@@ -348,7 +353,7 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 .play-settings #ps-vh {
   font: inherit;
   color: var(--fg);
-  background: #1d1d20;
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 6px;
@@ -364,7 +369,7 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
   width: 100%;
   font: 13px var(--mono);
   color: var(--fg);
-  background: #1d1d20;
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 6px 8px;
@@ -383,7 +388,7 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 .paste-load-dialog #pl-name {
   font: inherit;
   color: var(--fg);
-  background: #1d1d20;
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 6px;
@@ -397,16 +402,10 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
   margin: 8px 0;
   font-size: 13px;
 }
-/* Lightmode overrides — same specificity story as the v23 fixups. */
-body.lightmode .paste-load-dialog .pl-text,
-body.lightmode .paste-load-dialog #pl-name {
-  background: #ffffff;
-  color: var(--fg);
-  border-color: var(--line);
-}
-body.lightmode .paste-load-dialog .pl-error {
-  background: rgba(220, 53, 69, 0.08);
-}
+/* v26 M2: paste-load-dialog inputs use var(--input-bg) now — the
+   lightmode override block is redundant. The .pl-error tint stays
+   as a hardcoded rgba; v25's lightmode variant is replaced by a
+   single rule that uses var(--err) for the alpha-tinted bg. */
 
 /* Toolbar pickers (v9+/v17): "Level:" + "Tileset:" labelled native
    <select>s styled to match the toolbar buttons. */
@@ -423,7 +422,7 @@ body.lightmode .paste-load-dialog .pl-error {
 #levelSel {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 6px;
@@ -431,7 +430,7 @@ body.lightmode .paste-load-dialog .pl-error {
   cursor: pointer;
 }
 #tilesetSel:hover,
-#levelSel:hover { background: #3d3d40; }
+#levelSel:hover { background: var(--ctl-hover); }
 #dirty { color: var(--warn); margin-left: auto; }
 /* v23 M5: position:relative so .minimised-solutions can pin to the
    top of the wrap via position:absolute. Doesn't affect layout in
@@ -506,14 +505,14 @@ body.lightmode .paste-load-dialog .pl-error {
 .legend .legend-toggle {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 1px 6px;
   cursor: pointer;
   font-size: 11px;
 }
-.legend .legend-toggle:hover { background: #3d3d40; }
+.legend .legend-toggle:hover { background: var(--ctl-hover); }
 
 /* Collapsed: hide the legend-body, keep only the toolbar (vertical or
    horizontal narrow strip depending on layout). */
@@ -551,173 +550,39 @@ body.testmode #fitBtn { display: none; }
 #themeBtn {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 10px;
   cursor: pointer;
 }
-#themeBtn:hover { background: #3d3d40; }
-body.lightmode #themeBtn {
-  background: #e0e0e0;
-  color: var(--fg);
-}
-body.lightmode #themeBtn:hover { background: #d2d2d2; }
+#themeBtn:hover { background: var(--ctl-hover); }
 
-/* v23 M2: under the light theme, the rest of the toolbar buttons
-   inherit the same pale-on-pale look — the hardcoded #333 (the
-   dark-theme button bg) would otherwise stay dark and break
-   contrast. We re-bind them in one block here, matching the
-   `body.lightmode #themeBtn` look above. */
-body.lightmode #newBtn,
-body.lightmode #dlBtn,
-body.lightmode #playBtn,
-body.lightmode #playSettingsBtn,
-body.lightmode #testBtn,
-body.lightmode #fitBtn,
-body.lightmode #restartBtn,
-body.lightmode #exitBtn,
-body.lightmode .cf-btn,
-body.lightmode .legend .glyph,
-body.lightmode .legend .legend-toggle {
-  background: #e0e0e0;
-  color: var(--fg);
-}
-body.lightmode #newBtn:hover,
-body.lightmode #dlBtn:hover,
-body.lightmode #playBtn:hover,
-body.lightmode #playSettingsBtn:hover,
-body.lightmode #testBtn:hover,
-body.lightmode #fitBtn:hover,
-body.lightmode #restartBtn:hover,
-body.lightmode #exitBtn:hover,
-body.lightmode .cf-btn:hover,
-body.lightmode .legend .glyph:hover,
-body.lightmode .legend .legend-toggle:hover {
-  background: #d2d2d2;
-}
-/* The agent-dialog success/fail badge backgrounds are tuned for the
-   dark theme — re-bind their bg for light so the green/red text
-   stays readable. */
-body.lightmode .agent-dialog .badge.ok       { background: #d8f0e0; color: #1e7e34; }
-body.lightmode .agent-dialog .badge.fail     { background: #f2d0d0; color: #b22222; }
-body.lightmode .agent-dialog .badge.searching { background: #fff3cd; color: #856404; }
-/* v25 fixup: the test dialog's expanded content had several `#1d1d20`
-   dark backgrounds with `var(--fg)` text — black-on-near-black in
-   lightmode. Stat pills (steps/jumps/pickups), solution-row hover,
-   the countdown output + bar, and the focused-row green-tint all
-   re-bind to light values. The focused-row's `<strong>` keeps its
-   accent green via its own color rule above. */
-body.lightmode .agent-dialog .stat-pill {
-  background: #ececec;
-  color: var(--fg);
-  border-color: var(--line);
-}
-body.lightmode .agent-dialog .countdown {
-  background: #ececec;
-  color: var(--fg);
-}
-body.lightmode .agent-dialog .countdown-bar::-webkit-progress-bar {
-  background: #ececec;
-}
-body.lightmode .agent-dialog .solution-row:hover {
-  background: #ececec;
-}
-body.lightmode .agent-dialog .solution-row.focused {
-  background: #d8f0e0;
-  border-color: #1e7e34;
-}
-body.lightmode .agent-dialog .trace-section > summary,
-body.lightmode .agent-dialog .trace-list,
-body.lightmode .agent-dialog .trace-frame {
-  color: var(--fg);
-}
-/* v25 fixup: minimised-solutions floating bar uses var(--panel) which
-   re-binds via the body.lightmode root block, so the bar background is
-   already pale. But its stat-pills inherit the dark hardcoded bg from
-   the agent-dialog rule — flip those too. */
-body.lightmode .minimised-solutions .stat-pill {
-  background: #ececec;
-  color: var(--fg);
-  border-color: var(--line);
-}
-/* v25 fixup: New-Level form select (the `[New]` flow). Was hardcoded
-   #1d1d20 + var(--fg) → unreadable in lightmode. Same fix pattern as
-   the toolbar selects. */
-body.lightmode .nv-form select,
-body.lightmode .nv-form input {
-  background: #ffffff;
-  color: var(--fg);
-  border-color: var(--line);
-}
-/* v25 fixup: Level-loader list rows + per-row Download/New buttons.
-   .lv-pick + .lv-dl + .lv-new use #2d2d30/#333/etc dark hovers. */
-body.lightmode .lv-pick:hover,
-body.lightmode .problems .row:hover {
-  background: #ececec;
-}
-body.lightmode .lv-dl,
-body.lightmode .lv-new {
-  background: #ececec;
-  color: var(--fg);
-  border-color: var(--line);
-}
-body.lightmode .lv-dl:hover,
-body.lightmode .lv-new:hover {
-  background: #d8d8d8;
-}
-/* v25 fixup: confirm-dialog primary button (blue accent). Keep the
-   accent feel but lift the background a touch so dark text is legible
-   if it ever falls through. */
-body.lightmode .cf-btn.primary {
-  background: #2d5a88;
-  color: #ffffff;
-  border-color: #3a6ea5;
-}
-body.lightmode .cf-btn.primary:hover { background: #356aa0; }
+/* v26 M2: all the v23-v25 `body.lightmode #fooBtn / .stat-pill /
+   .solution-row / .agent-dialog .badge.ok / .nv-form select /
+   .lv-pick:hover / .play-settings #ps-n / etc.` override blocks
+   are DELETED. Each underlying rule now reads from a custom
+   property (--ctl-bg, --input-bg, --row-hover, --focus-tint,
+   --badge-ok-bg etc.) defined at :root and rebound under
+   body.lightmode — the cascade does the work, no specificity
+   foot-guns. */
 
+/* The two overrides we KEEP — the cascade doesn't help here: */
+/* 1. modal-backdrop uses an rgba (not in our var set). */
 body.lightmode .modal-backdrop { background: rgba(0, 0, 0, 0.3); }
-/* The textarea + select + number inputs default to dark — flip them too. */
-body.lightmode #src,
-body.lightmode select,
-body.lightmode .play-settings input[type="number"] {
-  background: #ffffff;
-  color: var(--fg);
-  border-color: var(--line);
-}
-/* v23 fixup: the #tilesetSel / #levelSel rule above hardcodes
-   `background: #333` with ID-selector specificity (0,1,0) — that
-   beats the `body.lightmode select` rule (0,1,1) ... no wait, both
-   are 0,1,1 (one class on body + one id/tag); the order matters.
-   Match the ID specificity explicitly so light-mode wins. Also style
-   the <option>s — most browsers paint them with the OS default
-   unless given explicit colours. */
-body.lightmode #tilesetSel,
-body.lightmode #levelSel {
-  background: #ffffff;
-  color: var(--fg);
-  border-color: var(--line);
-}
-body.lightmode #tilesetSel:hover,
-body.lightmode #levelSel:hover { background: #ececec; }
+/* 2. <option> elements are painted by the OS unless given an
+   explicit color/bg in CSS; the cascade doesn't reach the OS
+   widget. */
+body.lightmode select option,
 body.lightmode #tilesetSel option,
-body.lightmode #levelSel option,
-body.lightmode select option {
+body.lightmode #levelSel option {
   background: #ffffff;
   color: var(--fg);
 }
-/* v23 fixup: same specificity story as the selects — the existing
-   `.play-settings #ps-n / #ps-vw / #ps-vh` rule sits at (1,1,0) and
-   beats the earlier `body.lightmode .play-settings input[type="number"]`
-   override at (0,3,2), so the inputs stayed dark in light mode (dark
-   text on dark background — unreadable). Match the ID-specificity
-   explicitly. */
-body.lightmode .play-settings #ps-n,
-body.lightmode .play-settings #ps-vw,
-body.lightmode .play-settings #ps-vh {
-  background: #ffffff;
-  color: var(--fg);
-  border-color: var(--line);
+/* 3. .cf-btn.primary keeps an explicit white text so the dark
+   var(--fg) can't override it in light mode. */
+body.lightmode .cf-btn.primary {
+  color: #ffffff;
 }
 
 /* v22: fit-to-screen button — same toolbar-button look as the rest;
@@ -725,22 +590,22 @@ body.lightmode .play-settings #ps-vh {
 #fitBtn {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 10px;
   cursor: pointer;
 }
-#fitBtn:hover { background: #3d3d40; }
+#fitBtn:hover { background: var(--ctl-hover); }
 #fitBtn.active {
-  background: #1e3b29;
-  border-color: #6cd99a;
-  color: #6cd99a;
+  background: var(--focus-tint);
+  border-color: var(--focus-border);
+  color: var(--focus-border);
 }
 .legend .glyph {
   font: inherit;
   color: var(--dim);
-  background: #2a2a2a;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 8px;
@@ -757,7 +622,7 @@ body.lightmode .play-settings #ps-vh {
   image-rendering: pixelated;
   box-shadow: inset 0 0 0 1px var(--line);
 }
-.legend .glyph:hover { background: #333; }
+.legend .glyph:hover { background: var(--ctl-bg); }
 .legend .glyph.active {
   border-color: var(--warn);
   color: var(--fg);
@@ -780,7 +645,7 @@ body.lightmode .play-settings #ps-vh {
   cursor: default;
   border-style: dashed;
 }
-.legend .glyph.inert:hover { background: #2a2a2a; } /* no hover lift */
+.legend .glyph.inert:hover { background: var(--ctl-bg); } /* no hover lift */
 
 /* v18: Background-image dropdown in the legend, styled like the
    toolbar's Tileset:/Level: pickers. */
@@ -792,14 +657,14 @@ body.lightmode .play-settings #ps-vh {
 #bgImgSel {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 6px;
   max-width: 220px;
   cursor: pointer;
 }
-#bgImgSel:hover { background: #3d3d40; }
+#bgImgSel:hover { background: var(--ctl-hover); }
 
 .problems {
   /* v17: a fixed single-line message bar. The v13 height-driven
@@ -840,7 +705,7 @@ body.lightmode .play-settings #ps-vh {
   cursor: pointer;
   white-space: pre;
 }
-.problems .row:hover { background: #2d2d30; }
+.problems .row:hover { background: var(--row-hover); }
 .problems .loc { color: var(--dim); }
 .problems .error { color: var(--err); }
 .problems .warn { color: var(--warn); }
@@ -892,14 +757,14 @@ body.lightmode .play-settings #ps-vh {
   margin-left: auto;
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 0 8px;
   cursor: pointer;
   line-height: 1.4;
 }
-.agent-min-btn:hover { background: #3d3d40; }
+.agent-min-btn:hover { background: var(--ctl-hover); }
 body.lightmode .agent-min-btn { background: #e0e0e0; }
 body.lightmode .agent-min-btn:hover { background: #d2d2d2; }
 .modal {
@@ -953,19 +818,19 @@ body.lightmode .agent-min-btn:hover { background: #d2d2d2; }
   border-radius: 4px;
   cursor: pointer;
 }
-.lv-pick:hover { background: #2d2d30; }
+.lv-pick:hover { background: var(--row-hover); }
 .lv-id { color: var(--dim); font-size: 0.85em; }
 .lv-mod { color: var(--warn); font-size: 0.85em; margin-left: auto; }
 .lv-dl {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 0 10px;
   cursor: pointer;
 }
-.lv-dl:hover { background: #3d3d40; }
+.lv-dl:hover { background: var(--ctl-hover); }
 
 /* New-level affordance + form */
 .lv-new-row { padding: 0 0 6px; }
@@ -974,7 +839,7 @@ body.lightmode .agent-min-btn:hover { background: #d2d2d2; }
   font: inherit;
   text-align: left;
   color: var(--fg);
-  background: #2d2d30;
+  background: var(--row-hover);
   border: 1px dashed var(--line);
   border-radius: 4px;
   padding: 8px 10px;
@@ -994,7 +859,7 @@ body.lightmode .agent-min-btn:hover { background: #d2d2d2; }
 .nv-form select {
   font: inherit;
   color: var(--fg);
-  background: #1d1d20;
+  background: var(--input-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 5px 8px;
@@ -1008,13 +873,13 @@ body.lightmode .agent-min-btn:hover { background: #d2d2d2; }
 .cf-btn {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 5px 12px;
   cursor: pointer;
 }
-.cf-btn:hover { background: #3d3d40; }
+.cf-btn:hover { background: var(--ctl-hover); }
 .cf-btn.primary { background: #2d5a88; border-color: #3a6ea5; }
 .cf-btn.primary:hover { background: #356aa0; }
 
@@ -1033,14 +898,14 @@ body.playmode #overlay { pointer-events: none; }
 #exitBtn {
   font: inherit;
   color: var(--fg);
-  background: #333;
+  background: var(--ctl-bg);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 10px;
   cursor: pointer;
 }
 #restartBtn:hover,
-#exitBtn:hover { background: #3d3d40; }
+#exitBtn:hover { background: var(--ctl-hover); }
 
 /* Flash the problems panel when a playtest launch is refused (v9). */
 @keyframes ptflash {
