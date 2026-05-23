@@ -9,7 +9,9 @@ import { buildNavGraph } from './grid.js';
 test('aStar: finds a path on a flat level', () => {
   const parsed = parse('#####\n#P.E#\n#####');
   const g = buildNavGraph(parsed, DEFAULT_LEGEND);
-  const path = aStar(g, '1,1', '1,3');
+  // v26 M4: A* `from` is a stateKey (cell × vxBucket); `to` stays a
+  // cellKey and A* matches any vxBucket variant on arrival.
+  const path = aStar(g, '1,1,0', '1,3');
   assert.ok(path);
   // v21: the graph builder generates physically-achievable edges
   // including "walk-into-exit" win-edges and "drop/jump-with-held-
@@ -32,14 +34,16 @@ test('aStar: returns null when destination unreachable', () => {
   ].join('\n');
   const parsed = parse(text);
   const g = buildNavGraph(parsed, DEFAULT_LEGEND);
-  const path = aStar(g, '1,1', '1,10');
+  const path = aStar(g, '1,1,0', '1,10');
   assert.equal(path, null, `expected null path, got ${path && path.length} edges`);
 });
 
 test('aStar: same start + end returns empty path', () => {
   const parsed = parse('#####\n#P.E#\n#####');
   const g = buildNavGraph(parsed, DEFAULT_LEGEND);
-  const path = aStar(g, '1,1', '1,1');
+  // v26 M4: `from` is a stateKey; `to` is a cellKey. Matching cells
+  // → empty path.
+  const path = aStar(g, '1,1,0', '1,1');
   assert.deepEqual(path, []);
 });
 

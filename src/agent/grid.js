@@ -54,6 +54,27 @@ export function maxDcForDr(dr) {
 // --- helpers (same as v20) ------------------------------------------
 
 export const cellKey = (r, c) => `${r},${c}`;
+/** v26 M4: sub-pixel state-space A* node identity. Each grounded
+ *  cell expands to 3 nodes (one per vxBucket ∈ {-1, 0, +1}); A* picks
+ *  edges that depend on the player's incoming horizontal momentum.
+ *  Solves cases like below_ground.txt where a jump from (cell, vx=0)
+ *  reaches a different end cell than the same jump from (cell, vx=240)
+ *  — the v25 cell-resolved graph couldn't distinguish those. */
+export const stateKey = (r, c, vxBucket = 0) => `${r},${c},${vxBucket}`;
+/** Bucket the player's vx into {-1, 0, +1}. SPEED is the engine's
+ *  walk magnitude; treat |vx| < 30 (== "almost still") as bucket 0
+ *  so the spawn-grounded start fits cleanly. */
+export const VX_BUCKETS = [-1, 0, +1];
+export function vxBucketOf(vx) {
+  if (Math.abs(vx) < 30) return 0;
+  return vx < 0 ? -1 : +1;
+}
+/** Parse a stateKey back into (r, c, vxBucket) — used by A* goal
+ *  matching where we want any vxBucket variant of the goal cell. */
+export function parseStateKey(k) {
+  const [r, c, vx] = k.split(',').map(Number);
+  return { r, c, vxBucket: vx };
+}
 
 function inBounds(grid, r, c) {
   return r >= 0 && r < grid.length && c >= 0 && c < grid[r].length;
@@ -104,12 +125,20 @@ export function buildNavGraph(parsed, legend = null, tileset = null) {
   const pickupCells = [];
   const exitCells = [];
 
+  // v26 M4: each walkable cell expands to 3 stateKey nodes (one
+  // per vxBucket ∈ VX_BUCKETS). The richer node identity lets A*
+  // pick edges that depend on incoming horizontal momentum —
+  // crucial for cases like below_ground.txt where a chained jump
+  // works from a still-vx start but fails from a moving-left
+  // start (the cell-resolved v25 graph couldn't distinguish those).
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
       if (!isWalkable(grid, r, c)) continue;
       const ch = grid[r][c];
-      const k = cellKey(r, c);
-      nodes.set(k, { r, c, supported: isGrounded(grid, r, c) });
+      for (const vxBucket of VX_BUCKETS) {
+        const k = stateKey(r, c, vxBucket);
+        nodes.set(k, { r, c, vxBucket, supported: isGrounded(grid, r, c) });
+      }
       if (ch === 'P') pSpawn = { r, c };
       else if (ch === 'E') exitCells.push({ r, c });
       else if (legend?.[ch]?.role === 'pickup' || ch === 'o') pickupCells.push({ r, c });
@@ -165,10 +194,15 @@ function canBuildSimContext(parsed) {
 }
 
 function addActionEdges(ctx, parsed, cell, edgesArr, exitCells, precisionTargets = []) {
+  // v26 M4: `cell` carries `vxBucket` — the player's incoming
+  // horizontal momentum bucket. Initial vx for the sim matches it
+  // so the action runs from the correct continuous-physics state.
+  // Bucket 0 ≈ standing still; ±1 = moving at walk speed.
+  const startVx = cell.vxBucket * SPEED;
   const startState = {
     x: cell.c * TILE,
     y: cell.r * TILE,
-    vx: 0,
+    vx: startVx,
     vy: 0,
     onGround: true,
   };
@@ -211,10 +245,14 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells, precisionTargets
     // ON the exit — exits aren't required to be grounded for the
     // collision to fire.
     if (!isWinEdge && !isGrounded(parsed.grid, targetR, targetC)) continue;
-    if (targetR === cell.r && targetC === cell.c) continue;
+    if (targetR === cell.r && targetC === cell.c && vxBucketOf(result.endState.vx) === cell.vxBucket) continue;
 
+    // v26 M4: destination is a stateKey, NOT a cellKey — encodes
+    // the bucket the player ARRIVES in. The next step's edges
+    // will be those originating from `(targetR, targetC, endBucket)`.
+    const endBucket = vxBucketOf(result.endState.vx);
     edgesArr.push({
-      to: cellKey(targetR, targetC),
+      to: stateKey(targetR, targetC, endBucket),
       kind: action.kind,
       cost: result.cost,
       dir: action.params.dir,
@@ -238,14 +276,17 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells, precisionTargets
     // momentum. Skipped when result.trajectory is null (no
     // precision targets requested).
     if (result.trajectory && result.outcome === 'ok') {
+      const endBucket = vxBucketOf(result.endState.vx);
       for (const t of precisionTargets) {
         const tcx = t.c * TILE + TILE / 2;
         const tcy = t.r * TILE + TILE / 2;
-        const tk = cellKey(t.r, t.c);
-        // Skip self-loops and the regular-cell-resolved target (it
-        // already has an edge above).
-        if (tk === cellKey(targetR, targetC)) continue;
-        if (t.r === cell.r && t.c === cell.c) continue;
+        // v26 M4: precision edges land in the same vxBucket the
+        // action's end-state has. Identical bucket on `(targetR,
+        // targetC)` makes this a self-loop relative to the cell-
+        // resolved edge — skip.
+        const tk = stateKey(t.r, t.c, endBucket);
+        if (tk === stateKey(targetR, targetC, endBucket)) continue;
+        if (t.r === cell.r && t.c === cell.c && endBucket === cell.vxBucket) continue;
         let prevY = startState.y;
         for (const pt of result.trajectory) {
           const pcx = pt.x + TILE / 2;

@@ -13,7 +13,7 @@
 // `plan()` returns a single-element-friendly shape so v21 grows the
 // list without breaking callers.
 
-import { buildNavGraph, cellKey } from './grid.js';
+import { buildNavGraph, cellKey, stateKey, vxBucketOf } from './grid.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
 import { TILE } from '../play/constants.js';
 
@@ -41,14 +41,26 @@ function lowestF(open, fScore) {
 /**
  * A* on the nav-graph.
  * @param graph        from `buildNavGraph`
- * @param from         "r,c" key
- * @param to           "r,c" key
+ * @param from         stateKey "r,c,vxBucket" (v26 M4) — the player's
+ *                     exact node identity to search from
+ * @param to           cellKey "r,c" — match ANY stateKey at that
+ *                     cell (any vxBucket arrival is acceptable for
+ *                     a pickup / exit goal)
  * @param blocked      optional Set<string> of edge IDs to exclude (replan)
  * @returns Array<{from, edge, cost}> the path, or null if unreachable.
+ *
+ * v26 M4: A* operates on stateKey nodes (cell × vxBucket). The
+ * `from` is a stateKey; the `to` is a CELLKEY — A* succeeds when
+ * any stateKey at that cell is reached. Lets the planner pick the
+ * vxBucket variant that's cheapest to arrive at without forcing the
+ * caller to enumerate them.
  */
 export function aStar(graph, from, to, blocked = new Set()) {
-  if (!graph.nodes.has(from) || !graph.nodes.has(to)) return null;
-  if (from === to) return [];
+  if (!graph.nodes.has(from)) return null;
+  // v26: goal-cell match — accept ANY stateKey with prefix `to,`.
+  const goalCellPrefix = to + ',';
+  const matchesGoal = (k) => k === to || k.startsWith(goalCellPrefix);
+  if (matchesGoal(from)) return [];
 
   const [fr, fc] = from.split(',').map(Number);
   const [tr, tc] = to.split(',').map(Number);
@@ -60,7 +72,7 @@ export function aStar(graph, from, to, blocked = new Set()) {
 
   while (open.size > 0) {
     const current = lowestF(open, fScore);
-    if (current === to) {
+    if (matchesGoal(current)) {
       // Reconstruct.
       const path = [];
       let node = current;
@@ -127,7 +139,13 @@ function resolveGoals(graph, requiredPickups) {
 
   const startCell = graph.start;
   if (!startCell) return [exitKey];
-  const startKey = cellKey(startCell.r, startCell.c);
+  // v26 M4: TSP helpers' aStar(from, to) — `from` is a stateKey
+  // (cell × vxBucket). Spawn-grounded start is bucket 0; subsequent
+  // legs are estimated from bucket 0 too because the TSP heuristics
+  // don't simulate edge-by-edge (the actual planner loop tracks
+  // real-bucket state). Cost estimates are slightly pessimistic but
+  // consistent.
+  const startKey = stateKey(startCell.r, startCell.c, 0);
   const allKeys = graph.pickupCells.map((p) => cellKey(p.r, p.c));
 
   // Drop unreachable pickups (no A* path from start) — the planner
@@ -229,7 +247,11 @@ function* permutations(arr) {
   }
 }
 
-/** Greedy nearest-first ordering — the v20/v21 algorithm. */
+/** Greedy nearest-first ordering — the v20/v21 algorithm.
+ *  v26 M4: each leg's `cur` is normalised to a stateKey (bucket 0
+ *  assumed) so A* can search from it. The cost estimates are
+ *  consistent across legs; the actual planner loop uses real
+ *  buckets from prev endState. */
 function greedyNearest(graph, startKey, pickups, exitKey) {
   let cur = startKey;
   const remaining = [...pickups];
@@ -248,11 +270,19 @@ function greedyNearest(graph, startKey, pickups, exitKey) {
     }
     if (!bestKey) break;
     order.push(bestKey);
-    cur = bestKey;
+    // Normalise cellKey → stateKey for the next leg's aStar.
+    cur = cellToBucket0(bestKey);
     remaining.splice(remaining.indexOf(bestKey), 1);
   }
   void exitKey; // unused; kept for symmetry
   return order;
+}
+
+/** v26 M4: cellKey "r,c" → stateKey "r,c,0". Used by TSP helpers
+ *  that thread cellKey goals through A*; the bucket-0 assumption
+ *  is the approximation noted in resolveGoals. */
+function cellToBucket0(k) {
+  return k.split(',').length === 2 ? `${k},0` : k;
 }
 
 /** 2-opt local search on a tour. Tries swapping pairs of visits;
@@ -292,7 +322,8 @@ function totalChainCost(graph, startKey, chain) {
     const path = aStar(graph, cur, g);
     if (!path) return Infinity;
     total += path.reduce((s, step) => s + step.edge.cost, 0);
-    cur = g;
+    // v26 M4: same normalisation as greedyNearest.
+    cur = cellToBucket0(g);
   }
   return total;
 }
@@ -467,7 +498,11 @@ export function plan(parsed, legend, opts = {}) {
     // special-case code in the emitter.
     frame: 1,
     currentDir: null,
-    position: cellKey(graph.start.r, graph.start.c),
+    // v26 M4: position is now a stateKey (cell × vxBucket). Spawn
+    // settles vy=0, vx=0 → bucket 0. After each leg, position is
+    // updated to the last edge's `to` (which is a stateKey produced
+    // by addActionEdges).
+    position: stateKey(graph.start.r, graph.start.c, 0),
     // v25 M2: simContext + prevEndState carry the sub-pixel state
     // across emit-leg calls. Initialised to the spawn cell's
     // grounded state — matches what the live engine's spawn-fall

@@ -42,7 +42,9 @@ test('v25 M1: buildNavGraph edges carry endState', async ({ page }) => {
     const { buildNavGraph } = await import('/src/agent/grid.js');
     const parsed = parse('# size: 6x4\n######\n#P..E#\n######');
     const g = buildNavGraph(parsed, DEFAULT_LEGEND);
-    const startK = g.start ? `${g.start.r},${g.start.c}` : null;
+    // v26 M4: graph keys are stateKey (cell × vxBucket). Look up
+    // bucket-0 (the spawn-grounded default) variant.
+    const startK = g.start ? `${g.start.r},${g.start.c},0` : null;
     const edges = startK ? (g.edges.get(startK) || []) : [];
     // Sample at least one edge; assert endState shape.
     if (!edges.length) return { ok: false, reason: 'no edges' };

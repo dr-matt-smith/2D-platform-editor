@@ -15,7 +15,12 @@
 import { simulate } from './sim.js';
 import { plan, replan } from './planner.js';
 
-const SIM_MAX_FRAMES = 1200; // 20 simulated seconds at 60fps
+// v26 M4: bumped from 1200 → 2400 (20s → 40s sim time). The
+// sub-pixel state-space A* graph has 3× more nodes; plans that
+// chain through more bucket variants can exceed 20s sim time.
+// Genuinely-stuck plans still terminate within the wall-clock
+// budget — the simulator is fast (~50µs per frame).
+const SIM_MAX_FRAMES = 2400;
 const MAX_SOLUTIONS = 5;
 
 /**
