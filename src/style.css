@@ -435,7 +435,13 @@ body.demomode .stage { box-shadow: 0 0 0 2px #ffcc00 inset; }
 /* v23 M5: position:relative so .minimised-solutions can pin to the
    top of the wrap via position:absolute. Doesn't affect layout in
    any other mode. */
-.canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; position: relative; }
+/* v27 M1: scrollbar-gutter: stable reserves space for the vertical
+   scrollbar whether or not it's actually shown. Without this, when
+   the legend hides/minimises in FIT mode the wrap widens; fit math
+   re-scales; the canvas grows just past wrap height; scrollbar
+   appears; clientWidth shrinks ~15 px; canvas appears off-centre —
+   a visible "jog." Stable gutter eliminates the diff. */
+.canvas-wrap { flex: 1; overflow: auto; padding: 12px; min-height: 0; position: relative; scrollbar-gutter: stable; }
 .stage {
   position: relative;
   display: inline-block;
