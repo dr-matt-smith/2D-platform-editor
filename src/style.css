@@ -15,6 +15,25 @@
      already uses ad-hoc — promoting it to a variable lets M2's
      light-theme override re-bind it. */
   --accent: #6cd99a;
+  /* v26 M1: button + input + row-hover backgrounds. v23-v25's
+     ad-hoc lightmode override blocks are eliminated by routing
+     every hardcoded `background: #1d1d20 / #2d2d30 / #333 /
+     #3d3d40` through these properties — the cascade then handles
+     light/dark via the body.lightmode rebinds below. The dark
+     values here match what was previously hardcoded so M2's
+     substitution is mechanical (no visual diff). */
+  --ctl-bg:          #333;       /* toolbar + dialog button bg */
+  --ctl-hover:       #3d3d40;    /* hover state */
+  --input-bg:        #1d1d20;    /* textarea / select / number-input */
+  --row-hover:       #2d2d30;    /* row-level hover (lv-pick, problems) */
+  --focus-tint:      #1e3b29;    /* focused-row green tint */
+  --focus-border:    #6cd99a;    /* focused-row border + accent */
+  --badge-ok-bg:     #1e3b29;
+  --badge-ok-fg:     #6cd99a;
+  --badge-fail-bg:   #3b1e1e;
+  --badge-fail-fg:   #ff8c8c;
+  --badge-search-bg: #2a2d3a;
+  --badge-search-fg: #c8c8e0;
   color-scheme: dark;
 }
 
@@ -31,6 +50,22 @@ body.lightmode {
   --fg: #1a1a1a;
   --dim: #666666;
   --accent: #1e7e34;
+  /* v26 M1: light-theme rebinds for the v23-v25 patched-individually
+     control / input / row / focus / badge colours. M2 substitutes
+     the hardcoded hex values in the rules below; the override
+     blocks delete themselves once the cascade handles it. */
+  --ctl-bg:          #e0e0e0;
+  --ctl-hover:       #d2d2d2;
+  --input-bg:        #ffffff;
+  --row-hover:       #ececec;
+  --focus-tint:      #d8f0e0;
+  --focus-border:    #1e7e34;
+  --badge-ok-bg:     #d8f0e0;
+  --badge-ok-fg:     #1e7e34;
+  --badge-fail-bg:   #f2d0d0;
+  --badge-fail-fg:   #b22222;
+  --badge-search-bg: #fff3cd;
+  --badge-search-fg: #856404;
   color-scheme: light;
 }
 
