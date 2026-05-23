@@ -1,9 +1,32 @@
 # 2D Level Designer — Version 26 Design Document
 
-Status: Proposed · Date: 2026-05-23 · Builds on:
+Status: **Delivered (2026-05-23)** · Builds on:
 [version25_design.md](version25_design.md) (sub-pixel edge endpoints +
 re-simulate + precision_landing + AudioContext prime) ·
-Implementation: *to follow once this scope is approved*.
+Implementation:
+[version26_implementation.md](../2_implementation/version26_implementation.md)
+· Transcript:
+[version26_build.md](../3_transcripts/version26_build.md)
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `10d5a28` | define :root + body.lightmode CSS custom properties |
+| 2 | `b41c58c` | substitute hardcoded dark bgs with vars; delete override blocks |
+| 3 | `0a02f47` | fit-to-screen — scale #overlay alongside #preview |
+| 4 | `d260489` | sub-pixel state-space A* — node identity (cell, vxBucket) |
+| 5 | `f39404f` | acceptance gate — below_ground progress + full agent suite |
+| 6 | _this commit_ | acceptance + transcript; design + impl Delivered |
+
+Tests: 295 unit / 95 Playwright pass. Bundle 76.88 kB JS (gzip 26.67 kB),
+CSS 15.90 kB (gzip 3.67 kB — down 2.4 kB pre-gzip from v25 thanks to the
+deleted override blocks). v9 §7 byte-identical engine invariant preserved
+across all six commits.
+
+Carry-over to v27: full `below_ground.txt` solve. vxBucket
+discretisation (3 values) is coarser than the sub-pixel state
+drift that affects below_ground; the v26 architecture is the
+foundation, but v27 needs finer state buckets (e.g. xOffsetBucket
+on top of vxBucket) or a per-frame-trajectory planner.
 
 ## 1. Purpose
 

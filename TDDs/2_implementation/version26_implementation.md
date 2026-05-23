@@ -1,12 +1,25 @@
 # Version 26 — Implementation Plan
 
-Status: Proposed · Date: 2026-05-23 · Design:
+Status: **Delivered (2026-05-23)** · Design:
 [../1_design/version26_design.md](../1_design/version26_design.md)
+· Transcript:
+[../3_transcripts/version26_build.md](../3_transcripts/version26_build.md)
 
-Six small path-scoped commits. The CSS refactor is split into two
+Six small path-scoped commits. The CSS refactor was split into two
 milestones (define-then-substitute) to keep the diff reviewable and
-allow rollback. The agent thread (M4–M5) lands as the larger,
+allow rollback. The agent thread (M4–M5) landed as the larger,
 acceptance-gated change.
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `10d5a28` | CSS vars defined |
+| 2 | `b41c58c` | substitute + delete overrides |
+| 3 | `0a02f47` | fit-to-screen overlay sync |
+| 4 | `d260489` | sub-pixel A* (cell × vxBucket) |
+| 5 | `f39404f` | acceptance gate (below_ground partial; agent suite passes) |
+| 6 | _this commit_ | acceptance + transcript + Delivered |
+
+Tests at delivery: 295 unit / 95 Playwright. v9 §7 invariant preserved.
 
 ## Process (same discipline as v8–v25)
 
