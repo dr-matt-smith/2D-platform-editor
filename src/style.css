@@ -567,6 +567,80 @@ body.lightmode .legend .legend-toggle:hover {
 body.lightmode .agent-dialog .badge.ok       { background: #d8f0e0; color: #1e7e34; }
 body.lightmode .agent-dialog .badge.fail     { background: #f2d0d0; color: #b22222; }
 body.lightmode .agent-dialog .badge.searching { background: #fff3cd; color: #856404; }
+/* v25 fixup: the test dialog's expanded content had several `#1d1d20`
+   dark backgrounds with `var(--fg)` text — black-on-near-black in
+   lightmode. Stat pills (steps/jumps/pickups), solution-row hover,
+   the countdown output + bar, and the focused-row green-tint all
+   re-bind to light values. The focused-row's `<strong>` keeps its
+   accent green via its own color rule above. */
+body.lightmode .agent-dialog .stat-pill {
+  background: #ececec;
+  color: var(--fg);
+  border-color: var(--line);
+}
+body.lightmode .agent-dialog .countdown {
+  background: #ececec;
+  color: var(--fg);
+}
+body.lightmode .agent-dialog .countdown-bar::-webkit-progress-bar {
+  background: #ececec;
+}
+body.lightmode .agent-dialog .solution-row:hover {
+  background: #ececec;
+}
+body.lightmode .agent-dialog .solution-row.focused {
+  background: #d8f0e0;
+  border-color: #1e7e34;
+}
+body.lightmode .agent-dialog .trace-section > summary,
+body.lightmode .agent-dialog .trace-list,
+body.lightmode .agent-dialog .trace-frame {
+  color: var(--fg);
+}
+/* v25 fixup: minimised-solutions floating bar uses var(--panel) which
+   re-binds via the body.lightmode root block, so the bar background is
+   already pale. But its stat-pills inherit the dark hardcoded bg from
+   the agent-dialog rule — flip those too. */
+body.lightmode .minimised-solutions .stat-pill {
+  background: #ececec;
+  color: var(--fg);
+  border-color: var(--line);
+}
+/* v25 fixup: New-Level form select (the `[New]` flow). Was hardcoded
+   #1d1d20 + var(--fg) → unreadable in lightmode. Same fix pattern as
+   the toolbar selects. */
+body.lightmode .nv-form select,
+body.lightmode .nv-form input {
+  background: #ffffff;
+  color: var(--fg);
+  border-color: var(--line);
+}
+/* v25 fixup: Level-loader list rows + per-row Download/New buttons.
+   .lv-pick + .lv-dl + .lv-new use #2d2d30/#333/etc dark hovers. */
+body.lightmode .lv-pick:hover,
+body.lightmode .problems .row:hover {
+  background: #ececec;
+}
+body.lightmode .lv-dl,
+body.lightmode .lv-new {
+  background: #ececec;
+  color: var(--fg);
+  border-color: var(--line);
+}
+body.lightmode .lv-dl:hover,
+body.lightmode .lv-new:hover {
+  background: #d8d8d8;
+}
+/* v25 fixup: confirm-dialog primary button (blue accent). Keep the
+   accent feel but lift the background a touch so dark text is legible
+   if it ever falls through. */
+body.lightmode .cf-btn.primary {
+  background: #2d5a88;
+  color: #ffffff;
+  border-color: #3a6ea5;
+}
+body.lightmode .cf-btn.primary:hover { background: #356aa0; }
+
 body.lightmode .modal-backdrop { background: rgba(0, 0, 0, 0.3); }
 /* The textarea + select + number inputs default to dark — flip them too. */
 body.lightmode #src,
