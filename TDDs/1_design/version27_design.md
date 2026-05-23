@@ -27,13 +27,13 @@ v25 and v26.
    **Acceptance**: `below_ground.txt` solves end-to-end within
    5 s; all v21–v26 levels continue to solve.
 
-### Thread B — Top messages row
+### Thread B — Editor UX polish
 
-2. **A reserved row at the top of every level for HUD / score /
-   status messages.** Currently the in-game HUD text (`"coins:
-   3 / 4 → find the exit"`) renders over level cells the
-   designer might want the player to visit. v27 ships a dedicated
-   row that:
+2. **Top messages row.** A reserved row at the top of every
+   level for HUD / score / status messages. Currently the in-game
+   HUD text (`"coins: 3 / 4 → find the exit"`) renders over level
+   cells the designer might want the player to visit. v27 ships a
+   dedicated row that:
    - Renders with a distinct dark-grey background + light-grey
      text style (so it's visually separate from level tiles).
    - Doesn't collide with the player physically — the character
@@ -43,6 +43,22 @@ v25 and v26.
      with level art.
    - Is visually distinct in EDIT mode too (the designer
      understands it's reserved).
+
+3. **Fix-mode scrollbar jog on Play / legend toggle.** User-reported:
+   in FIT mode, clicking Play (or minimising the legend in Design
+   mode) causes a scrollbar to appear in the canvas-wrap, which
+   shifts the canvas position by the scrollbar width — a visible
+   "jog" the user describes. The cause: when the legend hides /
+   minimises, the canvas-wrap widens; `applyFitToScreen` /
+   `applyPlayFitToScreen` re-scale the canvas to the new wrap
+   dims, and the scaled height (using `Math.min(availW/iW,
+   availH/iH)`) ends up just a fraction over `wrap.clientHeight`,
+   triggering a vertical scrollbar. The scrollbar then reduces
+   `clientWidth` by ~15 px and the canvas appears off-centre. Fix:
+   `scrollbar-gutter: stable` on `.canvas-wrap` so the wrap
+   reserves scrollbar space whether or not a scrollbar appears
+   — `clientWidth` stays constant and the canvas position is
+   consistent.
 
 ### Out of scope (proposed deferrals)
 
@@ -210,6 +226,36 @@ reserved strip and doesn't try to paint there.
 In play / demo / test modes the HUD shows the live scene
 text (`scene.hudText()`).
 
+### 3.5  Fit-mode scrollbar jog fix
+
+`.canvas-wrap` gains `scrollbar-gutter: stable`:
+
+```css
+.canvas-wrap {
+  /* ... existing flex / overflow / padding ... */
+  scrollbar-gutter: stable;
+}
+```
+
+The wrap now reserves space for a vertical scrollbar
+unconditionally — when a scrollbar IS shown, it occupies that
+reserved space; when it ISN'T shown, the space stays empty
+(no visible scrollbar, but the gutter is still there). Result:
+`wrap.clientWidth` is the SAME whether or not a scrollbar is
+showing, so `applyFitToScreen` + `applyPlayFitToScreen` see a
+stable wrap width across legend-minimise / Play-entry
+transitions. No jog.
+
+Browser support: `scrollbar-gutter: stable` is supported in
+Chrome 94+, Firefox 97+, Safari 18.2+ (all modern browsers).
+Falls back gracefully (no effect on older browsers — they keep
+the v26 behaviour with the jog).
+
+Alternative considered: `overflow: hidden` only when fit is on.
+Rejected because (a) clips the canvas if the fit math rounds
+slightly wrong, (b) requires JS to toggle the overflow class.
+`scrollbar-gutter` is the CSS-only solution.
+
 ## 4. UX in detail
 
 ### 4.1  below_ground full solve
@@ -261,6 +307,24 @@ designer can't miss it.
 Click-to-paint above the HUD line is ignored; the user can
 still paint level row 0 (just below the line).
 
+### 4.4  Fit-mode scrollbar jog (invisible — but no longer jogs)
+
+User-invisible regression-fix. Sequence that used to jog:
+
+1. FIT button toggled on in Design mode (legend visible).
+2. Click Play → legend hides via v22 M5 → wrap widens.
+3. `applyPlayFitToScreen` recomputes scale using new wrap dims;
+   canvas grows.
+4. Scrollbar appears in the wrap (canvas height + padding just
+   exceeds `wrap.clientHeight`).
+5. Scrollbar shrinks `clientWidth` by ~15 px → canvas appears
+   off-centre by 15 px / 2.
+
+After v27: scrollbar gutter is reserved permanently on the wrap.
+The wrap's clientWidth stays constant whether or not a scrollbar
+is actually showing. The fit math sees the same wrap dims across
+all legend / mode transitions — no jog.
+
 ## 5. Architecture / impact
 
 | File | Change |
@@ -278,6 +342,8 @@ still paint level row 0 (just below the line).
 | `src/style.css` | New vars `--hud-bg`, `--hud-fg` at `:root` + `body.lightmode` |
 | `src/agent/overlay.js` | Path overlay y offset by HUD_HEIGHT |
 | `tests/v27-hud-row.spec.js` (new) | HUD band exists; canvas height = worldH + TILE; click-y < TILE is no-op; HUD text renders in play mode |
+| `src/style.css` | `.canvas-wrap { scrollbar-gutter: stable }` so wrap's `clientWidth` stays constant across legend / mode transitions; eliminates the v26 fit-mode jog |
+| `tests/v27-fit-scrollbar.spec.js` (new) | Asserts `wrap.clientWidth` is identical before and after legend minimise + Play entry under fit mode |
 | `TDDs/3_transcripts/version27_build.md` (new) | narrative |
 
 ## 6. Open questions — proposed defaults
@@ -304,6 +370,13 @@ still paint level row 0 (just below the line).
   **Proposed: placeholder** so the row's presence is visible.
 - **Click-to-paint in HUD band**: **no-op** (proposed). User
   can't accidentally paint into the band.
+- **Scrollbar gutter fix mechanism**: `scrollbar-gutter: stable`
+  (proposed — pure CSS, no JS). Alternatives: `overflow: hidden`
+  toggle (rejected — needs JS + risks clipping); fixed
+  scrollbar-allowance subtraction in fit math (rejected — leaves
+  visible empty margin even when no scrollbar). Browser support
+  for `scrollbar-gutter`: Chrome 94+, Firefox 97+, Safari 18.2+ —
+  acceptable for the editor's target audience.
 
 ## 7. Acceptance criteria
 
@@ -323,6 +396,15 @@ still paint level row 0 (just below the line).
   cell painted).
 - **Player can render OVER the HUD band** when jumping high
   (no collision, no death).
+
+### Editor UX
+- **No scrollbar jog** — in FIT mode, clicking Play (which hides
+  the legend) leaves `wrap.clientWidth` identical pre- and
+  post-transition; the canvas does not shift horizontally.
+- **No scrollbar jog on legend toggle** — same in DESIGN mode
+  when the user clicks "minimise legend" with FIT on.
+- **Editor still usable on browsers without `scrollbar-gutter`**
+  — old behaviour (v26 jog) is the graceful fallback.
 
 ### Tests
 - `npm test` green; `npx playwright test` green (existing 95 +
@@ -378,6 +460,10 @@ Plus the long-standing v16/v17/v18/v19 carry-overs.
   bucket boundaries; A* picks edges expecting a different
   bucket. Mitigation: 4 buckets (5 px each) if 3 isn't enough.
   v28 candidate: per-frame planner instead of bucketed A*.
+- **`scrollbar-gutter` unsupported on older browsers** — Safari
+  pre-18.2 ignores the property and the v26 jog persists. The
+  Browser support floor for this editor's user base is modern;
+  acceptable graceful degradation. No JS shim ships.
 - **Existing levels regression** — every level's nav-graph
   shape changes when node identity gains a fourth dimension.
   Mitigation: full agent-suite Playwright pass at M3 gate. If
