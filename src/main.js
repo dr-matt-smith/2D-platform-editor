@@ -359,6 +359,11 @@ function applyFitToScreen() {
   if (!fitToScreen) {
     previewCanvas.style.width = '';
     previewCanvas.style.height = '';
+    // v26 M3: keep the overlay's CSS scale aligned with the preview
+    // even when fit is off (cleared) — otherwise stale styling from
+    // a previous fit-on session would persist.
+    overlay.style.width = '';
+    overlay.style.height = '';
     return;
   }
   const wrap = document.querySelector('.canvas-wrap');
@@ -370,8 +375,17 @@ function applyFitToScreen() {
   const intrinsicH = previewCanvas.height;
   if (intrinsicW <= 0 || intrinsicH <= 0) return;
   const scale = Math.min(availW / intrinsicW, availH / intrinsicH);
-  previewCanvas.style.width = `${Math.floor(intrinsicW * scale)}px`;
-  previewCanvas.style.height = `${Math.floor(intrinsicH * scale)}px`;
+  const cssW = Math.floor(intrinsicW * scale);
+  const cssH = Math.floor(intrinsicH * scale);
+  previewCanvas.style.width = `${cssW}px`;
+  previewCanvas.style.height = `${cssH}px`;
+  // v26 M3: scale the overlay alongside the preview so that
+  // `overlay.getBoundingClientRect().width` matches the visible
+  // size. Without this, the click-to-paint math in cellFromEvent
+  // inverts the wrong scale ratio and clicks land on the wrong
+  // cell when Fit is on.
+  overlay.style.width = `${cssW}px`;
+  overlay.style.height = `${cssH}px`;
 }
 
 // v23 M4: play-mode CSS pin with optional fit-to-screen. The base
