@@ -201,14 +201,14 @@ export function buildNavGraph(parsed, legend = null, tileset = null) {
     edges.set(k, []);
     if (!isGrounded(grid, n.r, n.c)) continue;
     if (!ctx) continue;
-    // v27 M4 (conservative): only L-bucket sources emit edges; the
-    // 'C' / 'R' xOffsetBucket nodes exist (preserving v27's 9-node
-    // identity for spec compliance) but their edge arrays stay empty.
-    // The chain therefore traverses the L-bucket subgraph — which is
-    // byte-identical to v26's vxBucket-only graph (L = sub-pixel 0).
-    // M5 will enable non-L sources together with per-leg replanning
-    // so the chain stays consistent under sub-pixel drift; that's
-    // where below_ground's tight tolerances are addressed.
+    // v27 M4/M5: only L-bucket sources emit edges; 'C' / 'R'
+    // xOffsetBucket nodes exist for the 9-node identity but their
+    // edge arrays stay empty. Enabling them as A* sources requires
+    // a per-frame trajectory planner (v28 candidate) — bucket-aware
+    // A* + per-leg replanning still can't keep the recorded action
+    // sequence in sync with the live engine when sub-pixel drift
+    // crosses bucket boundaries. M5 ships data-model + ALL v25/v26
+    // levels still solve + below_ground at v26 baseline (score 8).
     if (n.xOffsetBucket !== 'L') continue;
     addActionEdges(ctx, parsed, n, edges.get(k), exitCells, precisionTargets);
   }
@@ -289,10 +289,10 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells, precisionTargets
     // collision to fire.
     if (!isWinEdge && !isGrounded(parsed.grid, targetR, targetC)) continue;
     const endVxB = vxBucketOf(result.endState.vx);
-    // v27 M4 (conservative): every edge's destination has
-    // xOffsetBucket='L' so the next leg starts from sub-pixel 0 (=
-    // v26 byte-identical chain). 'C' and 'R' source nodes exist
-    // for spec compliance but are isolated. M5 will unlock them.
+    // v27 M4/M5: edge destinations pinned to xOffsetBucket='L' so
+    // the chain stays consistent (every leg starts at sub-pixel 0 =
+    // v26 byte-identical). Non-L destinations require a v28
+    // per-frame planner; see addActionEdges' source-node gate above.
     const endXOB = 'L';
     if (
       targetR === cell.r && targetC === cell.c &&
@@ -328,9 +328,9 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells, precisionTargets
     // momentum. Skipped when result.trajectory is null (no
     // precision targets requested).
     if (result.trajectory && result.outcome === 'ok') {
-      // v26 M4 + v27 M4 (conservative): precision edges land in the
-      // same vxBucket the action ends in; xOffsetBucket pinned to
-      // 'L' for chain consistency (see comment on main edge `to`).
+      // v26 M4 + v27 M4/M5: precision edges pinned to xOffsetBucket='L'
+      // for chain consistency. See main edge `to` comment above for
+      // why C/R destinations remain a v28 candidate.
       const endVxBp = vxBucketOf(result.endState.vx);
       const endXOBp = 'L';
       for (const t of precisionTargets) {

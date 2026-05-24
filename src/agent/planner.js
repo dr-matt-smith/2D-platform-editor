@@ -525,11 +525,16 @@ export function plan(parsed, legend, opts = {}) {
 
   for (const goal of goals) {
     const [gr, gc] = goal.split(',').map(Number);
-    const path = aStar(graph, ctx.position, goal, blocked);
-    if (!path) {
-      // Pickup unreachable — skip; continue with the rest of the queue.
-      // Exit unreachable → bail; the trace returned so far reflects what
-      // the agent COULD do up to that point.
+    const subgoalName = describeGoal(graph, goal);
+    // v27 M5: per-leg replan. With 9× state-space discretisation A*
+    // can pick edges whose action sequence assumed a specific sub-
+    // cell start (e.g., 'C' bucket = x in cell-middle); the live
+    // engine's reSim may land in a neighbouring bucket. When the
+    // next planned step's `from` doesn't match the LIVE bucket, the
+    // recording's events for that step won't fire from where A*
+    // assumed — replan from the live position to the SAME goal.
+    let remaining = aStar(graph, ctx.position, goal, blocked);
+    if (!remaining) {
       const isExit = graph.exitCells.some((e) => e.r === gr && e.c === gc);
       if (isExit) {
         return {
@@ -544,8 +549,26 @@ export function plan(parsed, legend, opts = {}) {
       unreachable.push({ r: gr, c: gc, kind: 'pickup' });
       continue;
     }
-    const subgoalName = describeGoal(graph, goal);
-    emitLegInputs(path, subgoalName, ctx);
+    let replanBudget = 48;
+    while (remaining.length > 0 && replanBudget-- > 0) {
+      emitLegInputs([remaining[0]], subgoalName, ctx);
+      remaining = remaining.slice(1);
+      if (remaining.length === 0 || !ctx.prevEndState) continue;
+      // Re-derive the live bucket from prevEndState.
+      const liveR = Math.floor((ctx.prevEndState.y + TILE / 2) / TILE);
+      const liveC = Math.floor((ctx.prevEndState.x + TILE / 2) / TILE);
+      const liveVxB = vxBucketOf(ctx.prevEndState.vx);
+      const sub = ((ctx.prevEndState.x % TILE) + TILE) % TILE;
+      let liveXOB = 'L';
+      if (sub >= TILE / 3 && sub < (2 * TILE) / 3) liveXOB = 'C';
+      else if (sub >= (2 * TILE) / 3) liveXOB = 'R';
+      const liveKey = stateKey(liveR, liveC, liveVxB, liveXOB);
+      if (remaining[0].from === liveKey) continue;          // chain still aligned
+      if (!graph.nodes.has(liveKey)) continue;              // live position off-grid? trust plan
+      ctx.position = liveKey;
+      const fresh = aStar(graph, liveKey, goal, blocked);
+      if (fresh) remaining = fresh;                          // replan succeeded
+    }
   }
 
   return {
