@@ -139,13 +139,14 @@ function resolveGoals(graph, requiredPickups) {
 
   const startCell = graph.start;
   if (!startCell) return [exitKey];
-  // v26 M4: TSP helpers' aStar(from, to) — `from` is a stateKey
-  // (cell × vxBucket). Spawn-grounded start is bucket 0; subsequent
-  // legs are estimated from bucket 0 too because the TSP heuristics
-  // don't simulate edge-by-edge (the actual planner loop tracks
-  // real-bucket state). Cost estimates are slightly pessimistic but
-  // consistent.
-  const startKey = stateKey(startCell.r, startCell.c, 0);
+  // v26 M4 + v27 M4: TSP helpers' aStar(from, to) — `from` is a
+  // stateKey (cell × vxBucket × xOffsetBucket). Spawn-grounded
+  // start is bucket (0, 'L') — the player settles at x = c*TILE,
+  // which falls in the L third. Subsequent legs are estimated from
+  // (0, 'L') too because the TSP heuristics don't simulate edge-
+  // by-edge (the actual planner loop tracks real-bucket state).
+  // Cost estimates are slightly pessimistic but consistent.
+  const startKey = stateKey(startCell.r, startCell.c, 0, 'L');
   const allKeys = graph.pickupCells.map((p) => cellKey(p.r, p.c));
 
   // Drop unreachable pickups (no A* path from start) — the planner
@@ -278,11 +279,12 @@ function greedyNearest(graph, startKey, pickups, exitKey) {
   return order;
 }
 
-/** v26 M4: cellKey "r,c" → stateKey "r,c,0". Used by TSP helpers
- *  that thread cellKey goals through A*; the bucket-0 assumption
- *  is the approximation noted in resolveGoals. */
+/** v26 M4 + v27 M4: cellKey "r,c" → stateKey "r,c,0,L". Used by
+ *  TSP helpers that thread cellKey goals through A*; the
+ *  (bucket-0, L) assumption is the approximation noted in
+ *  resolveGoals (spawn-grounded settle position). */
 function cellToBucket0(k) {
-  return k.split(',').length === 2 ? `${k},0` : k;
+  return k.split(',').length === 2 ? `${k},0,L` : k;
 }
 
 /** 2-opt local search on a tour. Tries swapping pairs of visits;
@@ -498,11 +500,12 @@ export function plan(parsed, legend, opts = {}) {
     // special-case code in the emitter.
     frame: 1,
     currentDir: null,
-    // v26 M4: position is now a stateKey (cell × vxBucket). Spawn
-    // settles vy=0, vx=0 → bucket 0. After each leg, position is
+    // v26 M4 + v27 M4: position is now a stateKey
+    // (cell × vxBucket × xOffsetBucket). Spawn settles vy=0, vx=0,
+    // x=c*TILE → bucket (0, 'L'). After each leg, position is
     // updated to the last edge's `to` (which is a stateKey produced
     // by addActionEdges).
-    position: stateKey(graph.start.r, graph.start.c, 0),
+    position: stateKey(graph.start.r, graph.start.c, 0, 'L'),
     // v25 M2: simContext + prevEndState carry the sub-pixel state
     // across emit-leg calls. Initialised to the spawn cell's
     // grounded state — matches what the live engine's spawn-fall

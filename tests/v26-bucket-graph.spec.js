@@ -5,7 +5,10 @@
 
 import { test, expect } from '@playwright/test';
 
-test('v26 M4: graph node count = walkable-cells × 3 (vxBucket variants)', async ({ page }) => {
+test('v26 M4 + v27 M4: graph node count = walkable-cells × 9 (vx × xOffset variants)', async ({ page }) => {
+  // v26 shipped 3 vxBucket variants per cell; v27 M4 extends each to
+  // 3 xOffsetBucket variants for sub-cell x discretisation. The
+  // assertion shape is the same — node-count = cells × (3 × 3).
   await page.goto('/');
   await page.waitForSelector('#preview');
   const data = await page.evaluate(async () => {
@@ -15,39 +18,41 @@ test('v26 M4: graph node count = walkable-cells × 3 (vxBucket variants)', async
     const g = buildNavGraph(parsed, DEFAULT_LEGEND);
     return { nodeCount: g.nodes.size, edgeKeys: [...g.edges.keys()] };
   });
-  // 3 walkable cells × 3 vxBuckets = 9 nodes.
-  expect(data.nodeCount).toBe(9);
-  // Every node key has the three-part stateKey shape.
+  // 3 walkable cells × 9 (vx × xOffset) buckets = 27 nodes.
+  expect(data.nodeCount).toBe(27);
+  // Every node key has the four-part stateKey shape.
   for (const k of data.edgeKeys) {
-    expect(k.split(',')).toHaveLength(3);
+    expect(k.split(',')).toHaveLength(4);
   }
 });
 
-test('v26 M4: stateKey + vxBucketOf + parseStateKey helpers', async ({ page }) => {
+test('v26 M4 + v27 M4: stateKey + vxBucketOf + parseStateKey helpers', async ({ page }) => {
+  // v27 M4 extends stateKey to 4-part (cell × vxBucket × xOffsetBucket)
+  // and parseStateKey to return all four components.
   await page.goto('/');
   await page.waitForSelector('#preview');
   const r = await page.evaluate(async () => {
     const { stateKey, vxBucketOf, parseStateKey, VX_BUCKETS } = await import('/src/agent/grid.js');
     return {
-      keyMid: stateKey(5, 7, 0),
-      keyLeft: stateKey(5, 7, -1),
-      keyRight: stateKey(5, 7, +1),
+      keyMid: stateKey(5, 7, 0, 'L'),
+      keyLeft: stateKey(5, 7, -1, 'L'),
+      keyRight: stateKey(5, 7, +1, 'L'),
       bucketStill: vxBucketOf(0),
       bucketLeft: vxBucketOf(-240),
       bucketRight: vxBucketOf(+240),
       bucketSmall: vxBucketOf(15), // < 30 threshold
-      parsed: parseStateKey('5,7,1'),
+      parsed: parseStateKey('5,7,1,L'),
       buckets: VX_BUCKETS,
     };
   });
-  expect(r.keyMid).toBe('5,7,0');
-  expect(r.keyLeft).toBe('5,7,-1');
-  expect(r.keyRight).toBe('5,7,1');
+  expect(r.keyMid).toBe('5,7,0,L');
+  expect(r.keyLeft).toBe('5,7,-1,L');
+  expect(r.keyRight).toBe('5,7,1,L');
   expect(r.bucketStill).toBe(0);
   expect(r.bucketLeft).toBe(-1);
   expect(r.bucketRight).toBe(1);
   expect(r.bucketSmall).toBe(0); // |vx| < 30 → still
-  expect(r.parsed).toEqual({ r: 5, c: 7, vxBucket: 1 });
+  expect(r.parsed).toEqual({ r: 5, c: 7, vxBucket: 1, xOffsetBucket: 'L' });
   expect(r.buckets).toEqual([-1, 0, 1]);
 });
 
@@ -62,8 +67,9 @@ test('v26 M4: A* finds a path through state-space nodes', async ({ page }) => {
     const parsed = parse('############\n#P........E#\n############');
     const g = buildNavGraph(parsed, DEFAULT_LEGEND);
     // v26: A* `from` is stateKey, `to` is cellKey. Match any
-    // vxBucket variant of the exit cell.
-    const path = aStar(g, '1,1,0', '1,10');
+    // vxBucket variant of the exit cell. v27 M4: stateKey now 4-part
+    // (cell × vxBucket × xOffsetBucket).
+    const path = aStar(g, '1,1,0,L', '1,10');
     return {
       hasPath: !!path && path.length > 0,
       edgeCount: path?.length ?? 0,
