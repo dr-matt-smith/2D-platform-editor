@@ -56,3 +56,142 @@ export function clusterKey(state, tol = DEFAULT_CLUSTER_TOL) {
 export function nearby(a, b, tol = DEFAULT_CLUSTER_TOL) {
   return clusterKey(a, tol) === clusterKey(b, tol);
 }
+
+// ---- expandNode: on-demand edge generation -------------------------
+
+import { TILE } from '../play/constants.js';
+import { enumerateActions, actionToRecording } from './actions.js';
+import { makeSimContext, simulateActionInContext } from './simAction.js';
+import {
+  inBounds,
+  isWalkable,
+  isGrounded,
+  findOverlappingExit,
+} from './grid.js';
+
+/**
+ * Build a fresh sim-context cache. Pass this to expandNode across
+ * all calls within a single plan() invocation so the underlying
+ * PlaytestScene is created exactly once per (parsed, legend,
+ * tileset) tuple. The cache is keyed by parsed object identity.
+ */
+export function makeContextCache() {
+  return new Map();
+}
+
+function getContext(cache, parsed, legend, tileset) {
+  let ctx = cache.get(parsed);
+  if (!ctx) {
+    ctx = makeSimContext(parsed, legend, tileset);
+    cache.set(parsed, ctx);
+  }
+  return ctx;
+}
+
+/**
+ * Generate every reachable edge from the exact `state` on the level
+ * `parsed`. Runs each of the 46 actions through simulateAction;
+ * keeps the ones that land on a walkable cell (and grounded for
+ * non-win edges); also emits precision-landing edges to 1-tile
+ * pickup/exit targets the trajectory passes ±2 px of during
+ * descent (v25 M4 rule, lifted from grid.js#addActionEdges).
+ *
+ * Edges carry the destination as BOTH a cell `{r, c}` (for A*
+ * heuristic + goal-prefix matching) and the full exactState (for
+ * the next leg's seed). No bucketing.
+ *
+ * @param {Map} cache              from makeContextCache()
+ * @param {object} parsed          level.parse() result
+ * @param {object|null} legend     active tileset legend
+ * @param {object|null} tileset    active tileset object (or null)
+ * @param {{x,y,vx,vy,onGround}} state  exact start state
+ * @param {object} [opts]
+ * @param {Array<{r,c}>} [opts.exitCells]          for win-edge detection
+ * @param {Array<{r,c}>} [opts.precisionTargets]   for precision-landing rule
+ * @returns Array<edge>
+ */
+export function expandNode(cache, parsed, legend, tileset, state, opts = {}) {
+  const ctx = getContext(cache, parsed, legend, tileset);
+  const exitCells = opts.exitCells ?? [];
+  const precisionTargets = opts.precisionTargets ?? [];
+  const wantsTrajectory = precisionTargets.length > 0;
+  const edges = [];
+
+  for (const action of enumerateActions()) {
+    const result = simulateActionInContext(ctx, state, action, {
+      collectTrajectory: wantsTrajectory,
+    });
+
+    let targetR = result.endCell.r;
+    let targetC = result.endCell.c;
+    let isWinEdge = false;
+
+    if (result.outcome === 'won') {
+      const exit = findOverlappingExit(result.endPos, exitCells);
+      if (exit) {
+        targetR = exit.r;
+        targetC = exit.c;
+        isWinEdge = true;
+      }
+    } else if (result.outcome !== 'ok') {
+      continue;
+    }
+
+    if (result.collided) continue;
+    if (!inBounds(parsed.grid, targetR, targetC)) continue;
+    if (!isWalkable(parsed.grid, targetR, targetC)) continue;
+    if (!isWinEdge && !isGrounded(parsed.grid, targetR, targetC)) continue;
+
+    edges.push({
+      toCell: { r: targetR, c: targetC },
+      toState: result.endState,
+      kind: action.kind,
+      cost: result.cost,
+      dir: action.params.dir,
+      action,
+      recording: actionToRecording(action, 0),
+      endPos: result.endPos,
+      endVel: result.endVel,
+      endState: result.endState,
+      isWinEdge,
+    });
+
+    // v25 M4 precision-landing rule, copied across to per-frame
+    // (no bucketing on the precision edge's destination — toState
+    // is the live endState).
+    if (result.trajectory && result.outcome === 'ok') {
+      for (const t of precisionTargets) {
+        const tcx = t.c * TILE + TILE / 2;
+        const tcy = t.r * TILE + TILE / 2;
+        if (t.r === targetR && t.c === targetC) continue;
+        if (t.r === Math.floor((state.y + TILE / 2) / TILE) &&
+            t.c === Math.floor((state.x + TILE / 2) / TILE)) continue;
+        let prevY = state.y;
+        for (const pt of result.trajectory) {
+          const pcx = pt.x + TILE / 2;
+          const pcy = pt.y + TILE / 2;
+          const descending = pt.y > prevY;
+          if (descending && Math.abs(pcx - tcx) <= 2 && Math.abs(pcy - tcy) <= 2) {
+            edges.push({
+              toCell: { r: t.r, c: t.c },
+              toState: result.endState,
+              kind: action.kind,
+              cost: result.cost,
+              dir: action.params.dir,
+              action,
+              recording: actionToRecording(action, 0),
+              endPos: result.endPos,
+              endVel: result.endVel,
+              endState: result.endState,
+              isWinEdge: false,
+              precision: true,
+            });
+            break;
+          }
+          prevY = pt.y;
+        }
+      }
+    }
+  }
+  return edges;
+}

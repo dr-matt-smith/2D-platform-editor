@@ -370,7 +370,9 @@ function addActionEdges(ctx, parsed, cell, edgesArr, exitCells, precisionTargets
   }
 }
 
-function findOverlappingExit(endPos, exitCells) {
+// v28 M2: exported for reuse by `perframe.js#expandNode`. AABB
+// overlap test between the player's endPos and each exit cell.
+export function findOverlappingExit(endPos, exitCells) {
   for (const ec of exitCells) {
     const ax = endPos.x;
     const ay = endPos.y;
