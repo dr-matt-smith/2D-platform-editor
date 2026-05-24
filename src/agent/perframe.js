@@ -416,6 +416,7 @@ export function planPerFrame(parsed, legend, tileset, opts = {}) {
       cache, exitCells, precisionTargets: ctx.precisionTargets,
       tol: opts.tol, nodeCap: opts.nodeCap,
     });
+    const subgoalName = describeGoal(goal, exitCells, pickupCells);
     if (!path) {
       const isExit = exitCells.some((e) => e.r === gr && e.c === gc);
       if (isExit) {
@@ -428,7 +429,7 @@ export function planPerFrame(parsed, legend, tileset, opts = {}) {
       unreachable.push({ r: gr, c: gc, kind: 'pickup' });
       continue;
     }
-    emitPerFrameLeg(path, goal, ctx);
+    emitPerFrameLeg(path, subgoalName, ctx);
   }
 
   // Final release — drop the last held direction so the player
@@ -457,7 +458,19 @@ export function planPerFrame(parsed, legend, tileset, opts = {}) {
  * replay byte-identically. v27 M5's per-leg replan is therefore a
  * no-op here.
  */
-function emitPerFrameLeg(steps, goalKey, ctx) {
+/** Describe a goal cellKey for the trace's `why:` strings. Mirrors
+ *  planner.js#describeGoal — "exit at (c,r)" or "pickup #N at (c,r)". */
+function describeGoal(goalKey, exitCells, pickupCells) {
+  const [r, c] = goalKey.split(',').map(Number);
+  if (exitCells.some((e) => e.r === r && e.c === c)) {
+    return `exit at (${c},${r})`;
+  }
+  const idx = pickupCells.findIndex((p) => p.r === r && p.c === c);
+  if (idx >= 0) return `pickup #${idx + 1} at (${c},${r})`;
+  return `target (${c},${r})`;
+}
+
+function emitPerFrameLeg(steps, subgoalName, ctx) {
   for (const step of steps) {
     const edge = step.edge;
     const dir = edge.dir;
@@ -520,9 +533,12 @@ function emitPerFrameLeg(steps, goalKey, ctx) {
     ctx.trace.push({
       kind: edge.kind,
       target: { r: edge.toCell.r, c: edge.toCell.c },
-      why: `${edge.kind} toward ${goalKey}`,
+      why: `${edge.kind} ${edge.dir ?? ''} toward ${subgoalName}`.trim().replace(/\s+/g, ' '),
       frameRange: [startFrame, ctx.frame],
-      edgeId: `perframe>${edge.kind}>${edge.toCell.r},${edge.toCell.c}`,
+      // edgeId shape mirrors the bucket planner's "from>to:kind" so
+      // downstream code (planner.test.js + replan blocked-set) sees a
+      // colon-prefixed kind suffix.
+      edgeId: `perframe>${edge.toCell.r},${edge.toCell.c}:${edge.kind}`,
     });
     ctx.stats.steps++;
     // Update ctx.state to the live endState — the chain is exact.
