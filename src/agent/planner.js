@@ -462,12 +462,13 @@ export function plan(parsed, legend, opts = {}) {
   // mints a PlaytestScene which consumes it). Callers pass it via
   // opts.tileset; legacy callers (tests) leave it null.
   const tileset = opts.tileset ?? null;
-  // v28 M3: planner backend flag. `'bucket'` (default for M3) runs
-  // the v27 bucket-aware A*; `'perframe'` dispatches to the new
-  // per-frame trajectory planner. M4 flips the default. Either
-  // backend's contract — `{trace, recording, stats, graph, goals,
-  // unreachable}` — is the same.
-  const backend = opts.planner ?? 'bucket';
+  // v28 M3+M4: planner backend flag. `'perframe'` (default for M4+)
+  // uses the per-frame trajectory planner that solves below_ground
+  // end-to-end. `'bucket'` keeps the v27 bucket-aware A* callable
+  // for diagnostics + fallback. Either backend's contract —
+  // `{trace, recording, stats, graph, goals, unreachable}` — is
+  // the same.
+  const backend = opts.planner ?? 'perframe';
   if (backend === 'perframe') {
     return planPerFrame(parsed, legend, tileset, opts);
   }
