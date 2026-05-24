@@ -1,9 +1,11 @@
 # 2D Level Designer — Version 28 Design Document
 
-Status: Proposed · Date: 2026-05-24 · Builds on:
-[version27_design.md](version27_design.md) (HUD band + xOffsetBucket
-data model + scrollbar-gutter fix) · Implementation: *to follow once
-this scope is approved*.
+Status: **Delivered (2026-05-24) — below_ground.txt solves
+end-to-end; v25→v26→v27 carry-over retired.** · Date: 2026-05-24 ·
+Builds on: [version27_design.md](version27_design.md) · Implementation:
+[../2_implementation/version28_implementation.md](../2_implementation/version28_implementation.md)
+· Transcript:
+[../3_transcripts/version28_build.md](../3_transcripts/version28_build.md).
 
 ## 1. Purpose
 

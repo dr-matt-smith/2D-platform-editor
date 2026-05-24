@@ -1,8 +1,22 @@
 # Version 28 — Implementation Plan
 
-Status: **Proposed (2026-05-24)** · Design:
+Status: **Delivered (2026-05-24)** · Design:
 [../1_design/version28_design.md](../1_design/version28_design.md)
-· Transcript: _to follow at M6_
+· Transcript:
+[../3_transcripts/version28_build.md](../3_transcripts/version28_build.md)
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `09ffa74` | clusterKey + nearby helpers |
+| 2 | `4177a21` | expandNode — on-demand edge generation |
+| 3 | `4dda536` | per-frame A* core + simAction input-timing fix |
+| 4 | `ce25589` | flip default planner to perframe |
+| 5 | `a0f19c7` | below_ground full solve + acceptance gate |
+| 6 | _this commit_ | transcript + Delivered |
+
+Tests at delivery: 295 unit / 131 Playwright (+1 skipped).
+**below_ground.txt solves end-to-end (16/16 pickups, <500 ms)** —
+the v25→v26→v27 carry-over is retired. v9 §7 invariant preserved.
 
 Six path-scoped commits. The planner rewrite lands behind a feature
 flag (M3) so the existing bucket-aware path stays default until M4
