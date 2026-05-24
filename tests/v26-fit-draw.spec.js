@@ -84,11 +84,15 @@ test('v26 M3: click in Fit mode targets the visible cell', async ({ page }) => {
     const r = document.querySelector('#overlay').getBoundingClientRect();
     const W = 16; // grid width
     const H = 8;
+    // v27 M2: overlay is HUD_HEIGHT_TILES (= 1) cells taller than the
+    // grid. So in CSS units, total effective rows = H + 1; the HUD
+    // strip occupies the first row.
     const cellW = r.width / W;
-    const cellH = r.height / H;
+    const cellH = r.height / (H + 1);
     return {
       x: r.left + cellW * 8 + cellW / 2,
-      y: r.top + cellH * 3 + cellH / 2,
+      // Skip the HUD strip + 3 level rows; centre of cell row 3.
+      y: r.top + cellH * (1 + 3) + cellH / 2,
       row: 3,
       col: 8,
     };

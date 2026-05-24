@@ -50,7 +50,8 @@ test('v22.1: exit paints RED (locked) when pickup-required not met, GREEN after'
   await page.waitForTimeout(100);
 
   // Sample the centre of the exit cell. PlaytestScene uses engine
-  // TILE=20; the exit is at row 1, col 7 → canvas (7*20+10, 1*20+10) = (150, 30).
+  // TILE=20; the exit is at row 1, col 7. v27 M2: HUD strip (20 px)
+  // sits above the level, so canvas y = HUD + 1*20 + 10 = 50.
   const sampleAtExit = () => page.evaluate(() => {
     const ctx = document.querySelector('#preview').getContext('2d');
     // Sample a 5×5 patch and average — flag sprites have a mast +
@@ -59,7 +60,7 @@ test('v22.1: exit paints RED (locked) when pickup-required not met, GREEN after'
     let r = 0, g = 0, b = 0, n = 0;
     for (let dy = -4; dy <= 4; dy++) {
       for (let dx = -4; dx <= 4; dx++) {
-        const px = [...ctx.getImageData(150 + dx, 30 + dy, 1, 1).data];
+        const px = [...ctx.getImageData(150 + dx, 50 + dy, 1, 1).data];
         r += px[0]; g += px[1]; b += px[2]; n++;
       }
     }
@@ -72,9 +73,13 @@ test('v22.1: exit paints RED (locked) when pickup-required not met, GREEN after'
   expect(lockedPixel[0]).toBeGreaterThan(lockedPixel[1] + 10);
   expect(lockedPixel[0]).toBeGreaterThan(lockedPixel[2] + 10);
 
-  // Walk right to collect the cherry. Hold ArrowRight ~600ms.
+  // Walk right just far enough to collect the cherry but stop short
+  // of the exit. P at col 2 → cherry at col 4 = 40 px = ~170 ms at
+  // 240 px/s. 250 ms gives margin without reaching col 7 (exit).
+  // Stopping pre-exit keeps the scene in 'play' phase so the sample
+  // isn't darkened by the won-banner overlay.
   await page.keyboard.down('ArrowRight');
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(250);
   await page.keyboard.up('ArrowRight');
   await page.waitForTimeout(200);
 
@@ -103,11 +108,12 @@ test('v22.1: editor preview always shows the UNLOCKED variant (green)', async ({
   await page.waitForTimeout(400);
   const sampleAtExit = () => page.evaluate(() => {
     const ctx = document.querySelector('#preview').getContext('2d');
-    // Editor TILE=24; col 7 row 1 → (7*24+12, 1*24+12) = (180, 36).
+    // Editor TILE=24; col 7 row 1. v27 M2: HUD strip (24 px) above
+    // the level → canvas y = HUD + 1*24 + 12 = 60.
     let r = 0, g = 0, b = 0, n = 0;
     for (let dy = -4; dy <= 4; dy++) {
       for (let dx = -4; dx <= 4; dx++) {
-        const px = [...ctx.getImageData(180 + dx, 36 + dy, 1, 1).data];
+        const px = [...ctx.getImageData(180 + dx, 60 + dy, 1, 1).data];
         r += px[0]; g += px[1]; b += px[2]; n++;
       }
     }
@@ -143,9 +149,9 @@ test('v22.1: PlayWithYourPeas exit sprite swaps Bad → Good after collecting', 
   // assume saturated red/green for.) The HASH MUST DIFFER pre/post.
   const exitCellHash = () => page.evaluate(async () => {
     const ctx = document.querySelector('#preview').getContext('2d');
-    // PWYP renders at engine TILE=20; exit cell is col 7 row 1 →
-    // canvas rect (140, 20, 20, 20).
-    const data = ctx.getImageData(140, 20, 20, 20).data;
+    // PWYP renders at engine TILE=20; exit cell is col 7 row 1.
+    // v27 M2: HUD strip (20 px) above level → canvas rect (140, 40, 20, 20).
+    const data = ctx.getImageData(140, 40, 20, 20).data;
     // Quick FNV-1a-ish 32-bit roll over the channel bytes.
     let h = 0x811c9dc5 >>> 0;
     for (let i = 0; i < data.length; i++) {

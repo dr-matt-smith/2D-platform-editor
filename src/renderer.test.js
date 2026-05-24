@@ -5,7 +5,8 @@ import { parse } from './level.js';
 import { draw, tileMask, THIN } from './renderer.js';
 
 function fakeCtx() {
-  const calls = { fillRect: 0, arc: 0, drawImage: 0 };
+  const calls = { fillRect: 0, arc: 0, drawImage: 0, save: 0, restore: 0, translate: 0 };
+  const translates = [];
   return {
     canvas: { width: 0, height: 0 },
     set fillStyle(_) {},
@@ -17,6 +18,15 @@ function fakeCtx() {
     arc: () => calls.arc++,
     fill() {},
     drawImage: () => calls.drawImage++,
+    // v27 M2: renderer now wraps level draws in save/translate(0, HUD)/restore.
+    // v19 viewport scrolling also uses save/translate/restore (nested).
+    save: () => calls.save++,
+    restore: () => calls.restore++,
+    translate: (x, y) => {
+      calls.translate++;
+      translates.push({ x, y });
+    },
+    translates,
     calls,
   };
 }
@@ -78,11 +88,13 @@ test('THIN is exactly the v5 platform-cell mask set', () => {
   assert.deepEqual([...THIN].sort((a, b) => a - b), [0, 1, 2, 4, 5, 8, 10]);
 });
 
-test('canvas is sized to grid * tile', () => {
+test('canvas is sized to grid * tile + HUD strip', () => {
+  // v27 M2: canvas height = level rows × tile + HUD_HEIGHT_TILES × tile.
+  // For a 2-row grid with tile=10 and HUD_HEIGHT_TILES=1, that's 20 + 10 = 30.
   const ctx = fakeCtx();
   draw(ctx, parse('# size: 4x2\n####\n#..#'), null, 10);
   assert.equal(ctx.canvas.width, 40);
-  assert.equal(ctx.canvas.height, 20);
+  assert.equal(ctx.canvas.height, 30);
 });
 
 test('no-tileset path: walls drawn as fallback blocks, bg skipped', () => {
@@ -224,6 +236,7 @@ test('v11: draw-spec sub-region carried into ctx.drawImage args', () => {
     fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
     closePath() {}, arc() {}, fill() {},
     drawImage: (...a) => calls.push(a),
+    save() {}, restore() {}, translate() {},
   };
   const ts = fakeTileset({
     atlasReady: false,
@@ -306,6 +319,7 @@ test('v18: Pass 0a draws meta.backgroundImage stretched to level dims', () => {
     fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
     closePath() {}, arc() {}, fill() {},
     drawImage: (...a) => calls.push(a),
+    save() {}, restore() {}, translate() {},
   };
   const bgImage = { width: 640, height: 400 };
   const ts = {
@@ -427,17 +441,22 @@ function cameraCtx() {
   };
 }
 
-test('v19: camera=null path makes ZERO translate/save/restore calls (back-compat)', () => {
+test('v19+v27: camera=null path makes exactly one HUD-translate (no camera translates)', () => {
+  // v27 M2: even camera-null draws save+translate+restore for the
+  // HUD-band offset. Camera scrolling still adds zero additional
+  // translates in this case.
   const ctx = cameraCtx();
   const ts = fakeTileset();
   draw(ctx, parse('###\n#P#\n###'), ts, 10);
-  assert.equal(ctx.calls.translate.length, 0);
-  assert.equal(ctx.calls.save, 0);
-  assert.equal(ctx.calls.restore, 0);
+  assert.equal(ctx.calls.translate.length, 1);
+  assert.deepEqual(ctx.calls.translate[0], { x: 0, y: 10 }); // HUD = 1 × tile
+  assert.equal(ctx.calls.save, 1);
+  assert.equal(ctx.calls.restore, 1);
 });
 
-test('v19: camera sized canvas to viewport (not world)', () => {
-  // 8x4 world @ 10 px/cell = 80x40. Viewport 50x30.
+test('v19: camera sized canvas to viewport (+ HUD band) ', () => {
+  // 8x4 world @ 10 px/cell = 80x40. Viewport 50x30. v27: canvas height
+  // = viewH + HUD = 30 + 10 = 40.
   const ctx = cameraCtx();
   const ts = fakeTileset();
   draw(
@@ -449,10 +468,10 @@ test('v19: camera sized canvas to viewport (not world)', () => {
     { camX: 0, camY: 0, viewW: 50, viewH: 30 },
   );
   assert.equal(ctx.canvas.width, 50);
-  assert.equal(ctx.canvas.height, 30);
+  assert.equal(ctx.canvas.height, 40);
 });
 
-test('v19: camera applies translate(-round(camX), -round(camY))', () => {
+test('v19+v27: camera applies translate(-round(camX), -round(camY)) nested in HUD translate', () => {
   const ctx = cameraCtx();
   const ts = fakeTileset();
   draw(
@@ -463,12 +482,13 @@ test('v19: camera applies translate(-round(camX), -round(camY))', () => {
     0,
     { camX: 20.4, camY: 5.7, viewW: 50, viewH: 30 },
   );
-  // One save() + one matching restore() bracket the world drawing.
-  assert.equal(ctx.calls.save, 1);
-  assert.equal(ctx.calls.restore, 1);
-  // Exactly one translate, rounded.
-  assert.equal(ctx.calls.translate.length, 1);
-  assert.deepEqual(ctx.calls.translate[0], { x: -20, y: -6 });
+  // v27: two save()/restore() pairs — outer HUD, inner camera.
+  assert.equal(ctx.calls.save, 2);
+  assert.equal(ctx.calls.restore, 2);
+  // Two translates: HUD first, then camera.
+  assert.equal(ctx.calls.translate.length, 2);
+  assert.deepEqual(ctx.calls.translate[0], { x: 0, y: 10 }); // HUD
+  assert.deepEqual(ctx.calls.translate[1], { x: -20, y: -6 }); // camera
 });
 
 test('v19: cell-cull cuts drawImage calls for big worlds', () => {

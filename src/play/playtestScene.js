@@ -4,7 +4,7 @@ import { COLOURS, TILE } from './constants.js';
 import { toWorld } from './adapter.js';
 import { meetsPickupRequirement } from '../playSettings.js';
 import { centerCamera, computeCamera } from '../playtestCamera.js';
-import { draw as editorDraw, drawFallback } from '../renderer.js';
+import { draw as editorDraw, drawFallback, HUD_HEIGHT_TILES } from '../renderer.js';
 import { roleOf } from '../level.js';
 
 /**
@@ -351,26 +351,32 @@ export class PlaytestScene extends Scene {
     // (rounded) camera origin — matches the renderer's
     // `ctx.translate(-Math.round(camX), -Math.round(camY))`. In fit
     // mode camX/Y are 0, so the math is the v18 path exactly.
+    // v27 M2: editorDraw restores the matrix before returning, so we
+    // explicitly add the HUD-band offset here so the player sprite
+    // lands inside the level area (not in the reserved top strip).
+    const hudPx = HUD_HEIGHT_TILES * TILE;
     const spec = this.tileset?.entityFor?.(this.playerChar, now);
     const px = Math.round(this.player.x) - Math.round(this.camX);
-    const py = Math.round(this.player.y) - Math.round(this.camY);
+    const py = Math.round(this.player.y) - Math.round(this.camY) + hudPx;
     if (spec) {
       ctx.drawImage(spec.image, spec.sx, spec.sy, spec.sw, spec.sh, px, py, TILE, TILE);
     } else {
       drawFallback(ctx, this.playerChar, px, py, TILE);
     }
 
-    // HUD
+    // HUD text in the reserved top strip. v27 M3 will style this with
+    // a contrasting bg band; for M2 the text just lives in the new
+    // strip that earlier versions drew it on top of the level for.
     ctx.fillStyle = COLOURS.text;
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.font = 'bold 16px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 14px monospace';
     const hud =
       this.phase === 'play' &&
       meetsPickupRequirement(this.score, this.total, this.requiredPickups)
         ? `coins: ${this.score} / ${this.total}   →  find the exit`
         : `coins: ${this.score} / ${this.total}`;
-    ctx.fillText(hud, 8, 8);
+    ctx.fillText(hud, 8, hudPx / 2);
 
     if (this.phase !== 'play') this.#banner(ctx);
   }

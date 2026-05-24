@@ -31,6 +31,10 @@ export const HUE_PALETTE = [
  *                  default warm-yellow path/pickup hue; alpha scales
  *                  the global ctx alpha for this render. When opts
  *                  is absent, behaviour is byte-identical to v22.
+ *                  v27 M2: {yOffset} adds a fixed canvas-y offset so
+ *                  the path lands inside the level area when the
+ *                  overlay shares its canvas with a HUD band above.
+ *                  Default 0 = v26 byte-identical.
  */
 export function renderSolutionOverlay(ctx, solution, tile, opts = {}) {
   if (!solution || !solution.plan) return;
@@ -40,9 +44,11 @@ export function renderSolutionOverlay(ctx, solution, tile, opts = {}) {
   const polyColour = opts.colour ?? POLY_COLOUR;
   const pickupColour = opts.colour ?? PICKUP_COLOUR;
   const alpha = opts.alpha ?? 1;
+  const yOffset = opts.yOffset ?? 0;
 
   ctx.save();
   ctx.globalAlpha = alpha;
+  if (yOffset) ctx.translate(0, yOffset);
 
   // Polyline: start point → each trace target's cell center.
   // v21: jump entries render as parabolic arcs (6 intermediate
@@ -93,21 +99,24 @@ export function renderSolutionOverlay(ctx, solution, tile, opts = {}) {
  * dimmed; focused on top, full opacity, in the focused-row's hue.
  * The caller is responsible for clearing the overlay before calling.
  */
-export function renderAllSolutionsOverlay(ctx, solutions, focusedIdx, tile) {
+export function renderAllSolutionsOverlay(ctx, solutions, focusedIdx, tile, opts = {}) {
   if (!Array.isArray(solutions) || solutions.length === 0) return;
   const safeIdx = Math.max(0, Math.min(focusedIdx, solutions.length - 1));
+  const yOffset = opts.yOffset ?? 0;
   // Non-focused first → dimmed.
   for (let i = 0; i < solutions.length; i++) {
     if (i === safeIdx) continue;
     renderSolutionOverlay(ctx, solutions[i], tile, {
       colour: HUE_PALETTE[i % HUE_PALETTE.length],
       alpha: 0.35,
+      yOffset,
     });
   }
   // Focused on top → solid, in its own hue.
   renderSolutionOverlay(ctx, solutions[safeIdx], tile, {
     colour: HUE_PALETTE[safeIdx % HUE_PALETTE.length],
     alpha: 1.0,
+    yOffset,
   });
 }
 

@@ -37,14 +37,14 @@ test('v23 M3: dashed-yellow rectangle drawn on #overlay when viewport set', asyn
   await page.waitForTimeout(300);
 
   // Sample a pixel that should be ON the dashed stroke. The rect
-  // starts at x≈ (4 - 3)*24 + 1 = 25, y≈ (4 - 2)*24 + 1 = 49.
-  // Width = 6*24 - 2 = 142 → top-left stroke pixel at (25, 49).
+  // starts at x≈ (4 - 3)*24 + 1 = 25, y≈ (4 - 2)*24 + 1 + HUD = 73.
+  // (v27 M2: overlay paints guide offset by HUD_HEIGHT = 24.)
   // Walk a few pixels along the top edge looking for yellow alpha.
   const topEdgeSamples = await page.evaluate(() => {
     const ctx = document.querySelector('#overlay').getContext('2d');
     const samples = [];
     for (let x = 24; x < 170; x += 2) {
-      for (let y = 47; y <= 52; y++) {
+      for (let y = 71; y <= 76; y++) {
         const px = ctx.getImageData(x, y, 1, 1).data;
         if (px[3] > 0) samples.push([x, y, px[0], px[1], px[2], px[3]]);
       }
@@ -60,8 +60,8 @@ test('v23 M3: dashed-yellow rectangle drawn on #overlay when viewport set', asyn
   // Interior pixel — well inside the rect — must be CLEAR (just an outline).
   const interior = await page.evaluate(() => {
     const ctx = document.querySelector('#overlay').getContext('2d');
-    // Centre of viewport rect ≈ (96, 96). Far from any edge.
-    return [...ctx.getImageData(96, 96, 1, 1).data];
+    // Centre of viewport rect ≈ (96, 96 + HUD = 120). Far from any edge.
+    return [...ctx.getImageData(96, 120, 1, 1).data];
   });
   expect(interior[3]).toBe(0);
 });
@@ -90,10 +90,10 @@ test('v23 M3: viewport guide hidden in Play mode', async ({ page }) => {
   await page.waitForSelector('#preview');
   await injectLevel(page, LEVEL);
   await page.waitForTimeout(300);
-  // Verify guide is present in edit mode.
+  // Verify guide is present in edit mode. v27 M2: guide y offset by HUD_HEIGHT = 24.
   const editGuide = await page.evaluate(() => {
     const ctx = document.querySelector('#overlay').getContext('2d');
-    const px = ctx.getImageData(50, 49, 1, 1).data;
+    const px = ctx.getImageData(50, 73, 1, 1).data;
     return px[3] > 0;
   });
   expect(editGuide).toBe(true);
@@ -104,7 +104,7 @@ test('v23 M3: viewport guide hidden in Play mode', async ({ page }) => {
   // Overlay is detached / blank in play mode; the guide must NOT paint.
   const playGuide = await page.evaluate(() => {
     const ctx = document.querySelector('#overlay').getContext('2d');
-    const px = ctx.getImageData(50, 49, 1, 1).data;
+    const px = ctx.getImageData(50, 73, 1, 1).data;
     return px[3] > 0;
   });
   expect(playGuide).toBe(false);

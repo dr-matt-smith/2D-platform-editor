@@ -27,6 +27,10 @@ import { setupSplitter, setupProblemsSplitter } from './splitter.js';
 import { summariseIssues } from './summarise.js';
 
 const TILE = 24;
+// v27 M2: HUD-band height in CSS pixels (renderer's HUD_HEIGHT_TILES *
+// TILE). Click handlers, marquee, viewport guide and the agent's path
+// overlay all add this offset to land on / inside the level area.
+const HUD_HEIGHT = TILE;
 const DEBOUNCE_MS = 120;
 // Vite's deploy base for absolute fetch paths (see src/levels.js).
 const BASE = import.meta.env?.BASE_URL ?? '/';
@@ -323,7 +327,9 @@ function drawViewportGuide(octx, parsed, tile) {
   octx.strokeStyle = 'rgba(255, 220, 100, 0.9)';
   octx.lineWidth = 2;
   // Inset by 1 px so the dashed stroke renders fully inside the rect.
-  octx.strokeRect(x + 1, y + 1, vw * tile - 2, vh * tile - 2);
+  // v27 M2: y offset by HUD_HEIGHT so the guide aligns with the level
+  // rendered below the HUD band.
+  octx.strokeRect(x + 1, y + HUD_HEIGHT + 1, vw * tile - 2, vh * tile - 2);
   octx.restore();
 }
 
@@ -898,7 +904,9 @@ function tryPlaytest(opts = {}) {
   // (v18/v19 behaviour byte-identical).
   const pinCells = parsed.meta.viewport?.w ?? parsed.meta.width;
   const pinRows  = parsed.meta.viewport?.h ?? parsed.meta.height;
-  currentPlayPin = { cssW: pinCells * TILE, cssH: pinRows * TILE };
+  // v27 M2: cssH includes the HUD band so the play-mode canvas pin
+  // matches the renderer's grown intrinsic height (level + HUD strip).
+  currentPlayPin = { cssW: pinCells * TILE, cssH: pinRows * TILE + HUD_HEIGHT };
   document.body.classList.add('playmode');
   applyPlayFitToScreen();
   if (editorMode === 'demo') document.body.classList.add('demomode');
@@ -1118,10 +1126,12 @@ document.querySelector('#testBtn').addEventListener('click', () => {
       octx.clearRect(0, 0, overlay.width, overlay.height);
       if (result.ok) {
         const solutions = result.solutions || [result.solution];
+        // v27 M2: yOffset shifts the path overlay into the level area
+        // (below the reserved HUD strip at the top of the canvas).
         if (solutions.length > 1) {
-          renderAllSolutionsOverlay(octx, solutions, result.focusedIdx ?? 0, TILE);
+          renderAllSolutionsOverlay(octx, solutions, result.focusedIdx ?? 0, TILE, { yOffset: HUD_HEIGHT });
         } else {
-          renderSolutionOverlay(octx, result.solution, TILE);
+          renderSolutionOverlay(octx, result.solution, TILE, { yOffset: HUD_HEIGHT });
         }
       }
     },
@@ -1184,16 +1194,22 @@ function applyEdit(text) {
 }
 
 // Pointer position → clamped grid cell. The overlay shares the preview's
-// intrinsic size (gridW*TILE) but is CSS-scaled, so divide by that ratio.
+// intrinsic size (gridW*TILE + HUD_HEIGHT vertically) but is CSS-scaled,
+// so divide by that ratio. v27 M2: subtract HUD_HEIGHT from the
+// intrinsic-pixel y before grid-row conversion so clicks in the HUD band
+// (y < HUD_HEIGHT) yield cy = -1 (M3 click guard turns this into a no-op);
+// clicks below the band land on the right level row.
 function cellFromEvent(e) {
   const r = overlay.getBoundingClientRect();
   const gx = ((e.clientX - r.left) * (overlay.width / r.width)) / TILE;
-  const gy = ((e.clientY - r.top) * (overlay.height / r.height)) / TILE;
+  const gyPx = (e.clientY - r.top) * (overlay.height / r.height) - HUD_HEIGHT;
+  const gy = gyPx / TILE;
   const W = Math.max(1, Math.round(overlay.width / TILE));
-  const H = Math.max(1, Math.round(overlay.height / TILE));
+  const H = Math.max(1, Math.round((overlay.height - HUD_HEIGHT) / TILE));
   return {
     cx: Math.max(0, Math.min(W - 1, Math.floor(gx))),
     cy: Math.max(0, Math.min(H - 1, Math.floor(gy))),
+    inHud: gyPx < 0,
   };
 }
 
@@ -1204,12 +1220,14 @@ function drawMarquee(a, b) {
   const y1 = Math.max(a.cy, b.cy);
   octx.clearRect(0, 0, overlay.width, overlay.height);
   octx.fillStyle = 'rgba(255,255,255,0.18)';
-  octx.fillRect(x0 * TILE, y0 * TILE, (x1 - x0 + 1) * TILE, (y1 - y0 + 1) * TILE);
+  // v27 M2: y coords offset by HUD_HEIGHT so the marquee aligns with
+  // the level area below the reserved top strip.
+  octx.fillRect(x0 * TILE, y0 * TILE + HUD_HEIGHT, (x1 - x0 + 1) * TILE, (y1 - y0 + 1) * TILE);
   octx.strokeStyle = 'rgba(255,255,255,0.9)';
   octx.lineWidth = 2;
   octx.strokeRect(
     x0 * TILE + 1,
-    y0 * TILE + 1,
+    y0 * TILE + HUD_HEIGHT + 1,
     (x1 - x0 + 1) * TILE - 2,
     (y1 - y0 + 1) * TILE - 2,
   );
@@ -1233,7 +1251,13 @@ function applyRect(a, b, outline) {
 let dragStart = null;
 overlay.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
-  dragStart = cellFromEvent(e);
+  // v27 M2: ignore clicks that started in the reserved HUD band so
+  // the designer can't accidentally paint into the strip. (Drags
+  // that START below the HUD and end above are fine — the marquee
+  // clamps cy to the level area.)
+  const cell = cellFromEvent(e);
+  if (cell.inHud) return;
+  dragStart = cell;
   overlay.setPointerCapture(e.pointerId);
   drawMarquee(dragStart, dragStart);
 });

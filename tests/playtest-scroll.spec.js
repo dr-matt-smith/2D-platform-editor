@@ -59,9 +59,10 @@ test('windowed viewport: canvas sized to viewport AND camera scrolls on walk', a
     const c = document.querySelector('#preview');
     return { w: c.width, h: c.height };
   });
+  // v27 M2: canvas height = viewport rows × TILE + HUD strip (1 × TILE).
   expect(intrinsic).toEqual({
     w: VIEWPORT_W_CELLS * ENGINE_TILE,
-    h: VIEWPORT_H_CELLS * ENGINE_TILE,
+    h: VIEWPORT_H_CELLS * ENGINE_TILE + ENGINE_TILE,
   });
 
   // Hash before walking. Give the playtest a few rAF frames so the

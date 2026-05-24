@@ -85,6 +85,7 @@ test('v22: spawn-settle does not break levels where P is already grounded', asyn
     const c = document.querySelector('#preview');
     return { w: c.width, h: c.height };
   });
-  // Intrinsic dims: 5 cols × engine TILE (20) = 100; 3 rows × 20 = 60.
-  expect(dims).toEqual({ w: 100, h: 60 });
+  // Intrinsic dims: 5 cols × engine TILE (20) = 100;
+  // 3 rows × 20 = 60, + v27 M2 HUD band (20) = 80.
+  expect(dims).toEqual({ w: 100, h: 80 });
 });

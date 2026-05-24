@@ -24,6 +24,13 @@
 import { BACKGROUND_GLYPH } from './level.js';
 import { SKY, FALLBACK } from './palette.js';
 
+// v27 M2: HUD band height in TILES. The canvas reserves
+// `HUD_HEIGHT_TILES * tile` pixels at the top for the HUD strip;
+// level drawing is translated down by the same amount. Exported so
+// callers (main.js cellFromEvent / overlay drawing / PlaytestScene
+// player sprite) can mirror the offset.
+export const HUD_HEIGHT_TILES = 1;
+
 // Atlas decor indices (confirmed Dirt-atlas layout — see tileset.js / tiles.json).
 const T = {
   sky: 11,
@@ -139,8 +146,15 @@ export function draw(ctx, parsed, tileset, tile = 24, now, camera = null, entity
   // v19: canvas sized to viewport when scrolling, to world otherwise.
   const w = camera ? camera.viewW : worldW;
   const h = camera ? camera.viewH : worldH;
+  // v27 M2: canvas is HUD_HEIGHT_TILES (= 1) cells taller than the
+  // level area. The HUD band lives at the TOP of the canvas in the
+  // strip `y ∈ [0, hudPx)`. The level is rendered into the strip
+  // `y ∈ [hudPx, hudPx + h)` via a global y-translate. The HUD band
+  // is painted by the caller (PlaytestScene M3); for M2 it shows
+  // through as the SKY fill.
+  const hudPx = HUD_HEIGHT_TILES * tile;
   if (ctx.canvas.width !== w) ctx.canvas.width = w;
-  if (ctx.canvas.height !== h) ctx.canvas.height = h;
+  if (ctx.canvas.height !== h + hudPx) ctx.canvas.height = h + hudPx;
 
   const atlasReady = !!tileset?.atlasReady;
   const cave = meta.theme === 'cave';
@@ -165,12 +179,20 @@ export function draw(ctx, parsed, tileset, tile = 24, now, camera = null, entity
   }
 
   ctx.fillStyle = SKY;
-  ctx.fillRect(0, 0, w || 1, h || 1);
+  ctx.fillRect(0, 0, w || 1, (h + hudPx) || 1);
+
+  // v27 M2: shift ALL level-coord drawing down by hudPx so the HUD
+  // band reserves the top strip. The caller paints over the HUD band
+  // after this function returns (the restore at the bottom puts the
+  // matrix back so caller-side HUD / banner draw in screen coords).
+  ctx.save();
+  ctx.translate(0, hudPx);
 
   // v19: shift world coords into viewport space. All subsequent world-
   // coord draws (Pass 0a … 4c) are translated by -cam; the SKY fill
   // above stays in screen space (it fills the canvas, including any
-  // area outside the world when viewport > world).
+  // area outside the world when viewport > world). v27: this nests
+  // inside the HUD-band translate above.
   if (camera) {
     ctx.save();
     ctx.translate(-Math.round(camera.camX), -Math.round(camera.camY));
@@ -295,4 +317,10 @@ export function draw(ctx, parsed, tileset, tile = 24, now, camera = null, entity
   // own translate to the player overlay; the banner + HUD then paint
   // in viewport coords once the world translate is gone).
   if (camera) ctx.restore();
+
+  // v27 M2: restore the HUD-band translate. ctx is now back to identity
+  // — the caller can paint the HUD band (M3) and the player sprite
+  // (PlaytestScene will offset by HUD_HEIGHT_TILES * TILE so it
+  // renders inside the level area, not in the HUD band).
+  ctx.restore();
 }
