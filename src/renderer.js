@@ -31,6 +31,35 @@ import { SKY, FALLBACK } from './palette.js';
 // player sprite) can mirror the offset.
 export const HUD_HEIGHT_TILES = 1;
 
+// v27 M3: HUD-band paint. Reads --hud-bg + --hud-fg from the
+// document root (defined in style.css) so dark/light themes
+// switch via CSS without a JS theme listener. Falls back to
+// hardcoded greys when the doc-root isn't available (Node /
+// renderer.test.js). Text is rendered with the canonical bold
+// 14px monospace + textBaseline middle, anchored 8 px from the
+// left edge of the canvas.
+export function drawHud(ctx, text, tile) {
+  const hudPx = HUD_HEIGHT_TILES * tile;
+  let bg = '#252526';
+  let fg = '#ececec';
+  if (typeof document !== 'undefined' && document.documentElement) {
+    const styles = getComputedStyle(document.documentElement);
+    const b = styles.getPropertyValue('--hud-bg').trim();
+    const f = styles.getPropertyValue('--hud-fg').trim();
+    if (b) bg = b;
+    if (f) fg = f;
+  }
+  ctx.save();
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, ctx.canvas.width, hudPx);
+  ctx.fillStyle = fg;
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text ?? '', 8, hudPx / 2);
+  ctx.restore();
+}
+
 // Atlas decor indices (confirmed Dirt-atlas layout — see tileset.js / tiles.json).
 const T = {
   sky: 11,

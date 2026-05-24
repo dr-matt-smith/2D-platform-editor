@@ -4,7 +4,7 @@ import { COLOURS, TILE } from './constants.js';
 import { toWorld } from './adapter.js';
 import { meetsPickupRequirement } from '../playSettings.js';
 import { centerCamera, computeCamera } from '../playtestCamera.js';
-import { draw as editorDraw, drawFallback, HUD_HEIGHT_TILES } from '../renderer.js';
+import { draw as editorDraw, drawFallback, drawHud, HUD_HEIGHT_TILES } from '../renderer.js';
 import { roleOf } from '../level.js';
 
 /**
@@ -364,19 +364,15 @@ export class PlaytestScene extends Scene {
       drawFallback(ctx, this.playerChar, px, py, TILE);
     }
 
-    // HUD text in the reserved top strip. v27 M3 will style this with
-    // a contrasting bg band; for M2 the text just lives in the new
-    // strip that earlier versions drew it on top of the level for.
-    ctx.fillStyle = COLOURS.text;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.font = 'bold 14px monospace';
+    // v27 M3: HUD band rendered as contrasting strip via the shared
+    // renderer helper. `drawHud` reads --hud-bg / --hud-fg so the
+    // band tracks the editor's light/dark theme without a JS listener.
     const hud =
       this.phase === 'play' &&
       meetsPickupRequirement(this.score, this.total, this.requiredPickups)
         ? `coins: ${this.score} / ${this.total}   →  find the exit`
         : `coins: ${this.score} / ${this.total}`;
-    ctx.fillText(hud, 8, hudPx / 2);
+    drawHud(ctx, hud, TILE);
 
     if (this.phase !== 'play') this.#banner(ctx);
   }

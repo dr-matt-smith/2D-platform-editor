@@ -34,6 +34,11 @@
   --badge-fail-fg:   #ff8c8c;
   --badge-search-bg: #2a2d3a;
   --badge-search-fg: #c8c8e0;
+  /* v27 M3: HUD-band colours. Dark mode shows a near-black panel
+     with light-grey text — visually consistent with the existing
+     editor chrome (matches --panel / --fg). Light mode rebinds. */
+  --hud-bg:          #252526;
+  --hud-fg:          #ececec;
   color-scheme: dark;
 }
 
@@ -66,6 +71,9 @@ body.lightmode {
   --badge-fail-fg:   #b22222;
   --badge-search-bg: #fff3cd;
   --badge-search-fg: #856404;
+  /* v27 M3: light-theme HUD band — pale panel, dark text. */
+  --hud-bg:          #ececec;
+  --hud-fg:          #252526;
   color-scheme: light;
 }
 

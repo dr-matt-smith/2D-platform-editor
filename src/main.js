@@ -13,7 +13,7 @@ import {
   DEFAULT_TILESET,
 } from './level.js';
 import { validate } from './validate.js';
-import { draw } from './renderer.js';
+import { draw, drawHud } from './renderer.js';
 import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm, openPlaySettings, openPasteLoadDialog } from './loaderDialog.js';
@@ -656,6 +656,11 @@ function run() {
   if (tilesetWarn) issues.push(tilesetWarn);
   renderProblems(issues);
   draw(ctx, parsed, tileset, TILE);
+  // v27 M3: edit-mode HUD band shows static placeholder text so the
+  // designer sees the reserved strip and doesn't try to paint into
+  // it. (The pointerdown handler also enforces this — see
+  // cellFromEvent's `inHud` flag.)
+  drawHud(ctx, 'HUD: score / status', TILE);
 
   // Keep the selection overlay congruent with the (re-sized) preview.
   if (overlay.width !== ctx.canvas.width) overlay.width = ctx.canvas.width;
