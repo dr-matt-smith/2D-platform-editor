@@ -38,7 +38,7 @@ export const RELEASE_FRAMES = [2, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 42];
 /** Buffer used for the drop action's nominal recording length. The
  *  simAction reads its actual fall duration; this is just the "hold
  *  direction for at most this long" bound. */
-const DROP_HOLD_FRAMES_BUDGET = 60;
+export const DROP_HOLD_FRAMES_BUDGET = 60;
 
 /* v23 M6: action-graph completeness. The v21 set (walk, jump with 12
    release-frames, drop) covers the common cases but cannot enumerate:

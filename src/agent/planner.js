@@ -15,6 +15,7 @@
 
 import { buildNavGraph, cellKey, stateKey, vxBucketOf } from './grid.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
+import { planPerFrame } from './perframe.js';
 import { TILE } from '../play/constants.js';
 
 // ---- A* over the nav-graph ---------------------------------------------
@@ -461,6 +462,15 @@ export function plan(parsed, legend, opts = {}) {
   // mints a PlaytestScene which consumes it). Callers pass it via
   // opts.tileset; legacy callers (tests) leave it null.
   const tileset = opts.tileset ?? null;
+  // v28 M3: planner backend flag. `'bucket'` (default for M3) runs
+  // the v27 bucket-aware A*; `'perframe'` dispatches to the new
+  // per-frame trajectory planner. M4 flips the default. Either
+  // backend's contract — `{trace, recording, stats, graph, goals,
+  // unreachable}` — is the same.
+  const backend = opts.planner ?? 'bucket';
+  if (backend === 'perframe') {
+    return planPerFrame(parsed, legend, tileset, opts);
+  }
   const graph = buildNavGraph(parsed, legend, tileset);
   if (!graph.start || graph.exitCells.length === 0) {
     return emptyPlan(graph);

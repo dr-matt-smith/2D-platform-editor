@@ -136,9 +136,20 @@ function runSimLoop(scene, input, action, opts = {}) {
   // v21 note: `input.advance(frame)` was called explicitly here in
   // the v20.x model. v21 moved that into `PlaytestScene.update()`
   // (which calls `#tickScriptedInput` synchronously before
-  // `player.update`), guaranteeing the right read-order. The loop
-  // here just calls scene.update; the scene ticks the input itself.
+  // `player.update`), guaranteeing the right read-order.
+  //
+  // v28 M3 fixup: re-introduce the explicit advance BEFORE
+  // scene.update, matching sim.js's live-engine loop. Without this,
+  // simTime accumulates FP drift (sum-of-1/60 is 0.999... at iter
+  // 60 — see node-test) so the internal #tickScriptedInput's
+  // floor(simTime * 60) lags by 1 frame on some iters; release
+  // events fire 1 frame later inside simAction than in sim.js. The
+  // perframe planner's recorded action sequence drifts off the
+  // simulator's prediction by 1 frame of motion per leg. Calling
+  // advance(frame) directly is idempotent vs #tickScriptedInput
+  // (re-advancing to the same frame is a no-op in ScriptedInput).
   for (let frame = 0; frame < maxFrames; frame++) {
+    if (input?.advance) input.advance(frame);
     const prevX = scene.player.x;
     scene.update(DT);
 
