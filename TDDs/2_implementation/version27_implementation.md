@@ -1,8 +1,24 @@
 # Version 27 — Implementation Plan
 
-Status: **Proposed (2026-05-23)** · Design:
+Status: **Delivered (2026-05-24)** · Design:
 [../1_design/version27_design.md](../1_design/version27_design.md)
-· Transcript: _to follow at M6_
+· Transcript:
+[../3_transcripts/version27_build.md](../3_transcripts/version27_build.md)
+
+| M | Commit  | Deliverable |
+|---|---------|-------------|
+| 1 | `22dd0ec` | scrollbar-gutter: stable |
+| 2 | `7390233` | HUD-band geometry |
+| 3 | `345c905` | HUD band drawn + placeholder + click guard |
+| 4 | `81b4961` | xOffsetBucket — 9-node identity (conservative chain) |
+| 5 | `de164bf` | per-leg replan loop + acceptance gate (below_ground at v26 baseline) |
+| 6 | _this commit_ | transcript + Delivered |
+
+Tests at delivery: 295 unit / 113 Playwright. v9 §7 invariant
+preserved. **Thread A's below_ground full-solve acceptance was
+not met** — chain fragility forced M4/M5 to ship a conservative
+L-bucket-only emission. The per-frame trajectory planner moves
+to v28+.
 
 Six path-scoped commits. Thread B's small scrollbar-jog fix lands
 first (one CSS line, isolated test) so a regression there is

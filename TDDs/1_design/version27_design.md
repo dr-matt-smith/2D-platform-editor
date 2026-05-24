@@ -1,9 +1,13 @@
 # 2D Level Designer — Version 27 Design Document
 
-Status: Proposed · Date: 2026-05-23 · Builds on:
+Status: **Delivered (2026-05-24) — Thread B in full; Thread A
+partial (below_ground.txt at v26 baseline; per-frame planner
+is v28 candidate)** · Date: 2026-05-23 · Builds on:
 [version26_design.md](version26_design.md) (CSS-var refactor + fit-draw
-overlay + sub-pixel A*) · Implementation: *to follow once this scope
-is approved*.
+overlay + sub-pixel A*) · Implementation:
+[../2_implementation/version27_implementation.md](../2_implementation/version27_implementation.md)
+· Transcript:
+[../3_transcripts/version27_build.md](../3_transcripts/version27_build.md).
 
 ## 1. Purpose
 
