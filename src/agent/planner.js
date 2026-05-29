@@ -17,6 +17,10 @@ import { buildNavGraph, cellKey, stateKey, vxBucketOf } from './grid.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
 import { planPerFrame } from './perframe.js';
 import { TILE } from '../play/constants.js';
+// TEMPORARY (removed in M3): pin the JS adapter so the bucket
+// planner's makeSimContext call keeps working until M3 threads
+// adapter through the public plan() entry.
+import { jsAdapter as _adapter } from '../agent-adapter.js';
 
 // ---- A* over the nav-graph ---------------------------------------------
 
@@ -494,7 +498,7 @@ export function plan(parsed, legend, opts = {}) {
   // identical when simContext is null).
   let simContext = null;
   try {
-    simContext = makeSimContext(parsed, legend, tileset);
+    simContext = makeSimContext(_adapter, parsed, legend, tileset);
   } catch {
     simContext = null;
   }

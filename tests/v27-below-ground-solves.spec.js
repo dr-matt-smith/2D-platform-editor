@@ -43,9 +43,10 @@ test('v27 M5: below_ground PROGRESS — score advances over v25 baseline', async
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { plan } = await import('/src/agent/planner.js');
     const { simulate } = await import('/src/agent/sim.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse(document.querySelector('#src').value);
     const p = plan(parsed, DEFAULT_LEGEND, {});
-    return simulate({ parsed, legend: DEFAULT_LEGEND, recording: p.recording, maxFrames: 2400 });
+    return simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording: p.recording, maxFrames: 2400 });
   });
   if (sim.outcome === 'won') {
     expect(sim.outcome).toBe('won');

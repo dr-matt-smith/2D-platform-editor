@@ -24,6 +24,10 @@
 import { TILE, SPEED, JUMP_FORCE, GRAVITY } from '../play/constants.js';
 import { enumerateActions, actionToRecording } from './actions.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
+// TEMPORARY (removed in M3): pin the JS adapter so buildNavGraph's
+// makeSimContext call keeps working until M3 threads adapter through
+// the public plan()/testLevel() entries.
+import { jsAdapter as _adapter } from '../agent-adapter.js';
 
 // --- physics-derived constants (kept for v20.1 compat + prefilter) ---
 
@@ -185,7 +189,7 @@ export function buildNavGraph(parsed, legend = null, tileset = null) {
   // Build action-edges. Reuse a single PlaytestScene across all
   // actions to avoid per-action toWorld() overhead.
   const ctx = canBuildSimContext(parsed)
-    ? makeSimContext(parsed, legend, tileset)
+    ? makeSimContext(_adapter, parsed, legend, tileset)
     : null;
 
   // v25 M4: precision-landing targets — pickup cells + exit cells.

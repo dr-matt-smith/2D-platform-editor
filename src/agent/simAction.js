@@ -11,8 +11,11 @@
 // Pure (no DOM, no canvas). The vendored engine is byte-untouched;
 // the only consumer of `PlaytestScene.setPlayerState` is this module.
 
-import { ScriptedInput } from '../play/scriptedInput.js';
-import { PlaytestScene } from '../play/playtestScene.js';
+// v29 M2: the engine is injected. simAction no longer imports
+// PlaytestScene / ScriptedInput directly — it constructs them through
+// the physics adapter passed in by the caller (jsAdapter today; a
+// Python adapter tomorrow). TILE is still imported from the vendored
+// engine until M4 carves out the agent-local constant.
 import { TILE } from '../play/constants.js';
 import { actionCost, actionToRecording } from './actions.js';
 
@@ -24,14 +27,17 @@ const DT = 1 / 60;
  * to avoid paying PlaytestScene + toWorld() construction costs per
  * action (28 actions × hundreds of cells = thousands of calls).
  *
- * @returns {{scene, fakeGame}}
+ * v29 M2: `adapter` is prepended to the arg list. The scene +
+ * ScriptedInput are minted through it instead of `new PlaytestScene`
+ * / `new ScriptedInput`. The adapter's `makeScene` returns an
+ * already-entered scene whose `game` is a mutable `{ input, assets }`
+ * — `simulateActionInContext` swaps `game.input` per action.
+ *
+ * @returns {{scene, fakeGame, adapter}}
  */
-export function makeSimContext(parsed, legend, tileset = null) {
-  const input = new ScriptedInput([]);
-  const fakeGame = { input, assets: { play() {} } };
-  const scene = new PlaytestScene(fakeGame, parsed, legend, tileset, () => {});
-  scene.enter();
-  return { scene, fakeGame };
+export function makeSimContext(adapter, parsed, legend, tileset = null) {
+  const scene = adapter.makeScene(parsed, legend, tileset);
+  return { scene, fakeGame: scene.game, adapter };
 }
 
 /**
@@ -55,7 +61,7 @@ export function simulateActionInContext(ctx, startState, action, opts = {}) {
   // gravity), then advance(1) on the next update (press fires). This
   // mirrors what the live engine will see when the planner's
   // recording is replayed.
-  ctx.fakeGame.input = new ScriptedInput(actionToRecording(action, 1));
+  ctx.fakeGame.input = ctx.adapter.makeScriptedInput(actionToRecording(action, 1));
   ctx.scene.setPlayerState(startState);
   // v21: reset BOTH the input-tick counter and the wall-clock
   // accumulator so successive simulations on the same context start
@@ -71,6 +77,7 @@ export function simulateActionInContext(ctx, startState, action, opts = {}) {
  * Run one action and return the resulting state.
  *
  * @param {object} args
+ * @param {object} args.adapter  physics adapter (v29 M2)
  * @param {object} args.parsed   level.parse() result
  * @param {object} args.legend   active tileset legend
  * @param {object|null} args.tileset
@@ -87,8 +94,8 @@ export function simulateActionInContext(ctx, startState, action, opts = {}) {
  *   cost:       number,                       // actual frames the action took
  * }}
  */
-export function simulateAction({ parsed, legend, tileset = null, startState, action }) {
-  const ctx = makeSimContext(parsed, legend, tileset);
+export function simulateAction({ adapter, parsed, legend, tileset = null, startState, action }) {
+  const ctx = makeSimContext(adapter, parsed, legend, tileset);
   return simulateActionInContext(ctx, startState, action);
 }
 

@@ -12,8 +12,9 @@ test('v25 M4: simAction returns trajectory when collectTrajectory: true', async 
   const probe = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { makeSimContext, simulateActionInContext } = await import('/src/agent/simAction.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('# size: 10x4\n##########\n#P......E#\n##########');
-    const ctx = makeSimContext(parsed, DEFAULT_LEGEND, null);
+    const ctx = makeSimContext(jsAdapter, parsed, DEFAULT_LEGEND, null);
     // Without flag — no trajectory.
     const a = simulateActionInContext(
       ctx,

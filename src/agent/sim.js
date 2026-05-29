@@ -6,14 +6,13 @@
 //   - Unit tests that want to assert "this input sequence wins this
 //     level" without touching the DOM.
 //
-// The vendored engine (TDD v9 §7) is byte-untouched: this module
-// instantiates `PlaytestScene` with a `fakeGame = { input, assets }`
-// stub (PlaytestScene reads only those two fields from `game`), then
-// advances `scene.update(dt)` until `scene.phase` transitions or the
+// The vendored engine (TDD v9 §7) is byte-untouched. v29 M2: this
+// module no longer imports `PlaytestScene` / `ScriptedInput` — it
+// mints both through the injected physics adapter. The adapter's
+// `makeScene` returns an already-entered scene whose `game` is a
+// mutable `{ input, assets }`; we swap in the recording's input, then
+// advance `scene.update(dt)` until `scene.phase` transitions or the
 // `maxFrames` budget is exhausted.
-
-import { ScriptedInput } from '../play/scriptedInput.js';
-import { PlaytestScene } from '../play/playtestScene.js';
 
 const DEFAULT_DT = 1 / 60;
 const DEFAULT_MAX_FRAMES = 600; // 10 seconds of in-game time at 60 fps
@@ -22,6 +21,7 @@ const DEFAULT_MAX_FRAMES = 600; // 10 seconds of in-game time at 60 fps
  * Run a single headless simulation.
  *
  * @param {object}   args
+ * @param {object}   args.adapter    physics adapter (v29 M2)
  * @param {object}   args.parsed     result of `level.parse()`
  * @param {object}   args.legend     active tileset legend
  * @param {object|null} args.tileset active tileset object (or null for offline)
@@ -36,6 +36,7 @@ const DEFAULT_MAX_FRAMES = 600; // 10 seconds of in-game time at 60 fps
  * }}
  */
 export function simulate({
+  adapter,
   parsed,
   legend,
   tileset = null,
@@ -43,14 +44,14 @@ export function simulate({
   dt = DEFAULT_DT,
   maxFrames = DEFAULT_MAX_FRAMES,
 }) {
-  const input = new ScriptedInput(recording);
-  // PlaytestScene reads `game.input` (Player.update) and `game.assets.play()`
-  // (coin pickup sfx). assets.play is a no-op here — the simulator runs many
-  // times during planning; emitting sounds would be both expensive and
-  // unwanted.
-  const fakeGame = { input, assets: { play() {} } };
-  const scene = new PlaytestScene(fakeGame, parsed, legend, tileset, () => {});
-  scene.enter(); // calls restart(): builds entities, sets phase='play'
+  const input = adapter.makeScriptedInput(recording);
+  // The adapter's makeScene returns an already-entered scene
+  // (restart() built the entities, phase='play') whose `game` is a
+  // mutable `{ input, assets }`. assets.play is a no-op — the
+  // simulator runs many times during planning; emitting sounds would
+  // be both expensive and unwanted. Swap in the recording's input.
+  const scene = adapter.makeScene(parsed, legend, tileset);
+  scene.game.input = input;
 
   for (let frame = 0; frame < maxFrames; frame++) {
     input.advance(frame);

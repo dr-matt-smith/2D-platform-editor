@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { parse, DEFAULT_LEGEND } from '../level.js';
 import { ScriptedInput } from '../play/scriptedInput.js';
 import { simulate } from './sim.js';
+import { jsAdapter } from '../agent-adapter.js';
 
 // --- ScriptedInput unit cases (the simulator's input source) -------
 
@@ -70,7 +71,7 @@ test('simulate: walking right reaches the exit (smoke)', () => {
     { frame: 0, key: 'right', down: true },
     { frame: 120, key: 'right', down: false },
   ];
-  const result = simulate({ parsed, legend: DEFAULT_LEGEND, recording });
+  const result = simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording });
   assert.equal(result.outcome, 'won');
   assert.ok(result.frame < 60, `expected fast win, got frame ${result.frame}`);
 });
@@ -78,7 +79,7 @@ test('simulate: walking right reaches the exit (smoke)', () => {
 test('simulate: no input → times out without dying', () => {
   // Player sits on the floor doing nothing. Engine has no idle-death.
   const parsed = parse(PE_LEVEL);
-  const result = simulate({
+  const result = simulate({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     recording: [],
@@ -93,7 +94,7 @@ test('simulate: falling into a pit kills the player', () => {
   // worldH + 50 → phase = dead.
   const PIT = '#######\n#P...E#\n#.....#';
   const parsed = parse(PIT);
-  const result = simulate({
+  const result = simulate({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     recording: [], // no input — just fall
@@ -110,7 +111,7 @@ test('simulate: touching a spike kills the player', () => {
     { frame: 0, key: 'right', down: true },
     { frame: 60, key: 'right', down: false },
   ];
-  const result = simulate({ parsed, legend: DEFAULT_LEGEND, recording });
+  const result = simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording });
   assert.equal(result.outcome, 'dead');
 });
 
@@ -123,7 +124,7 @@ test('simulate: collecting a coin increments score, all-coins required to win', 
     { frame: 0, key: 'right', down: true },
     { frame: 120, key: 'right', down: false },
   ];
-  const result = simulate({ parsed, legend: DEFAULT_LEGEND, recording });
+  const result = simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording });
   assert.equal(result.outcome, 'won');
   assert.equal(result.score, 1);
 });
@@ -137,7 +138,7 @@ test('simulate: # pickup-required: 0 lets the player skip the coin', () => {
     { frame: 0, key: 'right', down: true },
     { frame: 120, key: 'right', down: false },
   ];
-  const result = simulate({ parsed, legend: DEFAULT_LEGEND, recording });
+  const result = simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording });
   assert.equal(result.outcome, 'won');
 });
 
@@ -156,13 +157,13 @@ test('simulate: pressing space changes the trajectory vs walk-only', () => {
     '#P......E\n' + // row 2 player on floor (P col 1, E col 8)
     '#########'; //   row 3 floor
   const parsed = parse(FLAT);
-  const walkOnly = simulate({
+  const walkOnly = simulate({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     recording: [{ frame: 0, key: 'right', down: true }],
     maxFrames: 5,
   });
-  const walkAndJump = simulate({
+  const walkAndJump = simulate({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     recording: [
@@ -186,7 +187,7 @@ test('simulate: pressing space changes the trajectory vs walk-only', () => {
 
 test('simulate: maxFrames is honoured', () => {
   const parsed = parse(PE_LEVEL);
-  const result = simulate({
+  const result = simulate({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     recording: [],

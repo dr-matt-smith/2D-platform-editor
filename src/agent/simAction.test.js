@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse, DEFAULT_LEGEND } from '../level.js';
 import { simulateAction } from './simAction.js';
+import { jsAdapter } from '../agent-adapter.js';
 
 // Test level: P at (2, 1) with plenty of overhead room for jumps.
 // 10 cols × 4 rows. Row 0+1 sky (no ceiling), row 2 the play row
@@ -18,7 +19,7 @@ const flatStart = { x: 20, y: 40, vx: 0, vy: 0, onGround: true };
 
 test('simulateAction: walk_right_1 ends at the next cell, onGround', () => {
   const parsed = parse(FLAT);
-  const r = simulateAction({
+  const r = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: flatStart,
@@ -36,7 +37,7 @@ test('simulateAction: walk_right_1 ends at the next cell, onGround', () => {
 test('simulateAction: walk_left_1 ends one cell to the left', () => {
   const parsed = parse(FLAT);
   const start = { ...flatStart, x: 40 };
-  const r = simulateAction({
+  const r = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: start,
@@ -55,7 +56,7 @@ test('simulateAction: walk into a wall flags collided=true', () => {
 #P.#.....#
 ##########`;
   const parsed = parse(WALL);
-  const r = simulateAction({
+  const r = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: { x: 20, y: 40, vx: 0, vy: 0, onGround: true },
@@ -68,13 +69,13 @@ test('simulateAction: walk into a wall flags collided=true', () => {
 
 test('simulateAction: jump with full holdFrames=42 carries far horizontally', () => {
   const parsed = parse(FLAT);
-  const rShort = simulateAction({
+  const rShort = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: flatStart,
     action: { kind: 'jump', params: { dir: 'right', holdFrames: 2 } },
   });
-  const rLong = simulateAction({
+  const rLong = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: flatStart,
@@ -91,7 +92,7 @@ test('simulateAction: jump with full holdFrames=42 carries far horizontally', ()
 
 test('simulateAction: jump with release-at-2 lands near the start cell (short hop)', () => {
   const parsed = parse(FLAT);
-  const r = simulateAction({
+  const r = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: flatStart,
@@ -105,7 +106,7 @@ test('simulateAction: jump with release-at-2 lands near the start cell (short ho
 
 test('simulateAction: jump arc returns onGround at the end of cost frames', () => {
   const parsed = parse(FLAT);
-  const r = simulateAction({
+  const r = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: flatStart,
@@ -134,7 +135,7 @@ test('simulateAction: drop_right off a ledge lands on the lower floor', () => {
 ##########`;
   const parsed = parse(text);
   const start = { x: 40, y: 40, vx: 0, vy: 0, onGround: true };
-  const r = simulateAction({
+  const r = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: start,
@@ -153,7 +154,7 @@ test('simulateAction: sub-pixel start position is preserved (no quantization on 
   const parsed = parse(FLAT);
   // Start at x=23.5 — between cells.
   const start = { x: 23.5, y: 40, vx: 0, vy: 0, onGround: true };
-  const r = simulateAction({
+  const r = simulateAction({ adapter: jsAdapter,
     parsed,
     legend: DEFAULT_LEGEND,
     startState: start,

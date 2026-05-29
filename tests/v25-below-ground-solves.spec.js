@@ -42,9 +42,10 @@ test('v25 M3: below_ground.txt — progress past frame 49 + score > 0', async ({
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { plan } = await import('/src/agent/planner.js');
     const { simulate } = await import('/src/agent/sim.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse(document.querySelector('#src').value);
     const p = plan(parsed, DEFAULT_LEGEND, {});
-    return simulate({ parsed, legend: DEFAULT_LEGEND, recording: p.recording, maxFrames: 1200 });
+    return simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording: p.recording, maxFrames: 1200 });
   });
   // v24 M5: died at frame 49 with score 0.
   // v25 M2: gets past frame 49; collects pickups along the way.

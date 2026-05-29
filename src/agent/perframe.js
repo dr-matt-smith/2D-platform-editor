@@ -70,6 +70,10 @@ import {
   findOverlappingExit,
   cellKey,
 } from './grid.js';
+// TEMPORARY (removed in M3): pin the JS adapter so the per-frame
+// planner's getContext call keeps working until M3 threads adapter
+// through planPerFrame.
+import { jsAdapter as _adapter } from '../agent-adapter.js';
 
 /**
  * Build a fresh sim-context cache. Pass this to expandNode across
@@ -84,7 +88,7 @@ export function makeContextCache() {
 function getContext(cache, parsed, legend, tileset) {
   let ctx = cache.get(parsed);
   if (!ctx) {
-    ctx = makeSimContext(parsed, legend, tileset);
+    ctx = makeSimContext(_adapter, parsed, legend, tileset);
     cache.set(parsed, ctx);
   }
   return ctx;

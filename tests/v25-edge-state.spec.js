@@ -12,8 +12,9 @@ test('v25 M1: simAction returns endState matching endPos/endVel', async ({ page 
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { makeSimContext, simulateActionInContext } = await import('/src/agent/simAction.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('# size: 6x4\n######\n#P..E#\n######');
-    const ctx = makeSimContext(parsed, DEFAULT_LEGEND, null);
+    const ctx = makeSimContext(jsAdapter, parsed, DEFAULT_LEGEND, null);
     const result = simulateActionInContext(
       ctx,
       { x: 20, y: 20, vx: 0, vy: 0, onGround: true },

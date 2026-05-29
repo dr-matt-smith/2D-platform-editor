@@ -14,6 +14,10 @@
 
 import { simulate } from './sim.js';
 import { plan, replan } from './planner.js';
+// TEMPORARY (removed in M3): pin the JS adapter so the runner's
+// simulate() call keeps working until M3 threads adapter through
+// testLevel.
+import { jsAdapter as _adapter } from '../agent-adapter.js';
 
 // v26 M4: bumped from 1200 → 2400 (20s → 40s sim time). The
 // sub-pixel state-space A* graph has 3× more nodes; plans that
@@ -78,6 +82,7 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
   while (attempt < replanBudget && solutions.length < MAX_SOLUTIONS) {
     attempt++;
     const sim = simulate({
+      adapter: _adapter,
       parsed,
       legend,
       tileset,
