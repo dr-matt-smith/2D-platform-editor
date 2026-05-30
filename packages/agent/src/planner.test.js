@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse, DEFAULT_LEGEND } from '../level.js';
+import { parse, DEFAULT_LEGEND } from '../../../src/level.js';
 import { plan, aStar } from './planner.js';
 import { buildNavGraph } from './grid.js';
-import { jsAdapter } from '../agent-adapter.js';
+import { jsAdapter } from '../../../src/agent-adapter.js';
 
 // --- v29 M3: physics-adapter contract ------------------------------
 

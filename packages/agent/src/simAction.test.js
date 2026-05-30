@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse, DEFAULT_LEGEND } from '../level.js';
+import { parse, DEFAULT_LEGEND } from '../../../src/level.js';
 import { simulateAction } from './simAction.js';
-import { jsAdapter } from '../agent-adapter.js';
+import { jsAdapter } from '../../../src/agent-adapter.js';
 
 // Test level: P at (2, 1) with plenty of overhead room for jumps.
 // 10 cols × 4 rows. Row 0+1 sky (no ceiling), row 2 the play row

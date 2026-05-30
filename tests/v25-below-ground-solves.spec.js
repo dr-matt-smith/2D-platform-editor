@@ -40,8 +40,8 @@ test('v25 M3: below_ground.txt — progress past frame 49 + score > 0', async ({
   // Get the raw simulator result via direct module access.
   const sim = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { plan } = await import('/src/agent/planner.js');
-    const { simulate } = await import('/src/agent/sim.js');
+    const { plan } = await import('/packages/agent/src/planner.js');
+    const { simulate } = await import('/packages/agent/src/sim.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse(document.querySelector('#src').value);
     const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });

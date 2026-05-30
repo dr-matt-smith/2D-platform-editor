@@ -13,7 +13,7 @@ test('v26 M4 + v27 M4: graph node count = walkable-cells × 9 (vx × xOffset var
   await page.waitForSelector('#preview');
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { buildNavGraph } = await import('/packages/agent/src/grid.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
     const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
@@ -33,7 +33,7 @@ test('v26 M4 + v27 M4: stateKey + vxBucketOf + parseStateKey helpers', async ({ 
   await page.goto('/');
   await page.waitForSelector('#preview');
   const r = await page.evaluate(async () => {
-    const { stateKey, vxBucketOf, parseStateKey, VX_BUCKETS } = await import('/src/agent/grid.js');
+    const { stateKey, vxBucketOf, parseStateKey, VX_BUCKETS } = await import('/packages/agent/src/grid.js');
     return {
       keyMid: stateKey(5, 7, 0, 'L'),
       keyLeft: stateKey(5, 7, -1, 'L'),
@@ -62,8 +62,8 @@ test('v26 M4: A* finds a path through state-space nodes', async ({ page }) => {
   await page.waitForSelector('#preview');
   const result = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { aStar } = await import('/src/agent/planner.js');
-    const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { aStar } = await import('/packages/agent/src/planner.js');
+    const { buildNavGraph } = await import('/packages/agent/src/grid.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     // A wider level so the path has multiple edges.
     const parsed = parse('############\n#P........E#\n############');

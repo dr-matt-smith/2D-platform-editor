@@ -10,7 +10,7 @@ test('v28 M1: identical states cluster identically', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
-    const { clusterKey } = await import('/src/agent/perframe.js');
+    const { clusterKey } = await import('/packages/agent/src/perframe.js');
     const a = { x: 100, y: 50, vx: 0, vy: 0, onGround: true };
     const b = { x: 100, y: 50, vx: 0, vy: 0, onGround: true };
     return { ka: clusterKey(a), kb: clusterKey(b) };
@@ -24,7 +24,7 @@ test('v28 M1: sub-tolerance Δ on any axis clusters identically', async ({ page 
   await page.goto('/');
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
-    const { clusterKey, nearby } = await import('/src/agent/perframe.js');
+    const { clusterKey, nearby } = await import('/packages/agent/src/perframe.js');
     const base = { x: 100, y: 50, vx: 0, vy: 0, onGround: true };
     const xJitter = { ...base, x: 100.24 };   // < 0.5 / 2 of x tol
     const yJitter = { ...base, y: 50.24 };
@@ -51,7 +51,7 @@ test('v28 M1: above-tolerance Δ clusters distinctly', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
-    const { nearby } = await import('/src/agent/perframe.js');
+    const { nearby } = await import('/packages/agent/src/perframe.js');
     const base = { x: 100, y: 50, vx: 0, vy: 0, onGround: true };
     return {
       xFar: nearby(base, { ...base, x: 101 }),   // 1 px > 0.5 tol
@@ -70,7 +70,7 @@ test('v28 M1: onGround flip breaks clustering (no tolerance on the bool)', async
   await page.goto('/');
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
-    const { nearby } = await import('/src/agent/perframe.js');
+    const { nearby } = await import('/packages/agent/src/perframe.js');
     const grounded = { x: 100, y: 50, vx: 0, vy: 0, onGround: true };
     const airborne = { x: 100, y: 50, vx: 0, vy: 0, onGround: false };
     return { same: nearby(grounded, airborne) };
@@ -86,7 +86,7 @@ test('v28 M1: custom tolerance changes the equivalence class', async ({ page }) 
   await page.goto('/');
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
-    const { nearby } = await import('/src/agent/perframe.js');
+    const { nearby } = await import('/packages/agent/src/perframe.js');
     const a = { x: 100, y: 50, vx: 0, vy: 0, onGround: true };
     const b = { x: 100.2, y: 50, vx: 0, vy: 0, onGround: true };
     return {

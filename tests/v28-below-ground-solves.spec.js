@@ -28,8 +28,8 @@ test('v28 M5: below_ground.txt solves end-to-end via plan() + simulate()', async
   await page.waitForTimeout(300);
   const sim = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { plan } = await import('/src/agent/planner.js');
-    const { simulate } = await import('/src/agent/sim.js');
+    const { plan } = await import('/packages/agent/src/planner.js');
+    const { simulate } = await import('/packages/agent/src/sim.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse(document.querySelector('#src').value);
     const t0 = performance.now();

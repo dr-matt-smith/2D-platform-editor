@@ -39,7 +39,7 @@ test('v29 M4: agent local constants match the engine TILE', async ({ page }) => 
   await page.goto('/');
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
-    const { TILE } = await import('/src/agent/constants.js');
+    const { TILE } = await import('/packages/agent/src/constants.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     return { agentTile: TILE, adapterTile: jsAdapter.TILE };
   });

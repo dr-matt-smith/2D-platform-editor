@@ -12,7 +12,7 @@ test('v27 M4: graph node count = walkable-cells × 9 (vx × xOffset variants)', 
   await page.waitForSelector('#preview');
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { buildNavGraph } = await import('/packages/agent/src/grid.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     // Same level as the v26 spec: 3 walkable middle cells.
     const parsed = parse('#####\n#P.E#\n#####');
@@ -31,7 +31,7 @@ test('v27 M4: xOffsetBucketOf splits a cell into L/C/R thirds', async ({ page })
   await page.goto('/');
   await page.waitForSelector('#preview');
   const r = await page.evaluate(async () => {
-    const { xOffsetBucketOf, X_OFFSET_BUCKETS } = await import('/src/agent/grid.js');
+    const { xOffsetBucketOf, X_OFFSET_BUCKETS } = await import('/packages/agent/src/grid.js');
     const TILE = 20;
     return {
       leftEdge: xOffsetBucketOf(0),
@@ -65,7 +65,7 @@ test('v27 M4: stateKey is 4-part; parseStateKey round-trips', async ({ page }) =
   await page.goto('/');
   await page.waitForSelector('#preview');
   const r = await page.evaluate(async () => {
-    const { stateKey, parseStateKey } = await import('/src/agent/grid.js');
+    const { stateKey, parseStateKey } = await import('/packages/agent/src/grid.js');
     return {
       defaultKey: stateKey(5, 7),
       explicit: stateKey(5, 7, -1, 'R'),
@@ -83,7 +83,7 @@ test('v27 M4: bucketCentreX picks bucket representatives within their thirds', a
   await page.goto('/');
   await page.waitForSelector('#preview');
   const r = await page.evaluate(async () => {
-    const { bucketCentreX, xOffsetBucketOf } = await import('/src/agent/grid.js');
+    const { bucketCentreX, xOffsetBucketOf } = await import('/packages/agent/src/grid.js');
     const c = 5;
     const lx = bucketCentreX(c, 'L');
     const cx = bucketCentreX(c, 'C');

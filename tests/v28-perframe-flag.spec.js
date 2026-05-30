@@ -15,8 +15,8 @@ for (const file of LEVELS) {
       const r = await fetch('data/levels/' + f);
       const text = await r.text();
       const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-      const { plan } = await import('/src/agent/planner.js');
-      const { simulate } = await import('/src/agent/sim.js');
+      const { plan } = await import('/packages/agent/src/planner.js');
+      const { simulate } = await import('/packages/agent/src/sim.js');
       const { jsAdapter } = await import('/src/agent-adapter.js');
       const parsed = parse(text);
       const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter, planner: 'perframe' });

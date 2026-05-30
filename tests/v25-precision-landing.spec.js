@@ -11,7 +11,7 @@ test('v25 M4: simAction returns trajectory when collectTrajectory: true', async 
   await page.waitForSelector('#preview');
   const probe = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { makeSimContext, simulateActionInContext } = await import('/src/agent/simAction.js');
+    const { makeSimContext, simulateActionInContext } = await import('/packages/agent/src/simAction.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('# size: 10x4\n##########\n#P......E#\n##########');
     const ctx = makeSimContext(jsAdapter, parsed, DEFAULT_LEGEND, null);
@@ -48,7 +48,7 @@ test('v25 M4: grid emits precision edges that pass ±2 px target centres', async
   // it directly, but the precision rule should.
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { buildNavGraph } = await import('/packages/agent/src/grid.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     // Level: P on row 5 col 1. Pickup `o` at row 3 col 7 with
     // walls around forcing precision landing.

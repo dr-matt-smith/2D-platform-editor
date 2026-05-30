@@ -11,7 +11,7 @@ test('v28 M2: expandNode from spawn on flat level yields walks + win-edges', asy
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { expandNode, makeContextCache } = await import('/packages/agent/src/perframe.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     // Wide enough for walk_left + walk_right to both find a walkable
     // destination cell — P at col 2 so col 1 (.) is open to the left.
@@ -47,7 +47,7 @@ test('v28 M2: expandNode results are deterministic across calls', async ({ page 
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { expandNode, makeContextCache } = await import('/packages/agent/src/perframe.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
     const cache = makeContextCache();
@@ -76,7 +76,7 @@ test('v28 M2: edge.toState is the exact endState (no bucketing)', async ({ page 
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { expandNode, makeContextCache } = await import('/packages/agent/src/perframe.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     // Wider level so the player has room to accelerate.
     const parsed = parse('##########\n#P......E#\n##########');
@@ -109,7 +109,7 @@ test('v28 M2: makeContextCache caches across multiple expand calls', async ({ pa
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { expandNode, makeContextCache } = await import('/packages/agent/src/perframe.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
     const cache = makeContextCache();

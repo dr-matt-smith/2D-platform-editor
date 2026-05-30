@@ -30,7 +30,7 @@ test('v23 M6: agent graph builds with 46 candidates per grounded cell', async ({
   await page.goto('/');
   await page.waitForSelector('#preview');
   const count = await page.evaluate(async () => {
-    const { enumerateActions } = await import('/src/agent/actions.js');
+    const { enumerateActions } = await import('/packages/agent/src/actions.js');
     return enumerateActions().length;
   });
   expect(count).toBe(46);
@@ -40,7 +40,7 @@ test('v23 M6: drop_release variants present in enumeration', async ({ page }) =>
   await page.goto('/');
   await page.waitForSelector('#preview');
   const detail = await page.evaluate(async () => {
-    const { enumerateActions } = await import('/src/agent/actions.js');
+    const { enumerateActions } = await import('/packages/agent/src/actions.js');
     const a = enumerateActions();
     return {
       dropRelease: a.filter((x) => x.kind === 'drop_release').length,

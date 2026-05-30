@@ -10,7 +10,7 @@ test('v28 M4: default backend is now perframe', async ({ page }) => {
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { plan } = await import('/src/agent/planner.js');
+    const { plan } = await import('/packages/agent/src/planner.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
     const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
@@ -26,7 +26,7 @@ test('v28 M4: opts.planner=bucket still callable for diagnostics', async ({ page
   await page.waitForSelector('#preview');
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { plan } = await import('/src/agent/planner.js');
+    const { plan } = await import('/packages/agent/src/planner.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
     const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter, planner: 'bucket' });

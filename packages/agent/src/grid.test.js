@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse, DEFAULT_LEGEND } from '../level.js';
-import { jsAdapter } from '../agent-adapter.js';
+import { parse, DEFAULT_LEGEND } from '../../../src/level.js';
+import { jsAdapter } from '../../../src/agent-adapter.js';
 import {
   buildNavGraph,
   JUMP_MAX_HORIZ_CELLS,

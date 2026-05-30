@@ -17,10 +17,11 @@ import { draw, drawHud } from './renderer.js';
 import { loadTileset } from './tileset.js';
 import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm, openPlaySettings, openPasteLoadDialog } from './loaderDialog.js';
-import { testLevel } from './agent/index.js';
-import { renderSolutionOverlay, renderAllSolutionsOverlay } from './agent/overlay.js';
-// v29 M3: the agent no longer imports src/play/* directly. The editor
-// wires in the JS physics adapter here, once, at the agent boundary.
+// v29 M5: the agent now lives in the @2d-platform/agent workspace
+// package (packages/agent/). overlay renderers + testLevel come from
+// its public index. The editor wires in the JS physics adapter here,
+// once, at the agent boundary — the agent never imports src/play/*.
+import { testLevel, renderSolutionOverlay, renderAllSolutionsOverlay } from '@2d-platform/agent';
 import { jsAdapter } from './agent-adapter.js';
 import { openAgentDialog } from './agentDialog.js';
 import { downloadText } from './download.js';

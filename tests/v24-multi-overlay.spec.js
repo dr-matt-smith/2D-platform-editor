@@ -16,7 +16,7 @@ test('v24 M3: HUE_PALETTE has 5 distinct hues', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('#preview');
   const palette = await page.evaluate(async () => {
-    const m = await import('/src/agent/overlay.js');
+    const m = await import('/packages/agent/src/overlay.js');
     return m.HUE_PALETTE;
   });
   expect(palette).toHaveLength(5);
@@ -31,7 +31,7 @@ test('v24 M3: renderAllSolutionsOverlay paints non-focused dimmed + focused soli
   await page.goto('/');
   await page.waitForSelector('#preview');
   const result = await page.evaluate(async () => {
-    const { renderAllSolutionsOverlay } = await import('/src/agent/overlay.js');
+    const { renderAllSolutionsOverlay } = await import('/packages/agent/src/overlay.js');
     const canvas = document.createElement('canvas');
     canvas.width = 240; canvas.height = 80;
     const ctx = canvas.getContext('2d');

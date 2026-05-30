@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse, DEFAULT_LEGEND } from '../level.js';
-import { ScriptedInput } from '../play/scriptedInput.js';
+import { parse, DEFAULT_LEGEND } from '../../../src/level.js';
+import { ScriptedInput } from '../../../src/play/scriptedInput.js';
 import { simulate } from './sim.js';
-import { jsAdapter } from '../agent-adapter.js';
+import { jsAdapter } from '../../../src/agent-adapter.js';
 
 // --- ScriptedInput unit cases (the simulator's input source) -------
 

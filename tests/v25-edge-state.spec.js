@@ -11,7 +11,7 @@ test('v25 M1: simAction returns endState matching endPos/endVel', async ({ page 
   await page.waitForSelector('#preview');
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { makeSimContext, simulateActionInContext } = await import('/src/agent/simAction.js');
+    const { makeSimContext, simulateActionInContext } = await import('/packages/agent/src/simAction.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('# size: 6x4\n######\n#P..E#\n######');
     const ctx = makeSimContext(jsAdapter, parsed, DEFAULT_LEGEND, null);
@@ -40,7 +40,7 @@ test('v25 M1: buildNavGraph edges carry endState', async ({ page }) => {
   await page.waitForSelector('#preview');
   const inspect = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
-    const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { buildNavGraph } = await import('/packages/agent/src/grid.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('# size: 6x4\n######\n#P..E#\n######');
     const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
