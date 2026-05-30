@@ -1,8 +1,12 @@
 # Version 29 — Implementation Plan
 
-Status: **Proposed (2026-05-25)** · Design:
+Status: **Delivered (2026-05-30)** · Design:
 [../1_design/version29_design.md](../1_design/version29_design.md)
-· Transcript: _to follow at M6_
+· Transcript:
+[../3_transcripts/version29_build.md](../3_transcripts/version29_build.md)
+
+Shipped commits: M1 `d595eec` · M2 `6ceb9af` · M3 `c9ff625` ·
+M4 `5fecd4e` · M5 `ad1af49` · M6 _this commit_.
 
 Six path-scoped commits. The refactor inverts control: the agent
 stops importing from `src/play/*` directly and instead receives a

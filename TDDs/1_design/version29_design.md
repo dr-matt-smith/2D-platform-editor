@@ -1,9 +1,11 @@
 # 2D Level Designer — Version 29 Design Document
 
-Status: Proposed · Date: 2026-05-25 · Builds on:
+Status: **Delivered (2026-05-30)** · Date: 2026-05-25 · Builds on:
 [version28_design.md](version28_design.md) (per-frame trajectory planner;
-below_ground.txt solves) · Implementation: *to follow once this scope
-is approved*.
+below_ground.txt solves) · Implementation:
+[../2_implementation/version29_implementation.md](../2_implementation/version29_implementation.md)
+· Transcript:
+[../3_transcripts/version29_build.md](../3_transcripts/version29_build.md).
 
 ## 1. Purpose
 
