@@ -70,10 +70,6 @@ import {
   findOverlappingExit,
   cellKey,
 } from './grid.js';
-// TEMPORARY (removed in M3): pin the JS adapter so the per-frame
-// planner's getContext call keeps working until M3 threads adapter
-// through planPerFrame.
-import { jsAdapter as _adapter } from '../agent-adapter.js';
 
 /**
  * Build a fresh sim-context cache. Pass this to expandNode across
@@ -85,10 +81,10 @@ export function makeContextCache() {
   return new Map();
 }
 
-function getContext(cache, parsed, legend, tileset) {
+function getContext(cache, adapter, parsed, legend, tileset) {
   let ctx = cache.get(parsed);
   if (!ctx) {
-    ctx = makeSimContext(_adapter, parsed, legend, tileset);
+    ctx = makeSimContext(adapter, parsed, legend, tileset);
     cache.set(parsed, ctx);
   }
   return ctx;
@@ -112,12 +108,13 @@ function getContext(cache, parsed, legend, tileset) {
  * @param {object|null} tileset    active tileset object (or null)
  * @param {{x,y,vx,vy,onGround}} state  exact start state
  * @param {object} [opts]
+ * @param {object} [opts.adapter]                  physics adapter (v29 M3)
  * @param {Array<{r,c}>} [opts.exitCells]          for win-edge detection
  * @param {Array<{r,c}>} [opts.precisionTargets]   for precision-landing rule
  * @returns Array<edge>
  */
 export function expandNode(cache, parsed, legend, tileset, state, opts = {}) {
-  const ctx = getContext(cache, parsed, legend, tileset);
+  const ctx = getContext(cache, opts.adapter, parsed, legend, tileset);
   const exitCells = opts.exitCells ?? [];
   const precisionTargets = opts.precisionTargets ?? [];
   const wantsTrajectory = precisionTargets.length > 0;
@@ -266,6 +263,7 @@ const DEFAULT_NODE_CAP = 100_000;
  * @param {{x,y,vx,vy,onGround}} fromState
  * @param {string} goalCellKey       "r,c"
  * @param {object} opts
+ * @param {object} [opts.adapter]    physics adapter (v29 M3)
  * @param {Array<{r,c}>} [opts.exitCells]
  * @param {Array<{r,c}>} [opts.precisionTargets]
  * @param {Map} [opts.cache]         from makeContextCache()
@@ -274,6 +272,7 @@ const DEFAULT_NODE_CAP = 100_000;
  */
 export function aStarPerFrame(parsed, legend, tileset, fromState, goalCellKey, opts = {}) {
   const cache = opts.cache ?? makeContextCache();
+  const adapter = opts.adapter;
   const exitCells = opts.exitCells ?? [];
   const precisionTargets = opts.precisionTargets ?? [];
   const tol = opts.tol ?? DEFAULT_CLUSTER_TOL;
@@ -320,7 +319,7 @@ export function aStarPerFrame(parsed, legend, tileset, fromState, goalCellKey, o
 
     // Expand.
     const edges = expandNode(cache, parsed, legend, tileset, curNode.state, {
-      exitCells, precisionTargets,
+      adapter, exitCells, precisionTargets,
     });
     // Deterministic order so tie-breaking is stable.
     edges.sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
@@ -417,6 +416,7 @@ export function planPerFrame(parsed, legend, tileset, opts = {}) {
   for (const goal of goals) {
     const [gr, gc] = goal.split(',').map(Number);
     const path = aStarPerFrame(parsed, legend, tileset, ctx.state, goal, {
+      adapter: opts.adapter,
       cache, exitCells, precisionTargets: ctx.precisionTargets,
       tol: opts.tol, nodeCap: opts.nodeCap,
     });

@@ -41,8 +41,9 @@ test('v25 M1: buildNavGraph edges carry endState', async ({ page }) => {
   const inspect = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('# size: 6x4\n######\n#P..E#\n######');
-    const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+    const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
     // v26 M4 + v27 M4: graph keys are stateKey (cell × vxBucket ×
     // xOffsetBucket). Spawn-grounded default is bucket (0, 'L').
     const startK = g.start ? `${g.start.r},${g.start.c},0,L` : null;

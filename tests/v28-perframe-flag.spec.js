@@ -19,7 +19,7 @@ for (const file of LEVELS) {
       const { simulate } = await import('/src/agent/sim.js');
       const { jsAdapter } = await import('/src/agent-adapter.js');
       const parsed = parse(text);
-      const p = plan(parsed, DEFAULT_LEGEND, { planner: 'perframe' });
+      const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter, planner: 'perframe' });
       const sim = simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording: p.recording, maxFrames: 2400 });
       return { outcome: sim.outcome, score: sim.score, traceLen: p.trace.length };
     }, file);

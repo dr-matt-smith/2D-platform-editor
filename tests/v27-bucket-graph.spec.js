@@ -13,9 +13,10 @@ test('v27 M4: graph node count = walkable-cells × 9 (vx × xOffset variants)', 
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     // Same level as the v26 spec: 3 walkable middle cells.
     const parsed = parse('#####\n#P.E#\n#####');
-    const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+    const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
     return { nodeCount: g.nodes.size, edgeKeys: [...g.edges.keys()] };
   });
   // 3 walkable cells × 9 (3 vxBuckets × 3 xOffsetBuckets) = 27 nodes.

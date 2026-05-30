@@ -13,11 +13,7 @@
 //     surface.
 
 import { simulate } from './sim.js';
-import { plan, replan } from './planner.js';
-// TEMPORARY (removed in M3): pin the JS adapter so the runner's
-// simulate() call keeps working until M3 threads adapter through
-// testLevel.
-import { jsAdapter as _adapter } from '../agent-adapter.js';
+import { plan, replan, assertAdapter } from './planner.js';
 
 // v26 M4: bumped from 1200 → 2400 (20s → 40s sim time). The
 // sub-pixel state-space A* graph has 3× more nodes; plans that
@@ -36,6 +32,10 @@ const MAX_SOLUTIONS = 5;
  * >
  */
 export async function testLevel(parsed, legend, tileset, opts = {}) {
+  // v29 M3: the physics adapter is required and threaded into every
+  // plan / replan / simulate call below.
+  assertAdapter(opts.adapter, 'testLevel()');
+  const adapter = opts.adapter;
   const maxRuntimeMs = opts.maxRuntimeMs ?? 5000;
   const onProgress = opts.onProgress ?? (() => {});
   const signal = opts.signal;
@@ -52,7 +52,7 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
   }
 
   // Initial plan.
-  let currentPlan = plan(parsed, legend, { tileset });
+  let currentPlan = plan(parsed, legend, { adapter, tileset });
   if (!(await yieldTick())) {
     return {
       ok: false,
@@ -82,7 +82,7 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
   while (attempt < replanBudget && solutions.length < MAX_SOLUTIONS) {
     attempt++;
     const sim = simulate({
-      adapter: _adapter,
+      adapter,
       parsed,
       legend,
       tileset,
@@ -119,7 +119,7 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
       const blockEdge = pickEdgeToBlock(currentPlan, blockedAcrossSolutions);
       if (!blockEdge) break;
       blockedAcrossSolutions.add(blockEdge);
-      const alt = plan(parsed, legend, { tileset, blocked: blockedAcrossSolutions });
+      const alt = plan(parsed, legend, { adapter, tileset, blocked: blockedAcrossSolutions });
       if (!alt || alt.trace.length === 0) break;
       if (sameRecording(currentPlan, alt)) break;
       currentPlan = alt;
@@ -127,7 +127,7 @@ export async function testLevel(parsed, legend, tileset, opts = {}) {
     }
     if (!(await yieldTick())) break;
 
-    const next = replan(currentPlan, sim, parsed, legend, { tileset });
+    const next = replan(currentPlan, sim, parsed, legend, { adapter, tileset });
     if (!next || next.trace.length === 0 || sameRecording(currentPlan, next)) {
       break;
     }

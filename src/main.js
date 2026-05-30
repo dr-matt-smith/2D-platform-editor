@@ -19,6 +19,9 @@ import { createLevels } from './levels.js';
 import { openLevelDialog, openConfirm, openPlaySettings, openPasteLoadDialog } from './loaderDialog.js';
 import { testLevel } from './agent/index.js';
 import { renderSolutionOverlay, renderAllSolutionsOverlay } from './agent/overlay.js';
+// v29 M3: the agent no longer imports src/play/* directly. The editor
+// wires in the JS physics adapter here, once, at the agent boundary.
+import { jsAdapter } from './agent-adapter.js';
 import { openAgentDialog } from './agentDialog.js';
 import { downloadText } from './download.js';
 import { createHistory } from './history.js';
@@ -1119,7 +1122,7 @@ document.querySelector('#testBtn').addEventListener('click', () => {
   requestAnimationFrame(() => applyFitToScreen());
   openAgentDialog({
     runAgent: (maxRuntimeMs, onProgress, signal) =>
-      testLevel(parsed, legend, tileset, { maxRuntimeMs, onProgress, signal }),
+      testLevel(parsed, legend, tileset, { adapter: jsAdapter, maxRuntimeMs, onProgress, signal }),
     onResult: (result /* , budgetMs */) => {
       // Paint the path overlay on success; clear on failure (a
       // previous success may have left the overlay populated and the

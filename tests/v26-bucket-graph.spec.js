@@ -14,8 +14,9 @@ test('v26 M4 + v27 M4: graph node count = walkable-cells × 9 (vx × xOffset var
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
-    const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+    const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
     return { nodeCount: g.nodes.size, edgeKeys: [...g.edges.keys()] };
   });
   // 3 walkable cells × 9 (vx × xOffset) buckets = 27 nodes.
@@ -63,9 +64,10 @@ test('v26 M4: A* finds a path through state-space nodes', async ({ page }) => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { aStar } = await import('/src/agent/planner.js');
     const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     // A wider level so the path has multiple edges.
     const parsed = parse('############\n#P........E#\n############');
-    const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+    const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
     // v26: A* `from` is stateKey, `to` is cellKey. Match any
     // vxBucket variant of the exit cell. v27 M4: stateKey now 4-part
     // (cell × vxBucket × xOffsetBucket).

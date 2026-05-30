@@ -11,8 +11,9 @@ test('v28 M4: default backend is now perframe', async ({ page }) => {
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { plan } = await import('/src/agent/planner.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
-    const p = plan(parsed, DEFAULT_LEGEND);
+    const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
     // Perframe trace entries have edgeId starting with 'perframe'.
     return { firstEdgeId: p.trace[0]?.edgeId ?? null };
   });
@@ -26,8 +27,9 @@ test('v28 M4: opts.planner=bucket still callable for diagnostics', async ({ page
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { plan } = await import('/src/agent/planner.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
-    const p = plan(parsed, DEFAULT_LEGEND, { planner: 'bucket' });
+    const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter, planner: 'bucket' });
     return { firstEdgeId: p.trace[0]?.edgeId ?? null };
   });
   expect(out.firstEdgeId).toBeTruthy();

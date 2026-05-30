@@ -44,7 +44,7 @@ test('v25 M3: below_ground.txt — progress past frame 49 + score > 0', async ({
     const { simulate } = await import('/src/agent/sim.js');
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse(document.querySelector('#src').value);
-    const p = plan(parsed, DEFAULT_LEGEND, {});
+    const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
     return simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording: p.recording, maxFrames: 1200 });
   });
   // v24 M5: died at frame 49 with score 0.

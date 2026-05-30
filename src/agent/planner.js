@@ -17,10 +17,27 @@ import { buildNavGraph, cellKey, stateKey, vxBucketOf } from './grid.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
 import { planPerFrame } from './perframe.js';
 import { TILE } from '../play/constants.js';
-// TEMPORARY (removed in M3): pin the JS adapter so the bucket
-// planner's makeSimContext call keeps working until M3 threads
-// adapter through the public plan() entry.
-import { jsAdapter as _adapter } from '../agent-adapter.js';
+
+/**
+ * v29 M3: physics-adapter contract check. The agent is engine-agnostic
+ * except for one hard dependency — the tile size it discretises the
+ * level with MUST match the engine the adapter wraps. A misconfigured
+ * adapter (e.g. a Python adapter that shipped the editor TILE=24
+ * instead of the engine TILE=20) would silently produce edges that
+ * the live engine never reproduces. Throw at the public boundary so
+ * the failure is loud and immediate.
+ */
+export function assertAdapter(adapter, where) {
+  if (!adapter) {
+    throw new Error(`${where}: opts.adapter is required (v29). Pass { adapter: jsAdapter, ... }.`);
+  }
+  if (adapter.TILE !== TILE) {
+    throw new Error(
+      `${where}: adapter.TILE (${adapter.TILE}) does not match the agent's TILE (${TILE}). ` +
+      `The adapter must wrap the same engine physics the agent was built against.`,
+    );
+  }
+}
 
 // ---- A* over the nav-graph ---------------------------------------------
 
@@ -461,6 +478,9 @@ function emitLegInputs(steps, subgoalName, ctx) {
  * case.
  */
 export function plan(parsed, legend, opts = {}) {
+  // v29 M3: the physics adapter is required. Verify TILE matches
+  // before any simulation happens.
+  assertAdapter(opts.adapter, 'plan()');
   const blocked = opts.blocked instanceof Set ? opts.blocked : new Set();
   // v21: tileset is required by the action-graph builder (simAction
   // mints a PlaytestScene which consumes it). Callers pass it via
@@ -476,7 +496,7 @@ export function plan(parsed, legend, opts = {}) {
   if (backend === 'perframe') {
     return planPerFrame(parsed, legend, tileset, opts);
   }
-  const graph = buildNavGraph(parsed, legend, tileset);
+  const graph = buildNavGraph(opts.adapter, parsed, legend, tileset);
   if (!graph.start || graph.exitCells.length === 0) {
     return emptyPlan(graph);
   }
@@ -498,7 +518,7 @@ export function plan(parsed, legend, opts = {}) {
   // identical when simContext is null).
   let simContext = null;
   try {
-    simContext = makeSimContext(_adapter, parsed, legend, tileset);
+    simContext = makeSimContext(opts.adapter, parsed, legend, tileset);
   } catch {
     simContext = null;
   }

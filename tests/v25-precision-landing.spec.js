@@ -49,6 +49,7 @@ test('v25 M4: grid emits precision edges that pass ±2 px target centres', async
   const data = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { buildNavGraph } = await import('/src/agent/grid.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     // Level: P on row 5 col 1. Pickup `o` at row 3 col 7 with
     // walls around forcing precision landing.
     const parsed = parse([
@@ -61,7 +62,7 @@ test('v25 M4: grid emits precision edges that pass ±2 px target centres', async
       '#.P......E.#',
       '############',
     ].join('\n'));
-    const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+    const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
     // Count edges flagged precision (the rule fired).
     let totalPrecisionEdges = 0;
     for (const edges of g.edges.values()) {

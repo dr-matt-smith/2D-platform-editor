@@ -12,13 +12,14 @@ test('v28 M2: expandNode from spawn on flat level yields walks + win-edges', asy
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     // Wide enough for walk_left + walk_right to both find a walkable
     // destination cell — P at col 2 so col 1 (.) is open to the left.
     const parsed = parse('######\n#.P.E#\n######');
     const cache = makeContextCache();
     const TILE = 20;
     const state = { x: 2 * TILE, y: 1 * TILE, vx: 0, vy: 0, onGround: true };
-    const edges = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, {
+    const edges = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, { adapter: jsAdapter,
       exitCells: [{ r: 1, c: 4 }],
     });
     return {
@@ -47,13 +48,14 @@ test('v28 M2: expandNode results are deterministic across calls', async ({ page 
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
     const cache = makeContextCache();
     const state = { x: 20, y: 20, vx: 0, vy: 0, onGround: true };
-    const e1 = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, {
+    const e1 = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, { adapter: jsAdapter,
       exitCells: [{ r: 1, c: 3 }],
     });
-    const e2 = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, {
+    const e2 = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, { adapter: jsAdapter,
       exitCells: [{ r: 1, c: 3 }],
     });
     // Compare a few summary signals — endState scalars should be
@@ -75,12 +77,13 @@ test('v28 M2: edge.toState is the exact endState (no bucketing)', async ({ page 
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     // Wider level so the player has room to accelerate.
     const parsed = parse('##########\n#P......E#\n##########');
     const cache = makeContextCache();
     const TILE = 20;
     const state = { x: TILE, y: TILE, vx: 0, vy: 0, onGround: true };
-    const edges = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, {
+    const edges = expandNode(cache, parsed, DEFAULT_LEGEND, null, state, { adapter: jsAdapter,
       exitCells: [{ r: 1, c: 8 }],
     });
     // Find a walk_right edge; its endState.x should be > start.x and
@@ -107,12 +110,13 @@ test('v28 M2: makeContextCache caches across multiple expand calls', async ({ pa
   const out = await page.evaluate(async () => {
     const { parse, DEFAULT_LEGEND } = await import('/src/level.js');
     const { expandNode, makeContextCache } = await import('/src/agent/perframe.js');
+    const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse('#####\n#P.E#\n#####');
     const cache = makeContextCache();
     expandNode(cache, parsed, DEFAULT_LEGEND, null,
-      { x: 20, y: 20, vx: 0, vy: 0, onGround: true });
+      { x: 20, y: 20, vx: 0, vy: 0, onGround: true }, { adapter: jsAdapter });
     expandNode(cache, parsed, DEFAULT_LEGEND, null,
-      { x: 40, y: 20, vx: 0, vy: 0, onGround: true });
+      { x: 40, y: 20, vx: 0, vy: 0, onGround: true }, { adapter: jsAdapter });
     return { entries: cache.size, hasParsed: cache.has(parsed) };
   });
   expect(out.entries).toBe(1);

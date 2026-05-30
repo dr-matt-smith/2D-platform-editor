@@ -2,10 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse, DEFAULT_LEGEND } from '../level.js';
 import { testLevel } from './runner.js';
+import { jsAdapter } from '../agent-adapter.js';
 
 test('runner: trivial walk-to-exit succeeds in 1 attempt', async () => {
   const parsed = parse('#####\n#P.E#\n#####');
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null);
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter });
   assert.equal(r.ok, true);
   assert.equal(r.solution.stats.attempts, 1);
   assert.ok(r.solution.stats.steps > 0);
@@ -13,13 +14,13 @@ test('runner: trivial walk-to-exit succeeds in 1 attempt', async () => {
 
 test('runner: # pickup-required: 0 → exit-direct level wins', async () => {
   const parsed = parse('# pickup-required: 0\n#######\n#P.o.E#\n#######');
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null);
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter });
   assert.equal(r.ok, true);
 });
 
 test('runner: pickup-required all → solution collects coin first', async () => {
   const parsed = parse('#######\n#P.o.E#\n#######');
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null);
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter });
   assert.equal(r.ok, true);
   assert.equal(r.solution.stats.score, 1);
 });
@@ -34,7 +35,7 @@ test('runner: unreachable exit → ok: false, attempts === 0', async () => {
     '............',
   ].join('\n');
   const parsed = parse(text);
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null);
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter });
   assert.equal(r.ok, false);
   assert.equal(r.attempts, 0);
   assert.ok(r.lastPlan.unreachable.some((u) => u.kind === 'exit'));
@@ -42,7 +43,7 @@ test('runner: unreachable exit → ok: false, attempts === 0', async () => {
 
 test('runner: solution carries enough info for the dialog UI', async () => {
   const parsed = parse('#####\n#P.E#\n#####');
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null);
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter });
   assert.ok(r.solution.plan);
   assert.ok(Array.isArray(r.solution.plan.trace));
   assert.ok(Array.isArray(r.solution.recording));
@@ -53,7 +54,7 @@ test('runner: solution carries enough info for the dialog UI', async () => {
 test('runner: onProgress callback fires at least once', async () => {
   const parsed = parse('#####\n#P.E#\n#####');
   const progressCalls = [];
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null, {
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter,
     onProgress: (elapsed, total) => progressCalls.push({ elapsed, total }),
   });
   assert.equal(r.ok, true);
@@ -64,7 +65,7 @@ test('runner: onProgress callback fires at least once', async () => {
 test('runner: maxRuntimeMs option overrides the default budget', async () => {
   const parsed = parse('#####\n#P.E#\n#####');
   const progressCalls = [];
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null, {
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter,
     maxRuntimeMs: 10000,
     onProgress: (elapsed, total) => progressCalls.push({ elapsed, total }),
   });
@@ -88,6 +89,6 @@ test('runner: signal.abort() interrupts the search', async () => {
   const parsed = parse(text);
   const ac = new AbortController();
   ac.abort();
-  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { signal: ac.signal });
+  const r = await testLevel(parsed, DEFAULT_LEGEND, null, { adapter: jsAdapter, signal: ac.signal });
   assert.equal(r.ok, false);
 });

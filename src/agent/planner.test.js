@@ -3,12 +3,29 @@ import assert from 'node:assert/strict';
 import { parse, DEFAULT_LEGEND } from '../level.js';
 import { plan, aStar } from './planner.js';
 import { buildNavGraph } from './grid.js';
+import { jsAdapter } from '../agent-adapter.js';
+
+// --- v29 M3: physics-adapter contract ------------------------------
+
+test('v29: plan() throws when opts.adapter is missing', () => {
+  const parsed = parse('#####\n#P.E#\n#####');
+  assert.throws(() => plan(parsed, DEFAULT_LEGEND), /opts\.adapter is required/);
+  assert.throws(() => plan(parsed, DEFAULT_LEGEND, {}), /opts\.adapter is required/);
+});
+
+test('v29: plan() throws when adapter.TILE mismatches the agent TILE', () => {
+  const parsed = parse('#####\n#P.E#\n#####');
+  // A Python (or misconfigured) adapter that shipped the editor
+  // TILE=24 instead of the engine TILE=20 must be rejected loudly.
+  const badAdapter = { ...jsAdapter, TILE: 24 };
+  assert.throws(() => plan(parsed, DEFAULT_LEGEND, { adapter: badAdapter }), /does not match/);
+});
 
 // --- A* basics -----------------------------------------------------
 
 test('aStar: finds a path on a flat level', () => {
   const parsed = parse('#####\n#P.E#\n#####');
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   // v26 M4: A* `from` is a stateKey (cell × vxBucket); `to` stays a
   // cellKey and A* matches any vxBucket variant on arrival.
   const path = aStar(g, '1,1,0,L', '1,3');
@@ -33,14 +50,14 @@ test('aStar: returns null when destination unreachable', () => {
     '............',
   ].join('\n');
   const parsed = parse(text);
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   const path = aStar(g, '1,1,0,L', '1,10');
   assert.equal(path, null, `expected null path, got ${path && path.length} edges`);
 });
 
 test('aStar: same start + end returns empty path', () => {
   const parsed = parse('#####\n#P.E#\n#####');
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   // v26 M4: `from` is a stateKey; `to` is a cellKey. Matching cells
   // → empty path.
   const path = aStar(g, '1,1,0,L', '1,1');
@@ -51,7 +68,7 @@ test('aStar: same start + end returns empty path', () => {
 
 test('plan: trivial flat level → non-empty trace heading toward the exit', () => {
   const parsed = parse('#####\n#P.E#\n#####');
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   assert.ok(p.trace.length > 0, 'expected trace');
   // v21 may pick walk/drop/jump-with-release for the exit-touch; all
   // valid. The trace's why: strings reference the exit goal.
@@ -69,7 +86,7 @@ test('plan: trivial flat level → non-empty trace heading toward the exit', () 
 test('plan: level with one pickup, default pickup-required (all) → visits pickup before exit', () => {
   // Floor row 2; row 1 has #P.o.E# (pickup col 3, exit col 5).
   const parsed = parse('#######\n#P.o.E#\n#######');
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   // First action should head toward the pickup (col 3), THEN the exit.
   const pickupEntries = p.trace.filter((t) => t.why.includes('pickup'));
   const exitEntries = p.trace.filter((t) => t.why.includes('exit'));
@@ -86,7 +103,7 @@ test('plan: level with one pickup, default pickup-required (all) → visits pick
 
 test('plan: # pickup-required: 0 → trace heads straight for the exit', () => {
   const parsed = parse('# pickup-required: 0\n#######\n#P.o.E#\n#######');
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   // No "pickup" mentions in any why string.
   const pickupEntries = p.trace.filter((t) => t.why.includes('pickup'));
   assert.equal(pickupEntries.length, 0);
@@ -95,7 +112,7 @@ test('plan: # pickup-required: 0 → trace heads straight for the exit', () => {
 test('plan: # pickup-required: 1 of 2 → trace visits exactly 1 (nearest)', () => {
   // Two pickups, one close (col 2) and one far (col 6).
   const parsed = parse('# pickup-required: 1\n#########\n#Po..o.E#\n#########');
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   const pickupVisits = new Set(
     p.trace.filter((t) => t.why.includes('pickup')).map((t) => t.why),
   );
@@ -114,7 +131,7 @@ test('plan: unreachable exit → empty trace + ok: false signal via unreachable 
     '............',
   ].join('\n');
   const parsed = parse(text);
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   // No trace, exit listed as unreachable.
   assert.equal(p.trace.length, 0);
   assert.ok(p.unreachable.some((u) => u.kind === 'exit'), `unreachable: ${JSON.stringify(p.unreachable)}`);
@@ -122,7 +139,7 @@ test('plan: unreachable exit → empty trace + ok: false signal via unreachable 
 
 test('plan: trace entries have frameRange + edgeId for replan use', () => {
   const parsed = parse('#####\n#P.E#\n#####');
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   for (const entry of p.trace) {
     assert.ok(entry.frameRange);
     assert.equal(entry.frameRange.length, 2);
@@ -133,7 +150,7 @@ test('plan: trace entries have frameRange + edgeId for replan use', () => {
 
 test('plan: stats reflect the trace', () => {
   const parsed = parse('#####\n#P.E#\n#####');
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   assert.equal(p.stats.steps, p.trace.length);
   assert.equal(p.stats.walks, p.trace.filter((t) => t.kind === 'walk').length);
   assert.equal(p.stats.jumps, p.trace.filter((t) => t.kind === 'jump').length);
@@ -149,7 +166,7 @@ test('v22: 2-pickup level — order chosen minimises total chain cost', () => {
   // regress 2-pickup behaviour.
   const text = '#########\n#o.P...o#\n#########';
   const parsed = parse(text);
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   // 2 pickups + exit (none here, but plan should still produce a
   // pickup-ordering attempt; with no exit the trace is short).
   // Actually no exit means resolveGoals returns []. Let's add an E:
@@ -162,7 +179,7 @@ test('v22: 4-pickup row — TSP-optimal picks the end-to-end order', () => {
   // sensible result.
   const text = '##########\n#P.oooo.E#\n##########';
   const parsed = parse(text);
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   // 4 pickup entries should appear in left-to-right order.
   const pickupVisits = p.trace.filter((t) => t.why.includes('pickup')).map((t) => t.why);
   // Pickups should be visited in some order; test that the first
@@ -185,7 +202,7 @@ test('v22: planner internals — combinations + permutations are exhaustive', ()
   // if the chain is cheaper.
   const text = '############\n#o..P.o..o.#\n############';
   const parsed = parse(text);
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   // Plan should visit all 3 pickups + exit (well, no E here — but
   // the trace should have the pickup goal entries).
   // Just confirm the plan is non-empty and trace covers pickups.
@@ -200,7 +217,7 @@ test('v22: pickup-required K of M — only top-K pickups visited', () => {
   // 3 pickups, only 1 required. Plan visits exactly 1.
   const text = '# pickup-required: 1\n##########\n#Po.o.o.E#\n##########';
   const parsed = parse(text);
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   const pickupVisits = new Set(
     p.trace.filter((t) => t.why.includes('pickup')).map((t) => t.why),
   );
@@ -218,7 +235,7 @@ test('plan: jump trace entry produces a space tap in the recording', () => {
     '#########',
   ].join('\n');
   const parsed = parse(text);
-  const p = plan(parsed, DEFAULT_LEGEND);
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   const hasJump = p.trace.some((t) => t.kind === 'jump');
   if (hasJump) {
     const spaceEvents = p.recording.filter((e) => e.key === 'space');

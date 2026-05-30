@@ -33,7 +33,7 @@ test('v28 M5: below_ground.txt solves end-to-end via plan() + simulate()', async
     const { jsAdapter } = await import('/src/agent-adapter.js');
     const parsed = parse(document.querySelector('#src').value);
     const t0 = performance.now();
-    const p = plan(parsed, DEFAULT_LEGEND, {});
+    const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
     const planMs = performance.now() - t0;
     const s = simulate({ adapter: jsAdapter, parsed, legend: DEFAULT_LEGEND, recording: p.recording, maxFrames: 2400 });
     return { outcome: s.outcome, score: s.score, planMs };

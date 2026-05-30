@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parse, DEFAULT_LEGEND } from '../level.js';
+import { jsAdapter } from '../agent-adapter.js';
 import {
   buildNavGraph,
   JUMP_MAX_HORIZ_CELLS,
@@ -44,7 +45,7 @@ test('buildNavGraph: locates P spawn (settled) + E + pickups', () => {
   // P high above the floor; spawn settles to (3, 1).
   const text = '#####\n#P..#\n#...#\n#.oE#\n#####';
   const parsed = parse(text);
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   assert.deepEqual(g.start, { r: 3, c: 1 });
   assert.deepEqual(g.pickupCells, [{ r: 3, c: 2 }]);
   assert.deepEqual(g.exitCells, [{ r: 3, c: 3 }]);
@@ -58,7 +59,7 @@ const cellOf = (stateK) => stateK.split(',').slice(0, 2).join(',');
 test('buildNavGraph: walk edges between adjacent grounded cells', () => {
   // Flat 5-wide floor, player + exit on row 1.
   const parsed = parse('#####\n#P.E#\n#####');
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   // From (1, 2) bucket-0 — middle cell — should have walk edges to
   // (1, 1) and (1, 3) (vxBucket variants don't matter for assertion).
   const mid = g.edges.get(stateKey(1, 2, 0, 'L'));
@@ -70,7 +71,7 @@ test('buildNavGraph: walk edges between adjacent grounded cells', () => {
 test('buildNavGraph: hazard cells produce no walk edges to/from', () => {
   // P – walk – (1,2) – walk – (1,3) blocked because (1,3) is ^.
   const parsed = parse('#####\n#P.^E#\n#####');
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   // The hazard cell isn't in the node map under any vxBucket.
   assert.equal(g.nodes.has(stateKey(1, 3, 0, 'L')), false);
   // From (1, 2) bucket-0, no walk edge to any (1, 3, *) state.
@@ -90,7 +91,7 @@ test('buildNavGraph: drop edge off a ledge to lower platform', () => {
     '...#######', // floor at row 4 cols 3-9
   ].join('\n');
   const parsed = parse(text);
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   // From (2, 2): grounded by row 3 col 2 = `#`. drop_right walks off
   // the right ledge (row 3 col 3 = `.`) and falls to the lower
   // platform (row 4 cols 3-9 = `#`).
@@ -126,7 +127,7 @@ test('buildNavGraph: jump edge between two platforms across a gap', () => {
     '#########',
   ].join('\n');
   const parsed = parse(text);
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   // From (1, 1) — player spawn ground — there should be a jump edge
   // reaching across the gap to (1, 6).
   const fromSpawn = g.edges.get(stateKey(1, 1, 0, 'L'));
@@ -152,7 +153,7 @@ test('buildNavGraph: jump arc clears a single-column wall (v20.1 parabola check)
     '#########',
   ].join('\n');
   const parsed = parse(text);
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   const fromSpawn = g.edges.get(stateKey(1, 1, 0, 'L'));
   const jumps = fromSpawn.filter((e) => e.kind === 'jump');
   const reachableCells = jumps.map((e) => cellOf(e.to));
@@ -164,7 +165,7 @@ test('buildNavGraph: spawn-cell node + edge map non-empty for trivial level', ()
   // v26 M4 + v27 M4: each cell expands to 3 vxBuckets × 3
   // xOffsetBuckets = 9 variants → 27 nodes for a 3-cell level.
   const parsed = parse('#####\n#P.E#\n#####');
-  const g = buildNavGraph(parsed, DEFAULT_LEGEND);
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
   assert.ok(g.nodes.size >= 27); // 3 cells × 9 (vx × xOffset) buckets
   assert.ok(g.edges.get(stateKey(1, 1, 0, 'L')).length > 0);
 });
