@@ -1,0 +1,8 @@
+{
+  "name": "@2d-platform/agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The 2D level-designer's planning agent — engine-agnostic via a physics-adapter API (v29).",
+  "type": "module",
+  "main": "src/index.js"
+}

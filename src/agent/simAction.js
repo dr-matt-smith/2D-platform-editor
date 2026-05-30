@@ -14,9 +14,9 @@
 // v29 M2: the engine is injected. simAction no longer imports
 // PlaytestScene / ScriptedInput directly — it constructs them through
 // the physics adapter passed in by the caller (jsAdapter today; a
-// Python adapter tomorrow). TILE is still imported from the vendored
-// engine until M4 carves out the agent-local constant.
-import { TILE } from '../play/constants.js';
+// Python adapter tomorrow). v29 M4: TILE now comes from the agent's
+// own constants.js, not the vendored src/play/constants.js.
+import { TILE } from './constants.js';
 import { actionCost, actionToRecording } from './actions.js';
 
 const DT = 1 / 60;

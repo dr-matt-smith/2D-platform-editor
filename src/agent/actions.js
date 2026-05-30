@@ -19,7 +19,7 @@
 // Pure: no DOM, no engine, no rendering. Consumers (simAction.js,
 // grid.js, planner.js, agentDialog.js) read these structs.
 
-import { JUMP_FORCE, GRAVITY } from '../play/constants.js';
+import { JUMP_FORCE, GRAVITY } from './constants.js';
 
 /** Frames the player covers one cell of walking at SPEED=240, TILE=20.
  *  20 / (240/60) = 5 frames per cell. */

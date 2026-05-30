@@ -16,7 +16,7 @@
 import { buildNavGraph, cellKey, stateKey, vxBucketOf } from './grid.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
 import { planPerFrame } from './perframe.js';
-import { TILE } from '../play/constants.js';
+import { TILE } from './constants.js';
 
 /**
  * v29 M3: physics-adapter contract check. The agent is engine-agnostic

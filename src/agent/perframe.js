@@ -59,7 +59,7 @@ export function nearby(a, b, tol = DEFAULT_CLUSTER_TOL) {
 
 // ---- expandNode: on-demand edge generation -------------------------
 
-import { TILE } from '../play/constants.js';
+import { TILE } from './constants.js';
 import { WALK_FRAMES_PER_CELL, DROP_HOLD_FRAMES_BUDGET, enumerateActions, actionToRecording } from './actions.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
 import {

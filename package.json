@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "A text-based level editor for simple 2D games (mazes and platformers) with live preview.",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "gen:levels": "node scripts/gen-levels-manifest.mjs",
     "gen:tilesets": "node scripts/gen-tilesets-manifest.mjs",

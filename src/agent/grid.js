@@ -21,7 +21,7 @@
 // plus new fields the v21 planner reads (`action`, `recording`,
 // `endPos`, `endVel`).
 
-import { TILE, SPEED, JUMP_FORCE, GRAVITY } from '../play/constants.js';
+import { TILE, SPEED, JUMP_FORCE, GRAVITY } from './constants.js';
 import { enumerateActions, actionToRecording } from './actions.js';
 import { makeSimContext, simulateActionInContext } from './simAction.js';
 
