@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-adapter"
+version = "0.0.0"
+description = "Python physics adapter for the 2D level-designer's planning agent — a faithful port of the JS engine, conforming to the {TILE, makeScene, makeScriptedInput} contract."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

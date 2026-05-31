@@ -1,0 +1,5701 @@
+{
+  "generatedFrom": "jsAdapter (src/agent-adapter.js)",
+  "dt": 0.016666666666666666,
+  "roles": {
+    ".": "background",
+    "#": "terrain",
+    "P": "player",
+    "^": "hazard",
+    "o": "pickup",
+    "E": "exit"
+  },
+  "cases": [
+    {
+      "name": "walk_right_to_exit",
+      "kind": "primitive",
+      "grid": [
+        ".........",
+        "#P.....E#",
+        "#########"
+      ],
+      "meta": {
+        "width": 9,
+        "height": 3,
+        "pickupRequired": 0
+      },
+      "recording": [
+        {
+          "frame": 0,
+          "key": "right",
+          "down": true
+        }
+      ],
+      "maxFrames": 120,
+      "frames": [
+        {
+          "x": 24,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 28,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 32,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 36,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 40,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 44,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 48,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 52,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 56,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 60,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 64,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 68,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 72,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 76,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 80,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 84,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 88,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 92,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 96,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 100,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 104,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 108,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 112,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 116,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 120,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 124,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "won",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "name": "jump_arc_straight_up",
+      "kind": "primitive",
+      "grid": [
+        ".........",
+        ".........",
+        "#P.....E#",
+        "#########"
+      ],
+      "meta": {
+        "width": 9,
+        "height": 4,
+        "pickupRequired": 0
+      },
+      "recording": [
+        {
+          "frame": 0,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 1,
+          "key": "space",
+          "down": false
+        }
+      ],
+      "maxFrames": 90,
+      "frames": [
+        {
+          "x": 20,
+          "y": 31.11111111111111,
+          "vx": 0,
+          "vy": -533.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 22.666666666666664,
+          "vx": 0,
+          "vy": -506.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 14.666666666666664,
+          "vx": 0,
+          "vy": -480,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 7.111111111111109,
+          "vx": 0,
+          "vy": -453.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -1.7763568394002505e-15,
+          "vx": 0,
+          "vy": -426.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -6.666666666666667,
+          "vx": 0,
+          "vy": -399.99999999999994,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -12.888888888888888,
+          "vx": 0,
+          "vy": -373.33333333333326,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -18.666666666666664,
+          "vx": 0,
+          "vy": -346.6666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -23.999999999999996,
+          "vx": 0,
+          "vy": -319.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -28.888888888888882,
+          "vx": 0,
+          "vy": -293.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -33.33333333333332,
+          "vx": 0,
+          "vy": -266.6666666666665,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -37.33333333333332,
+          "vx": 0,
+          "vy": -239.99999999999986,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -40.88888888888887,
+          "vx": 0,
+          "vy": -213.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -43.99999999999998,
+          "vx": 0,
+          "vy": -186.66666666666654,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -46.66666666666664,
+          "vx": 0,
+          "vy": -159.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -48.888888888888864,
+          "vx": 0,
+          "vy": -133.33333333333323,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -50.66666666666664,
+          "vx": 0,
+          "vy": -106.66666666666656,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -51.99999999999997,
+          "vx": 0,
+          "vy": -79.99999999999989,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -52.88888888888886,
+          "vx": 0,
+          "vy": -53.333333333333215,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -53.3333333333333,
+          "vx": 0,
+          "vy": -26.666666666666547,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -53.3333333333333,
+          "vx": 0,
+          "vy": 1.2079226507921703e-13,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -52.88888888888885,
+          "vx": 0,
+          "vy": 26.66666666666679,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -51.99999999999996,
+          "vx": 0,
+          "vy": 53.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -50.66666666666662,
+          "vx": 0,
+          "vy": 80.00000000000013,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -48.88888888888884,
+          "vx": 0,
+          "vy": 106.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -46.66666666666662,
+          "vx": 0,
+          "vy": 133.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -43.99999999999995,
+          "vx": 0,
+          "vy": 160.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -40.888888888888836,
+          "vx": 0,
+          "vy": 186.66666666666677,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -37.33333333333328,
+          "vx": 0,
+          "vy": 213.33333333333343,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -33.33333333333328,
+          "vx": 0,
+          "vy": 240.00000000000009,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -28.888888888888832,
+          "vx": 0,
+          "vy": 266.66666666666674,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -23.999999999999943,
+          "vx": 0,
+          "vy": 293.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -18.666666666666607,
+          "vx": 0,
+          "vy": 320.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -12.888888888888827,
+          "vx": 0,
+          "vy": 346.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": -6.666666666666602,
+          "vx": 0,
+          "vy": 373.3333333333335,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 6.750155989720952e-14,
+          "vx": 0,
+          "vy": 400.00000000000017,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 7.111111111111182,
+          "vx": 0,
+          "vy": 426.66666666666686,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 14.66666666666674,
+          "vx": 0,
+          "vy": 453.33333333333354,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 22.666666666666742,
+          "vx": 0,
+          "vy": 480.0000000000002,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 31.111111111111192,
+          "vx": 0,
+          "vy": 506.6666666666669,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "name": "jump_into_ceiling",
+      "kind": "primitive",
+      "grid": [
+        "#########",
+        "#P.....E#",
+        "#########"
+      ],
+      "meta": {
+        "width": 9,
+        "height": 3,
+        "pickupRequired": 0
+      },
+      "recording": [
+        {
+          "frame": 0,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 1,
+          "key": "space",
+          "down": false
+        }
+      ],
+      "maxFrames": 40,
+      "frames": [
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 20,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "name": "walk_off_ledge_into_pit",
+      "kind": "primitive",
+      "grid": [
+        "..........",
+        ".P........",
+        ".##.......",
+        "..........",
+        ".........."
+      ],
+      "meta": {
+        "width": 10,
+        "height": 5,
+        "pickupRequired": 0
+      },
+      "recording": [
+        {
+          "frame": 0,
+          "key": "right",
+          "down": true
+        }
+      ],
+      "maxFrames": 90,
+      "frames": [
+        {
+          "x": 24,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 28,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 32,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 36,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 40,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 44,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 48,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 52,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 56,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 60,
+          "y": 20.444444444444443,
+          "vx": 240,
+          "vy": 26.666666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 64,
+          "y": 21.333333333333332,
+          "vx": 240,
+          "vy": 53.333333333333336,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 68,
+          "y": 22.666666666666664,
+          "vx": 240,
+          "vy": 80,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 72,
+          "y": 24.444444444444443,
+          "vx": 240,
+          "vy": 106.66666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 76,
+          "y": 26.666666666666664,
+          "vx": 240,
+          "vy": 133.33333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 80,
+          "y": 29.333333333333332,
+          "vx": 240,
+          "vy": 160,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 84,
+          "y": 32.44444444444444,
+          "vx": 240,
+          "vy": 186.66666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 88,
+          "y": 36,
+          "vx": 240,
+          "vy": 213.33333333333331,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 92,
+          "y": 40,
+          "vx": 240,
+          "vy": 239.99999999999997,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 96,
+          "y": 44.44444444444444,
+          "vx": 240,
+          "vy": 266.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 100,
+          "y": 49.33333333333333,
+          "vx": 240,
+          "vy": 293.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 104,
+          "y": 54.666666666666664,
+          "vx": 240,
+          "vy": 320,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 108,
+          "y": 60.44444444444444,
+          "vx": 240,
+          "vy": 346.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 112,
+          "y": 66.66666666666667,
+          "vx": 240,
+          "vy": 373.33333333333337,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 116,
+          "y": 73.33333333333334,
+          "vx": 240,
+          "vy": 400.00000000000006,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 120,
+          "y": 80.44444444444446,
+          "vx": 240,
+          "vy": 426.66666666666674,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 124,
+          "y": 88.00000000000001,
+          "vx": 240,
+          "vy": 453.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 128,
+          "y": 96.00000000000001,
+          "vx": 240,
+          "vy": 480.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 132,
+          "y": 104.44444444444446,
+          "vx": 240,
+          "vy": 506.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 136,
+          "y": 113.33333333333334,
+          "vx": 240,
+          "vy": 533.3333333333335,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 140,
+          "y": 122.66666666666669,
+          "vx": 240,
+          "vy": 560.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 144,
+          "y": 132.44444444444446,
+          "vx": 240,
+          "vy": 586.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 148,
+          "y": 142.66666666666669,
+          "vx": 240,
+          "vy": 613.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 152,
+          "y": 153.33333333333334,
+          "vx": 240,
+          "vy": 640,
+          "onGround": false,
+          "phase": "dead",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "name": "walk_into_spike_dies",
+      "kind": "primitive",
+      "grid": [
+        ".........",
+        "#P.^...E#",
+        "#########"
+      ],
+      "meta": {
+        "width": 9,
+        "height": 3,
+        "pickupRequired": 0
+      },
+      "recording": [
+        {
+          "frame": 0,
+          "key": "right",
+          "down": true
+        }
+      ],
+      "maxFrames": 60,
+      "frames": [
+        {
+          "x": 24,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 28,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 32,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 36,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 40,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 44,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "dead",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "name": "collect_coin_then_exit",
+      "kind": "primitive",
+      "grid": [
+        ".......",
+        "#P.o.E#",
+        "#######"
+      ],
+      "meta": {
+        "width": 7,
+        "height": 3,
+        "pickupRequired": "all"
+      },
+      "recording": [
+        {
+          "frame": 0,
+          "key": "right",
+          "down": true
+        }
+      ],
+      "maxFrames": 90,
+      "frames": [
+        {
+          "x": 24,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 28,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 32,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 36,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 40,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 44,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 48,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 52,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 56,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 60,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 64,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 68,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 72,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 76,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 80,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 84,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "won",
+          "score": 1
+        }
+      ]
+    },
+    {
+      "name": "agent_plan_tutorial",
+      "kind": "agent",
+      "grid": [
+        "########################",
+        "#......................#",
+        "#...P.............E....#",
+        "#.............##########",
+        "#.......oooo...........#",
+        "#......######..........#",
+        "#......................#",
+        "#..........^^^.........#",
+        "#......................#",
+        "########################"
+      ],
+      "meta": {
+        "width": 24,
+        "height": 10,
+        "pickupRequired": "all"
+      },
+      "recording": [
+        {
+          "frame": 1,
+          "key": "left",
+          "down": true
+        },
+        {
+          "frame": 6,
+          "key": "left",
+          "down": false
+        },
+        {
+          "frame": 6,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 6,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 7,
+          "key": "space",
+          "down": false
+        },
+        {
+          "frame": 30,
+          "key": "right",
+          "down": false
+        },
+        {
+          "frame": 36,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 51,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 52,
+          "key": "space",
+          "down": false
+        },
+        {
+          "frame": 70,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 71,
+          "key": "space",
+          "down": false
+        },
+        {
+          "frame": 82,
+          "key": "right",
+          "down": false
+        },
+        {
+          "frame": 83,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 88,
+          "key": "right",
+          "down": false
+        }
+      ],
+      "maxFrames": 2400,
+      "frames": [
+        {
+          "x": 80,
+          "y": 160,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 76,
+          "y": 160,
+          "vx": -240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 72,
+          "y": 160,
+          "vx": -240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 68,
+          "y": 160,
+          "vx": -240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 64,
+          "y": 160,
+          "vx": -240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 60,
+          "y": 160,
+          "vx": -240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 64,
+          "y": 151.11111111111111,
+          "vx": 240,
+          "vy": -533.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 68,
+          "y": 142.66666666666666,
+          "vx": 240,
+          "vy": -506.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 72,
+          "y": 134.66666666666666,
+          "vx": 240,
+          "vy": -480,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 76,
+          "y": 127.1111111111111,
+          "vx": 240,
+          "vy": -453.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 80,
+          "y": 119.99999999999999,
+          "vx": 240,
+          "vy": -426.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 84,
+          "y": 113.33333333333331,
+          "vx": 240,
+          "vy": -399.99999999999994,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 88,
+          "y": 107.1111111111111,
+          "vx": 240,
+          "vy": -373.33333333333326,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 92,
+          "y": 101.33333333333333,
+          "vx": 240,
+          "vy": -346.6666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 96,
+          "y": 96,
+          "vx": 240,
+          "vy": -319.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 100,
+          "y": 91.11111111111111,
+          "vx": 240,
+          "vy": -293.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 104,
+          "y": 86.66666666666667,
+          "vx": 240,
+          "vy": -266.6666666666665,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 108,
+          "y": 82.66666666666667,
+          "vx": 240,
+          "vy": -239.99999999999986,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 112,
+          "y": 79.11111111111111,
+          "vx": 240,
+          "vy": -213.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 116,
+          "y": 76,
+          "vx": 240,
+          "vy": -186.66666666666654,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 120,
+          "y": 73.33333333333333,
+          "vx": 240,
+          "vy": -159.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 124,
+          "y": 71.11111111111111,
+          "vx": 240,
+          "vy": -133.33333333333323,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 128,
+          "y": 69.33333333333334,
+          "vx": 240,
+          "vy": -106.66666666666656,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 132,
+          "y": 68.00000000000001,
+          "vx": 240,
+          "vy": -79.99999999999989,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 136,
+          "y": 67.11111111111113,
+          "vx": 240,
+          "vy": -53.333333333333215,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 140,
+          "y": 66.66666666666669,
+          "vx": 240,
+          "vy": -26.666666666666547,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 144,
+          "y": 66.66666666666669,
+          "vx": 240,
+          "vy": 1.2079226507921703e-13,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 148,
+          "y": 67.11111111111113,
+          "vx": 240,
+          "vy": 26.66666666666679,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 152,
+          "y": 68.00000000000001,
+          "vx": 240,
+          "vy": 53.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 69.33333333333334,
+          "vx": 240,
+          "vy": 80.00000000000013,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 71.11111111111113,
+          "vx": 0,
+          "vy": 106.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 73.33333333333336,
+          "vx": 0,
+          "vy": 133.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 76.00000000000003,
+          "vx": 0,
+          "vy": 160.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 79.11111111111114,
+          "vx": 0,
+          "vy": 186.66666666666677,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 80,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 80,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 160,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 164,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 168,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 172,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 176,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 180,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 184,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 188,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 192,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 196,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 200,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 204,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 208,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 212,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 216,
+          "y": 80,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 220,
+          "y": 71.11111111111111,
+          "vx": 240,
+          "vy": -533.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 224,
+          "y": 62.66666666666667,
+          "vx": 240,
+          "vy": -506.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 228,
+          "y": 54.66666666666667,
+          "vx": 240,
+          "vy": -480,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 232,
+          "y": 47.111111111111114,
+          "vx": 240,
+          "vy": -453.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 236,
+          "y": 40,
+          "vx": 240,
+          "vy": -426.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 240,
+          "y": 33.333333333333336,
+          "vx": 240,
+          "vy": -399.99999999999994,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 244,
+          "y": 27.111111111111114,
+          "vx": 240,
+          "vy": -373.33333333333326,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 248,
+          "y": 21.33333333333334,
+          "vx": 240,
+          "vy": -346.6666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 252,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 256,
+          "y": 20.444444444444443,
+          "vx": 240,
+          "vy": 26.666666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 260,
+          "y": 21.333333333333332,
+          "vx": 240,
+          "vy": 53.333333333333336,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 264,
+          "y": 22.666666666666664,
+          "vx": 240,
+          "vy": 80,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 268,
+          "y": 24.444444444444443,
+          "vx": 240,
+          "vy": 106.66666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 272,
+          "y": 26.666666666666664,
+          "vx": 240,
+          "vy": 133.33333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 276,
+          "y": 29.333333333333332,
+          "vx": 240,
+          "vy": 160,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 280,
+          "y": 32.44444444444444,
+          "vx": 240,
+          "vy": 186.66666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 284,
+          "y": 36,
+          "vx": 240,
+          "vy": 213.33333333333331,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 288,
+          "y": 40,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 292,
+          "y": 40,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 296,
+          "y": 31.11111111111111,
+          "vx": 240,
+          "vy": -533.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 300,
+          "y": 22.666666666666664,
+          "vx": 240,
+          "vy": -506.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 304,
+          "y": 20,
+          "vx": 240,
+          "vy": 0,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 308,
+          "y": 20.444444444444443,
+          "vx": 240,
+          "vy": 26.666666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 312,
+          "y": 21.333333333333332,
+          "vx": 240,
+          "vy": 53.333333333333336,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 316,
+          "y": 22.666666666666664,
+          "vx": 240,
+          "vy": 80,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 320,
+          "y": 24.444444444444443,
+          "vx": 240,
+          "vy": 106.66666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 324,
+          "y": 26.666666666666664,
+          "vx": 240,
+          "vy": 133.33333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 328,
+          "y": 29.333333333333332,
+          "vx": 240,
+          "vy": 160,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 332,
+          "y": 32.44444444444444,
+          "vx": 240,
+          "vy": 186.66666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 336,
+          "y": 36,
+          "vx": 240,
+          "vy": 213.33333333333331,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 340,
+          "y": 40,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 340,
+          "y": 40,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 344,
+          "y": 40,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "won",
+          "score": 4
+        }
+      ]
+    },
+    {
+      "name": "agent_plan_simple",
+      "kind": "agent",
+      "grid": [
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "P.....................E.",
+        "########################",
+        "########################",
+        "########################"
+      ],
+      "meta": {
+        "width": 24,
+        "height": 14,
+        "pickupRequired": "all"
+      },
+      "recording": [
+        {
+          "frame": 1,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 108,
+          "key": "right",
+          "down": false
+        }
+      ],
+      "maxFrames": 2400,
+      "frames": [
+        {
+          "x": 0,
+          "y": 200,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 4,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 8,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 12,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 16,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 20,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 24,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 28,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 32,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 36,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 40,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 44,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 48,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 52,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 56,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 60,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 64,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 68,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 72,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 76,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 80,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 84,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 88,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 92,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 96,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 100,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 104,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 108,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 112,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 116,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 120,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 124,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 128,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 132,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 136,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 140,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 144,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 148,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 152,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 156,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 160,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 164,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 168,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 172,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 176,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 180,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 184,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 188,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 192,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 196,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 200,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 204,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 208,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 212,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 216,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 220,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 224,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 228,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 232,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 236,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 240,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 244,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 248,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 252,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 256,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 260,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 264,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 268,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 272,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 276,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 280,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 284,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 288,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 292,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 296,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 300,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 304,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 308,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 312,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 316,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 320,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 324,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 328,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 332,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 336,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 340,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 344,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 348,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 352,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 356,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 360,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 364,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 368,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 372,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 376,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 380,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 384,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 388,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 392,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 396,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 400,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 404,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 408,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 412,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 416,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 420,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 424,
+          "y": 200,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "won",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "name": "agent_plan_above_ground",
+      "kind": "agent",
+      "grid": [
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "........................................",
+        "................oo......................",
+        "...............####.....................",
+        "...............####.....................",
+        "........o......####.....................",
+        ".......###.....####..........oo.........",
+        ".......###.....####.........####........",
+        ".......###.....####.........####........",
+        "..P....###.....####.........####.....E..",
+        "########################################",
+        "##################.....##########...####",
+        "##################.^^^.##########.^.####"
+      ],
+      "meta": {
+        "width": 40,
+        "height": 16,
+        "pickupRequired": "all"
+      },
+      "recording": [
+        {
+          "frame": 1,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 1,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 2,
+          "key": "space",
+          "down": false
+        },
+        {
+          "frame": 29,
+          "key": "right",
+          "down": false
+        },
+        {
+          "frame": 31,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 36,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 37,
+          "key": "space",
+          "down": false
+        },
+        {
+          "frame": 68,
+          "key": "right",
+          "down": false
+        },
+        {
+          "frame": 70,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 115,
+          "key": "space",
+          "down": true
+        },
+        {
+          "frame": 116,
+          "key": "space",
+          "down": false
+        },
+        {
+          "frame": 139,
+          "key": "right",
+          "down": false
+        },
+        {
+          "frame": 149,
+          "key": "right",
+          "down": true
+        },
+        {
+          "frame": 192,
+          "key": "right",
+          "down": false
+        }
+      ],
+      "maxFrames": 2400,
+      "frames": [
+        {
+          "x": 40,
+          "y": 240,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 44,
+          "y": 231.11111111111111,
+          "vx": 240,
+          "vy": -533.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 48,
+          "y": 222.66666666666666,
+          "vx": 240,
+          "vy": -506.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 52,
+          "y": 214.66666666666666,
+          "vx": 240,
+          "vy": -480,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 56,
+          "y": 207.11111111111111,
+          "vx": 240,
+          "vy": -453.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 60,
+          "y": 200,
+          "vx": 240,
+          "vy": -426.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 64,
+          "y": 193.33333333333334,
+          "vx": 240,
+          "vy": -399.99999999999994,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 68,
+          "y": 187.11111111111111,
+          "vx": 240,
+          "vy": -373.33333333333326,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 72,
+          "y": 181.33333333333334,
+          "vx": 240,
+          "vy": -346.6666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 76,
+          "y": 176,
+          "vx": 240,
+          "vy": -319.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 80,
+          "y": 171.11111111111111,
+          "vx": 240,
+          "vy": -293.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 84,
+          "y": 166.66666666666669,
+          "vx": 240,
+          "vy": -266.6666666666665,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 88,
+          "y": 162.66666666666669,
+          "vx": 240,
+          "vy": -239.99999999999986,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 92,
+          "y": 159.11111111111114,
+          "vx": 240,
+          "vy": -213.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 96,
+          "y": 156.00000000000003,
+          "vx": 240,
+          "vy": -186.66666666666654,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 100,
+          "y": 153.33333333333337,
+          "vx": 240,
+          "vy": -159.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 104,
+          "y": 151.11111111111114,
+          "vx": 240,
+          "vy": -133.33333333333323,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 108,
+          "y": 149.33333333333337,
+          "vx": 240,
+          "vy": -106.66666666666656,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 112,
+          "y": 148.00000000000003,
+          "vx": 240,
+          "vy": -79.99999999999989,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 116,
+          "y": 147.11111111111114,
+          "vx": 240,
+          "vy": -53.333333333333215,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 120,
+          "y": 146.6666666666667,
+          "vx": 240,
+          "vy": -26.666666666666547,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 124,
+          "y": 146.6666666666667,
+          "vx": 240,
+          "vy": 1.2079226507921703e-13,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 128,
+          "y": 147.11111111111117,
+          "vx": 240,
+          "vy": 26.66666666666679,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 132,
+          "y": 148.00000000000006,
+          "vx": 240,
+          "vy": 53.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 136,
+          "y": 149.3333333333334,
+          "vx": 240,
+          "vy": 80.00000000000013,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 140,
+          "y": 151.11111111111117,
+          "vx": 240,
+          "vy": 106.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 0
+        },
+        {
+          "x": 144,
+          "y": 153.3333333333334,
+          "vx": 240,
+          "vy": 133.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 148,
+          "y": 156.00000000000006,
+          "vx": 240,
+          "vy": 160.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 152,
+          "y": 159.11111111111117,
+          "vx": 240,
+          "vy": 186.66666666666677,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 152,
+          "y": 160,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 152,
+          "y": 160,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 156,
+          "y": 160,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 160,
+          "y": 160,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 164,
+          "y": 160,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 168,
+          "y": 160,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 172,
+          "y": 160,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 176,
+          "y": 151.11111111111111,
+          "vx": 240,
+          "vy": -533.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 180,
+          "y": 142.66666666666666,
+          "vx": 240,
+          "vy": -506.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 184,
+          "y": 134.66666666666666,
+          "vx": 240,
+          "vy": -480,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 188,
+          "y": 127.1111111111111,
+          "vx": 240,
+          "vy": -453.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 192,
+          "y": 119.99999999999999,
+          "vx": 240,
+          "vy": -426.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 196,
+          "y": 113.33333333333331,
+          "vx": 240,
+          "vy": -399.99999999999994,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 200,
+          "y": 107.1111111111111,
+          "vx": 240,
+          "vy": -373.33333333333326,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 204,
+          "y": 101.33333333333333,
+          "vx": 240,
+          "vy": -346.6666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 208,
+          "y": 96,
+          "vx": 240,
+          "vy": -319.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 212,
+          "y": 91.11111111111111,
+          "vx": 240,
+          "vy": -293.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 216,
+          "y": 86.66666666666667,
+          "vx": 240,
+          "vy": -266.6666666666665,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 220,
+          "y": 82.66666666666667,
+          "vx": 240,
+          "vy": -239.99999999999986,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 224,
+          "y": 79.11111111111111,
+          "vx": 240,
+          "vy": -213.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 228,
+          "y": 76,
+          "vx": 240,
+          "vy": -186.66666666666654,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 232,
+          "y": 73.33333333333333,
+          "vx": 240,
+          "vy": -159.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 236,
+          "y": 71.11111111111111,
+          "vx": 240,
+          "vy": -133.33333333333323,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 240,
+          "y": 69.33333333333334,
+          "vx": 240,
+          "vy": -106.66666666666656,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 244,
+          "y": 68.00000000000001,
+          "vx": 240,
+          "vy": -79.99999999999989,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 248,
+          "y": 67.11111111111113,
+          "vx": 240,
+          "vy": -53.333333333333215,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 252,
+          "y": 66.66666666666669,
+          "vx": 240,
+          "vy": -26.666666666666547,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 256,
+          "y": 66.66666666666669,
+          "vx": 240,
+          "vy": 1.2079226507921703e-13,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 260,
+          "y": 67.11111111111113,
+          "vx": 240,
+          "vy": 26.66666666666679,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 264,
+          "y": 68.00000000000001,
+          "vx": 240,
+          "vy": 53.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 268,
+          "y": 69.33333333333334,
+          "vx": 240,
+          "vy": 80.00000000000013,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 272,
+          "y": 71.11111111111113,
+          "vx": 240,
+          "vy": 106.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 276,
+          "y": 73.33333333333336,
+          "vx": 240,
+          "vy": 133.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 280,
+          "y": 76.00000000000003,
+          "vx": 240,
+          "vy": 160.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 284,
+          "y": 79.11111111111114,
+          "vx": 240,
+          "vy": 186.66666666666677,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 288,
+          "y": 82.6666666666667,
+          "vx": 240,
+          "vy": 213.33333333333343,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 292,
+          "y": 86.6666666666667,
+          "vx": 240,
+          "vy": 240.00000000000009,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 296,
+          "y": 91.11111111111114,
+          "vx": 240,
+          "vy": 266.66666666666674,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 300,
+          "y": 96.00000000000003,
+          "vx": 240,
+          "vy": 293.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 300,
+          "y": 100,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 300,
+          "y": 100,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 1
+        },
+        {
+          "x": 304,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 308,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 312,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 316,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 320,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 2
+        },
+        {
+          "x": 324,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 328,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 332,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 336,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 340,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 344,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 348,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 352,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 356,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 360,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 364,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 368,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 372,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 376,
+          "y": 100,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 380,
+          "y": 100.44444444444444,
+          "vx": 240,
+          "vy": 26.666666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 384,
+          "y": 101.33333333333333,
+          "vx": 240,
+          "vy": 53.333333333333336,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 388,
+          "y": 102.66666666666666,
+          "vx": 240,
+          "vy": 80,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 392,
+          "y": 104.44444444444443,
+          "vx": 240,
+          "vy": 106.66666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 396,
+          "y": 106.66666666666666,
+          "vx": 240,
+          "vy": 133.33333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 400,
+          "y": 109.33333333333333,
+          "vx": 240,
+          "vy": 160,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 404,
+          "y": 112.44444444444444,
+          "vx": 240,
+          "vy": 186.66666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 408,
+          "y": 116,
+          "vx": 240,
+          "vy": 213.33333333333331,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 412,
+          "y": 120,
+          "vx": 240,
+          "vy": 239.99999999999997,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 416,
+          "y": 124.44444444444444,
+          "vx": 240,
+          "vy": 266.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 420,
+          "y": 129.33333333333334,
+          "vx": 240,
+          "vy": 293.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 424,
+          "y": 134.66666666666669,
+          "vx": 240,
+          "vy": 320,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 428,
+          "y": 140.44444444444446,
+          "vx": 240,
+          "vy": 346.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 432,
+          "y": 146.66666666666669,
+          "vx": 240,
+          "vy": 373.33333333333337,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 436,
+          "y": 153.33333333333334,
+          "vx": 240,
+          "vy": 400.00000000000006,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 440,
+          "y": 160.44444444444446,
+          "vx": 240,
+          "vy": 426.66666666666674,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 444,
+          "y": 168,
+          "vx": 240,
+          "vy": 453.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 448,
+          "y": 176,
+          "vx": 240,
+          "vy": 480.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 452,
+          "y": 184.44444444444446,
+          "vx": 240,
+          "vy": 506.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 456,
+          "y": 193.33333333333334,
+          "vx": 240,
+          "vy": 533.3333333333335,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 460,
+          "y": 202.66666666666669,
+          "vx": 240,
+          "vy": 560.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 464,
+          "y": 212.44444444444446,
+          "vx": 240,
+          "vy": 586.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 468,
+          "y": 222.66666666666669,
+          "vx": 240,
+          "vy": 613.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 472,
+          "y": 233.33333333333334,
+          "vx": 240,
+          "vy": 640,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 476,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 480,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 484,
+          "y": 231.11111111111111,
+          "vx": 240,
+          "vy": -533.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 488,
+          "y": 222.66666666666666,
+          "vx": 240,
+          "vy": -506.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 492,
+          "y": 214.66666666666666,
+          "vx": 240,
+          "vy": -480,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 496,
+          "y": 207.11111111111111,
+          "vx": 240,
+          "vy": -453.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 500,
+          "y": 200,
+          "vx": 240,
+          "vy": -426.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 504,
+          "y": 193.33333333333334,
+          "vx": 240,
+          "vy": -399.99999999999994,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 508,
+          "y": 187.11111111111111,
+          "vx": 240,
+          "vy": -373.33333333333326,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 512,
+          "y": 181.33333333333334,
+          "vx": 240,
+          "vy": -346.6666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 516,
+          "y": 176,
+          "vx": 240,
+          "vy": -319.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 520,
+          "y": 171.11111111111111,
+          "vx": 240,
+          "vy": -293.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 524,
+          "y": 166.66666666666669,
+          "vx": 240,
+          "vy": -266.6666666666665,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 528,
+          "y": 162.66666666666669,
+          "vx": 240,
+          "vy": -239.99999999999986,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 532,
+          "y": 159.11111111111114,
+          "vx": 240,
+          "vy": -213.3333333333332,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 536,
+          "y": 156.00000000000003,
+          "vx": 240,
+          "vy": -186.66666666666654,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 540,
+          "y": 153.33333333333337,
+          "vx": 240,
+          "vy": -159.9999999999999,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 544,
+          "y": 151.11111111111114,
+          "vx": 240,
+          "vy": -133.33333333333323,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 548,
+          "y": 149.33333333333337,
+          "vx": 240,
+          "vy": -106.66666666666656,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 552,
+          "y": 148.00000000000003,
+          "vx": 240,
+          "vy": -79.99999999999989,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 556,
+          "y": 147.11111111111114,
+          "vx": 240,
+          "vy": -53.333333333333215,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 560,
+          "y": 146.6666666666667,
+          "vx": 240,
+          "vy": -26.666666666666547,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 564,
+          "y": 146.6666666666667,
+          "vx": 240,
+          "vy": 1.2079226507921703e-13,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 568,
+          "y": 147.11111111111117,
+          "vx": 240,
+          "vy": 26.66666666666679,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 572,
+          "y": 148.00000000000006,
+          "vx": 240,
+          "vy": 53.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 576,
+          "y": 149.3333333333334,
+          "vx": 240,
+          "vy": 80.00000000000013,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 576,
+          "y": 151.11111111111117,
+          "vx": 0,
+          "vy": 106.6666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 576,
+          "y": 153.3333333333334,
+          "vx": 0,
+          "vy": 133.33333333333346,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 576,
+          "y": 156.00000000000006,
+          "vx": 0,
+          "vy": 160.0000000000001,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 576,
+          "y": 159.11111111111117,
+          "vx": 0,
+          "vy": 186.66666666666677,
+          "onGround": false,
+          "phase": "play",
+          "score": 3
+        },
+        {
+          "x": 576,
+          "y": 162.66666666666674,
+          "vx": 0,
+          "vy": 213.33333333333343,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 576,
+          "y": 166.66666666666674,
+          "vx": 0,
+          "vy": 240.00000000000009,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 576,
+          "y": 171.1111111111112,
+          "vx": 0,
+          "vy": 266.66666666666674,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 576,
+          "y": 176.00000000000009,
+          "vx": 0,
+          "vy": 293.3333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 576,
+          "y": 180,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 576,
+          "y": 180,
+          "vx": 0,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 580,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 4
+        },
+        {
+          "x": 584,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 588,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 592,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 596,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 600,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 604,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 608,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 612,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 616,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 620,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 624,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 628,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 632,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 636,
+          "y": 180,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 640,
+          "y": 180.44444444444446,
+          "vx": 240,
+          "vy": 26.666666666666668,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 644,
+          "y": 181.33333333333334,
+          "vx": 240,
+          "vy": 53.333333333333336,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 648,
+          "y": 182.66666666666669,
+          "vx": 240,
+          "vy": 80,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 652,
+          "y": 184.44444444444446,
+          "vx": 240,
+          "vy": 106.66666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 656,
+          "y": 186.66666666666669,
+          "vx": 240,
+          "vy": 133.33333333333334,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 660,
+          "y": 189.33333333333334,
+          "vx": 240,
+          "vy": 160,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 664,
+          "y": 192.44444444444446,
+          "vx": 240,
+          "vy": 186.66666666666666,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 668,
+          "y": 196,
+          "vx": 240,
+          "vy": 213.33333333333331,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 672,
+          "y": 200,
+          "vx": 240,
+          "vy": 239.99999999999997,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 676,
+          "y": 204.44444444444446,
+          "vx": 240,
+          "vy": 266.66666666666663,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 680,
+          "y": 209.33333333333334,
+          "vx": 240,
+          "vy": 293.3333333333333,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 684,
+          "y": 214.66666666666669,
+          "vx": 240,
+          "vy": 320,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 688,
+          "y": 220.44444444444446,
+          "vx": 240,
+          "vy": 346.6666666666667,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 692,
+          "y": 226.66666666666669,
+          "vx": 240,
+          "vy": 373.33333333333337,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 696,
+          "y": 233.33333333333334,
+          "vx": 240,
+          "vy": 400.00000000000006,
+          "onGround": false,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 700,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 704,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 708,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 712,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 716,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 720,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "play",
+          "score": 5
+        },
+        {
+          "x": 724,
+          "y": 240,
+          "vx": 240,
+          "vy": 0,
+          "onGround": true,
+          "phase": "won",
+          "score": 5
+        }
+      ]
+    }
+  ]
+}
