@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-adapter"
+name = "agent-py"
 version = "0.0.0"
-description = "Python physics adapter for the 2D level-designer's planning agent — a faithful port of the JS engine, conforming to the {TILE, makeScene, makeScriptedInput} contract."
+description = "Pure-Python port of the 2D level-designer's planning agent: agent_adapter (physics engine, {TILE, make_scene, make_scripted_input} contract) + agent_planner (A* solver that emits a solving input recording). Parity-tested against the JS code."
 requires-python = ">=3.10"
 dependencies = []
 

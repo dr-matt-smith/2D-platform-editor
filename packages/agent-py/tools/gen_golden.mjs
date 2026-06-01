@@ -104,7 +104,9 @@ const PRIMITIVES = [
 ];
 
 // --- agent cases (plan() recordings on real levels) --------------------
-const AGENT_LEVELS = ['tutorial.txt', 'simple.txt', 'above_ground.txt'];
+// below_ground.txt is the chained-jump level the v28 per-frame planner
+// was built to solve — the strongest exercise of the planner port.
+const AGENT_LEVELS = ['tutorial.txt', 'simple.txt', 'above_ground.txt', 'below_ground.txt'];
 
 const cases = [];
 
