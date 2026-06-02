@@ -29,6 +29,7 @@ from .actions import (
     enumerate_actions,
 )
 from .constants import GRAVITY, JUMP_FORCE, SPEED, TILE
+from .level import parse
 from .grid import (
     JUMP_MAX_HORIZ_CELLS,
     JUMP_MAX_VERT_CELLS,
@@ -65,6 +66,7 @@ __all__ = [
     "replan",
     "simulate",
     "assert_adapter",
+    "parse",
     # per-frame planner
     "plan_per_frame",
     "a_star_per_frame",

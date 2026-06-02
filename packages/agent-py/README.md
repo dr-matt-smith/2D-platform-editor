@@ -162,9 +162,59 @@ identically.
 
 ---
 
+## agent_mcp — the MCP server
+
+`agent_mcp` exposes the planner over the **Model Context Protocol** so
+other agents can submit a level and get back a solving recording — the
+v29 "open the webapp to other agents" item. It depends on the official
+MCP SDK, kept as an **optional** extra so the core packages stay
+dependency-free:
+
+```
+cd packages/agent-py
+pip install -e ".[mcp]"        # installs agent_adapter + agent_planner + mcp
+python -m agent_mcp            # serve over stdio  (or: agent-py-mcp)
+```
+
+Register it with a client (e.g. Claude Code) as a stdio server running
+`python -m agent_mcp`.
+
+### Tools
+
+| Tool | Purpose |
+|------|---------|
+| `describe_level_format` | glyph legend + header directives, so a caller can author a level |
+| `solve_level` | search for winning recordings; returns up to 5, shortest-first, each with `recording` + `stats` + `trace` |
+| `plan_level` | a single plan (no replan loop) — recording + explainable trace + unreachable goals |
+| `simulate_recording` | replay a recording on a level and report `won`/`dead`/`timeout` |
+
+Every tool takes the level as the editor's **plain text format** (paste a
+level file's contents); `solve_level` / `plan_level` / `simulate_recording`
+accept an optional `pickup_required` override. Results are returned as
+JSON. The `recording` a tool returns is a list of `{frame, key, down}`
+events that replays byte-identically on the live JS engine.
+
+```python
+# minimal stdio client (see examples/mcp_client.py)
+out = await session.call_tool("solve_level", {
+    "level": "# pickup-required: 0\n.........\n#P.....E#\n#########",
+})
+result = json.loads(out.content[0].text)   # {"ok": true, "solutions": [...]}
+```
+
+### MCP tests
+
+`tests/test_mcp.py` registers + drives the tools (and exercises the wire
+via an in-memory `call_tool`). They `importorskip("mcp")`, so the default
+`python3 -m pytest` (no `mcp` installed) skips them; install the extra to
+run them.
+
+---
+
 ## Status / next
 
-Both the **physics adapter** and the **planner** are ported and
-parity-tested against the JS code. A natural follow-up is an
-MCP-callable wrapper so other agents can submit a level and get back a
-solving recording (the v29 "open to other agents" item).
+The **physics adapter**, the **planner**, and an **MCP server** are all
+ported and parity-tested against the JS code — a level solves end-to-end
+in pure Python, and other agents can drive it over MCP. Possible
+follow-ups: structured (typed) MCP output schemas for richer client
+ergonomics, and an HTTP/SSE transport alongside stdio.
