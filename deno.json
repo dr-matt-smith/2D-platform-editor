@@ -1,0 +1,54 @@
+{
+  "workspace": ["./packages/agent"],
+  "tasks": {
+    "gen:levels": "deno run --allow-read --allow-write scripts/gen-levels-manifest.ts",
+    "gen:tilesets": "deno run --allow-read --allow-write scripts/gen-tilesets-manifest.ts",
+    "gen": {
+      "description": "Regenerate the levels and tilesets manifests",
+      "dependencies": ["gen:levels", "gen:tilesets"]
+    },
+    "gen:player-sprite": "deno run --allow-read --allow-write scripts/gen-player-sprite.ts",
+    "gen:golden": {
+      "description": "Regenerate the Python adapter's golden parity vectors from the JS engine",
+      "command": "deno run --allow-read --allow-write packages/agent-py/tools/gen_golden.ts"
+    },
+    "dev": {
+      "description": "Editor at http://localhost:5173",
+      "command": "deno run -A npm:vite",
+      "dependencies": ["gen"]
+    },
+    "build": {
+      "description": "Production bundle in dist/",
+      "command": "deno run -A npm:vite build",
+      "dependencies": ["gen"]
+    },
+    "build:pages": {
+      "description": "Production bundle for GitHub Pages (/2D-platform-editor/ sub-path)",
+      "command": "deno run -A npm:vite build --base=/2D-platform-editor/",
+      "dependencies": ["gen"]
+    },
+    "preview": "deno run -A npm:vite preview",
+    "check": "deno check",
+    "test": "deno test --allow-read",
+    "test:e2e": "deno run -A npm:@playwright/test test"
+  },
+  "imports": {
+    "@playwright/test": "npm:@playwright/test@^1.60.0",
+    "@std/assert": "jsr:@std/assert@^1.0.0",
+    "vite": "npm:vite@^7.3.3"
+  },
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext", "deno.ns"],
+    "types": ["vite/client"]
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-window", "no-window-prefix"]
+    }
+  },
+  "test": {
+    "exclude": ["tests/"]
+  },
+  "exclude": ["dist/", "packages/agent-py/.venv/", "v4_preview/", "test-results/", "playwright-report/"]
+}

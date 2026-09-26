@@ -10,15 +10,22 @@ no leaving the page.
 
 ## Quick start
 
+Needs [Deno](https://deno.com) 2.x — there is no install step: Deno fetches
+Vite and the other tools on first run.
+
 ```bash
-npm install
-npm run dev       # editor at http://localhost:5173
-npm test          # node --test
-npm run build     # production bundle in dist/
+deno task dev       # editor at http://localhost:5173
+deno task test      # unit tests (Deno.test)
+deno task check     # type check the whole project
+deno task build     # production bundle in dist/
+deno task test:e2e  # Playwright end-to-end tests (starts the dev server itself)
 ```
 
-`npm run gen` regenerates the levels and tilesets manifests; `predev` /
-`prebuild` hooks run it automatically.
+The first `deno task test:e2e` needs Playwright's browser:
+`deno run -A npm:@playwright/test install chromium`.
+
+`deno task gen` regenerates the levels and tilesets manifests; `dev` and
+`build` run it automatically first. All tasks are defined in `deno.json`.
 
 ## Editor
 
@@ -63,12 +70,15 @@ scale-to-fit (no camera).
 ## Project layout
 
 ```
-src/              editor (parse, validate, renderer, levels, history, …)
+src/              editor, in TypeScript (parse, validate, renderer, levels, history, …)
 src/play/         vendored playtest engine + adapter + gate + scene
                   (CC BY 4.0; LICENSE + sources.md alongside the code)
 public/data/      bundled levels and tilesets (+ generated manifests)
 TDDs/             per-version Design / Implementation / Transcript docs
-scripts/          manifest generators (pre-dev/build hooks)
+packages/agent/   the planning agent (Deno workspace member @2d-platform/agent)
+packages/agent-py/ Python port of the physics adapter + planner (+ MCP server)
+tests/            Playwright end-to-end specs
+scripts/          manifest generators (run before dev/build)
 ```
 
 ## Versioning model
@@ -80,7 +90,7 @@ milestone.
 
 ## Licence
 
-The editor itself is **MIT** (see `package.json`). The vendored playtest
+The editor itself is **MIT**. The vendored playtest
 engine under `src/play/` is **CC BY 4.0** (full text in
 [`src/play/LICENSE`](src/play/LICENSE); attribution in
 [`src/play/sources.md`](src/play/sources.md)). Earlier versions also

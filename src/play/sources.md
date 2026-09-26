@@ -11,7 +11,7 @@ association"). The upstream project is **© 2026 Matt Smith
 
 ## What's vendored
 
-- **`core/` + `entities/` + `constants.js` + `logger.js`** — the
+- **`core/` + `entities/` + `constants.ts` + `logger.ts`** — the
   swept-AABB platformer engine: `Game`/`Scene`/`Input`/`AssetLoader`,
   `Player` (gravity + single jump + swept-y collision),
   `Platform`/`Coin`/`Spike` entities, the AABB primitives. Vendored
@@ -21,7 +21,7 @@ association"). The upstream project is **© 2026 Matt Smith
 
 - **`AssetLoader.synth('coin')` recipe** — the Web-Audio oscillator
   envelope used for the coin pickup sound. Original to the upstream
-  project, vendored verbatim in `core/assets.js`. No audio file is
+  project, vendored verbatim in `core/assets.ts`. No audio file is
   bundled (the recipe is the asset).
 
 ## What's *not* vendored (anymore)

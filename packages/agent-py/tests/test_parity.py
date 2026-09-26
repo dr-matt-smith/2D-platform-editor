@@ -4,7 +4,7 @@ frame-for-frame on the golden vectors.
 Each vector was produced by driving the REAL JS engine (jsAdapter) over
 a case; here we drive the Python adapter (py_adapter) over the same
 case and assert every per-frame player state matches. Regenerate the
-vectors with:  node packages/agent-py/tools/gen_golden.mjs
+vectors with:  deno task gen:golden
 """
 
 import json

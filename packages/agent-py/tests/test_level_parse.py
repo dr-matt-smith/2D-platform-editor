@@ -2,7 +2,7 @@
 pickupRequired) on the golden levels.
 
 The golden vectors store each agent case's grid + trimmed meta (produced by
-the JS parser in tools/gen_golden.mjs). Re-parsing the same level text here
+the JS parser in tools/gen_golden.ts). Re-parsing the same level text here
 must yield an identical grid + meta — otherwise the planner would discretise
 a different level than the JS agent did.
 """

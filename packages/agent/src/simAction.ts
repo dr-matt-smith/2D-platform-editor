@@ -1,0 +1,300 @@
+// Per-action simulator — the v21 source of truth for "what does this
+// action actually do?". Mints a `PlaytestScene` from the parsed level,
+// forces the player to a given start state (position + velocity +
+// grounded flag), and steps `scene.update(1/60)` through the action's
+// recording. Returns where the player ended up, in sub-pixel precision.
+//
+// The graph builder (M3) runs this once per (cell, action) candidate
+// during graph construction, so edges are physically valid by
+// construction — no "agent thinks vs engine says" drift.
+//
+// Pure (no DOM, no canvas). The vendored engine is byte-untouched;
+// the only consumer of `PlaytestScene.setPlayerState` is this module.
+
+// v29 M2: the engine is injected. simAction no longer imports
+// PlaytestScene / ScriptedInput directly — it constructs them through
+// the physics adapter passed in by the caller (jsAdapter today; a
+// Python adapter tomorrow). v29 M4: TILE now comes from the agent's
+// own constants.js, not the vendored src/play/constants.js.
+import { TILE } from './constants.ts';
+import { actionCost, actionToRecording } from './actions.ts';
+import type { Action } from './actions.ts';
+import type { Cell } from './grid.ts';
+import type {
+  InputSource,
+  Legend,
+  ParsedLevel,
+  PhysicsAdapter,
+  PlayerState,
+  SceneGame,
+  SceneHandle,
+} from './sim.ts';
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface Velocity {
+  vx: number;
+  vy: number;
+}
+
+/** A reusable scene + adapter pair (see makeSimContext). */
+export interface SimContext {
+  scene: SceneHandle;
+  fakeGame: SceneGame;
+  adapter: PhysicsAdapter;
+}
+
+export interface SimActionOptions {
+  collectTrajectory?: boolean;
+}
+
+export type SimActionOutcome = 'ok' | 'mid-air' | 'dead' | 'won';
+
+/** Where one simulated action left the player. */
+export interface SimActionResult {
+  outcome: SimActionOutcome;
+  /** AABB top-left. */
+  endPos: Point;
+  /** Cell containing the AABB centre. */
+  endCell: Cell;
+  endVel: Velocity;
+  endState: PlayerState;
+  /** Per-frame AABB top-left; null unless `collectTrajectory`. */
+  trajectory: Point[] | null;
+  collided: boolean;
+  /** Frames the action actually took. */
+  cost: number;
+}
+
+export interface SimulateActionArgs {
+  adapter: PhysicsAdapter;
+  parsed: ParsedLevel;
+  legend: Legend | null;
+  tileset?: unknown;
+  startState: PlayerState;
+  action: Action;
+}
+
+const DT = 1 / 60;
+
+/**
+ * Build a reusable simulation context. The graph builder (grid.js)
+ * runs simulateActionInContext repeatedly against this ONE context
+ * to avoid paying PlaytestScene + toWorld() construction costs per
+ * action (28 actions × hundreds of cells = thousands of calls).
+ *
+ * v29 M2: `adapter` is prepended to the arg list. The scene +
+ * ScriptedInput are minted through it instead of `new PlaytestScene`
+ * / `new ScriptedInput`. The adapter's `makeScene` returns an
+ * already-entered scene whose `game` is a mutable `{ input, assets }`
+ * — `simulateActionInContext` swaps `game.input` per action.
+ *
+ * @returns {{scene, fakeGame, adapter}}
+ */
+export function makeSimContext(
+  adapter: PhysicsAdapter,
+  parsed: ParsedLevel,
+  legend: Legend | null,
+  tileset: unknown = null,
+): SimContext {
+  const scene = adapter.makeScene(parsed, legend, tileset);
+  return { scene, fakeGame: scene.game, adapter };
+}
+
+/**
+ * Simulate `action` from `startState` against an existing context.
+ * Same outcome shape as `simulateAction(...)`; just faster because
+ * `PlaytestScene` + `toWorld()` are reused.
+ *
+ * v25 M4: optional `opts.collectTrajectory` flag. When set, the
+ * returned object carries `trajectory: [{x, y}]` — the player's
+ * AABB-top-left for every frame of the simulation. grid.js uses
+ * this for the precision_landing edge rule (±2 px target-centre
+ * passes). When unset, no trajectory work — back-compat fast path.
+ */
+export function simulateActionInContext(
+  ctx: SimContext,
+  startState: PlayerState,
+  action: Action,
+  opts: SimActionOptions = {},
+): SimActionResult {
+  ctx.scene.phase = 'play';
+  ctx.scene.score = 0;
+  for (const c of ctx.scene.coins) c.collected = false;
+  // v21: recording starts at frame=1 (matches the planner's settle
+  // offset). PlaytestScene's #tickScriptedInput then calls advance(0)
+  // on the first update (no events fire — the player settles under
+  // gravity), then advance(1) on the next update (press fires). This
+  // mirrors what the live engine will see when the planner's
+  // recording is replayed.
+  ctx.fakeGame.input = ctx.adapter.makeScriptedInput(actionToRecording(action, 1));
+  ctx.scene.setPlayerState(startState);
+  // v21: reset BOTH the input-tick counter and the wall-clock
+  // accumulator so successive simulations on the same context start
+  // fresh — otherwise simTime keeps accumulating and the second
+  // action's first update would advance through the entire recording
+  // in one tick.
+  ctx.scene.simFrame = 0;
+  ctx.scene.simTime = 0;
+  return runSimLoop(ctx.scene, ctx.fakeGame.input, action, opts);
+}
+
+/**
+ * Run one action and return the resulting state.
+ *
+ * @param {object} args
+ * @param {object} args.adapter  physics adapter (v29 M2)
+ * @param {object} args.parsed   level.parse() result
+ * @param {object} args.legend   active tileset legend
+ * @param {object|null} args.tileset
+ * @param {{x:number,y:number,vx?:number,vy?:number,onGround?:boolean}} args.startState
+ *        player AABB top-left + velocity at action start
+ * @param {{kind:string,params:object}} args.action
+ *
+ * @returns {{
+ *   outcome:    'ok' | 'mid-air' | 'dead' | 'won',
+ *   endPos:     { x:number, y:number },     // AABB top-left
+ *   endCell:    { r:number, c:number },     // cell containing AABB centre
+ *   endVel:     { vx:number, vy:number },
+ *   collided:   boolean,
+ *   cost:       number,                       // actual frames the action took
+ * }}
+ */
+export function simulateAction(
+  { adapter, parsed, legend, tileset = null, startState, action }: SimulateActionArgs,
+): SimActionResult {
+  const ctx = makeSimContext(adapter, parsed, legend, tileset);
+  return simulateActionInContext(ctx, startState, action);
+}
+
+/** Shared simulation loop. Called by both the single-shot and the
+ *  context-reuse path. Reads input + scene from its arguments;
+ *  advances scene.update(1/60) until the action's natural end.
+ *
+ *  - For walks: runs nominalCost+1 frames so the release event at
+ *    frame=nominalCost fires and the player's vx is reset to 0
+ *    before we capture endVel. Reports cost=nominalCost.
+ *  - For jumps/drops: runs nominalCost+30 frames; early-exit when
+ *    the player lands (wasInAir → onGround transition). Reports
+ *    cost = actual landing frame.
+ */
+function runSimLoop(
+  scene: SceneHandle,
+  input: InputSource,
+  action: Action,
+  opts: SimActionOptions = {},
+): SimActionResult {
+  const nominalCost = actionCost(action);
+  const collectTrajectory = opts.collectTrajectory === true;
+  const trajectory: Point[] | null = collectTrajectory ? [] : null;
+  // v23 M6: drop_release and run_off are also "air actions" — they
+  // may leave the ground mid-recording; loop should early-exit on
+  // landing rather than running to the recording's nominal end.
+  const isAirAction = action.kind === 'jump'
+    || action.kind === 'drop'
+    || action.kind === 'drop_release'
+    || action.kind === 'run_off';
+  // v21: the recording is offset by 1 frame (events start at f=1);
+  // the loop's first iteration applies advance(0) with no events,
+  // which acts as the player's settle frame. Walks need
+  // (nominalCost + 1) iterations to cover the settle + the press
+  // + the in-motion frames + the release frame. Jumps/drops get a
+  // 30-frame buffer so the airborne arc has time to land.
+  const maxFrames = isAirAction ? nominalCost + 30 : nominalCost + 1;
+  let wasInAir = !scene.player.onGround;
+  let collided = false;
+
+  // The loop's `frame` is 0-indexed; "cost" is the *count* of update
+  // calls = frame + 1. This matches the live engine: the planner
+  // emits the action's press event at live-frame F+1 (= F=0 settle +
+  // F=1 first motion frame), so the live engine takes (F+1) physics
+  // updates to reach the same state simAction reaches at loop frame
+  // F. Without the +1, the planner would emit a release one frame
+  // too early and the player would stop short of their predicted
+  // landing position.
+  //
+  // v21 note: `input.advance(frame)` was called explicitly here in
+  // the v20.x model. v21 moved that into `PlaytestScene.update()`
+  // (which calls `#tickScriptedInput` synchronously before
+  // `player.update`), guaranteeing the right read-order.
+  //
+  // v28 M3 fixup: re-introduce the explicit advance BEFORE
+  // scene.update, matching sim.js's live-engine loop. Without this,
+  // simTime accumulates FP drift (sum-of-1/60 is 0.999... at iter
+  // 60 — see node-test) so the internal #tickScriptedInput's
+  // floor(simTime * 60) lags by 1 frame on some iters; release
+  // events fire 1 frame later inside simAction than in sim.js. The
+  // perframe planner's recorded action sequence drifts off the
+  // simulator's prediction by 1 frame of motion per leg. Calling
+  // advance(frame) directly is idempotent vs #tickScriptedInput
+  // (re-advancing to the same frame is a no-op in ScriptedInput).
+  for (let frame = 0; frame < maxFrames; frame++) {
+    if (input?.advance) input.advance(frame);
+    const prevX = scene.player.x;
+    scene.update(DT);
+
+    // v25 M4: per-frame trajectory (top-left of AABB) for the
+    // precision_landing edge rule.
+    if (trajectory) trajectory.push({ x: scene.player.x, y: scene.player.y });
+
+    if (Math.abs(scene.player.vx) > 0 && Math.abs(scene.player.x - prevX) < 0.1 && frame > 0) {
+      collided = true;
+    }
+    if (scene.phase === 'dead') {
+      return finalise(scene, frame + 1, 'dead', collided, trajectory);
+    }
+    if (scene.phase === 'won') {
+      return finalise(scene, frame + 1, 'won', collided, trajectory);
+    }
+    if (!scene.player.onGround) {
+      wasInAir = true;
+    } else if (wasInAir && isAirAction) {
+      return finalise(scene, frame + 1, 'ok', collided, trajectory);
+    }
+  }
+  // ↓ Walks completing normally: nominalCost is the canonical cost
+  // (the extra +1 loop iteration was to process the release event;
+  // the action's duration from the live engine's POV is exactly
+  // nominalCost frames of motion).
+  const cost = isAirAction ? maxFrames : nominalCost;
+  const outcome = scene.player.onGround ? 'ok' : 'mid-air';
+  return finalise(scene, cost, outcome, collided, trajectory);
+}
+
+function finalise(
+  scene: SceneHandle,
+  cost: number,
+  outcome: SimActionOutcome,
+  collided: boolean,
+  trajectory: Point[] | null = null,
+): SimActionResult {
+  const px = scene.player.x;
+  const py = scene.player.y;
+  const cx = px + scene.player.w / 2;
+  const cy = py + scene.player.h / 2;
+  return {
+    outcome,
+    endPos: { x: px, y: py },
+    endCell: { r: Math.floor(cy / TILE), c: Math.floor(cx / TILE) },
+    endVel: { vx: scene.player.vx, vy: scene.player.vy },
+    // v25 M1: full physics state at the end of the action. The
+    // shape matches PlaytestScene.setPlayerState so the next step's
+    // re-simulation can begin EXACTLY where this one ended — no
+    // cell-rounded drift. Existing endPos/endCell/endVel stay for
+    // back-compat with v21-v24 callers.
+    endState: {
+      x: scene.player.x,
+      y: scene.player.y,
+      vx: scene.player.vx,
+      vy: scene.player.vy,
+      onGround: scene.player.onGround,
+    },
+    // v25 M4: per-frame trajectory (only when caller asked).
+    trajectory,
+    collided,
+    cost,
+  };
+}

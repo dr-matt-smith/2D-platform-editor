@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
-# Builds the editor with Vite under the project-pages sub-path and
-# publishes it as a Pages artifact. Triggered on every push to main and
-# can be re-run manually from the Actions tab.
+# Type checks and tests the editor with Deno, builds it with Vite under
+# the project-pages sub-path, and publishes it as a Pages artifact.
+# Triggered on every push to main and can be re-run manually from the
+# Actions tab.
 
 on:
   push:
@@ -24,13 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: denoland/setup-deno@v2
         with:
-          node-version: '20'
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run build:pages
+          deno-version: v2.x
+          cache: true
+      - run: deno task check
+      - run: deno task test
+      - run: deno task build:pages
       - uses: actions/configure-pages@v6
         with:
           enablement: true

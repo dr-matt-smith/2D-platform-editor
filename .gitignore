@@ -1,12 +1,15 @@
-# Dependencies
+# Dependencies (Deno fills node_modules/ with the npm packages Vite and
+# Playwright need, because deno.json sets "nodeModulesDir": "auto")
 node_modules/
 
 # Build output
 dist/
 
+# Vite dependency pre-bundle cache
+.vite/
+
 # Logs
 *.log
-npm-debug.log*
 
 # Environment
 .env
@@ -20,6 +23,9 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Celbridge project metadata (the *.celbridge project file stays tracked)
+.celbridge/
 
 # Claude Code local settings
 .claude/settings.local.json

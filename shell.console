@@ -1,0 +1,4 @@
+# A shell console running the platform default shell, opened in the project folder.
+# Run any deno task here, e.g. `deno task test` or `deno task check`.
+[session]
+type = "shell"

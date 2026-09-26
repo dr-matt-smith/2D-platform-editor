@@ -21,8 +21,8 @@ on the live engine.
 
 ```js
 import { testLevel } from '@2d-platform/agent';
-import { jsAdapter } from '../../src/agent-adapter.js'; // the editor's JS adapter
-import { parse, DEFAULT_LEGEND } from '../../src/level.js';
+import { jsAdapter } from '../../src/agent-adapter.ts'; // the editor's JS adapter
+import { parse, DEFAULT_LEGEND } from '../../src/level.ts';
 
 const parsed = parse('#####\n#P.E#\n#####');
 const result = await testLevel(parsed, DEFAULT_LEGEND, null, {
@@ -68,7 +68,7 @@ const adapter = {
 };
 ```
 
-`src/agent-adapter.js` in the editor is the reference JS adapter — it
+`src/agent-adapter.ts` in the editor is the reference JS adapter — it
 wraps the vendored `PlaytestScene` + `ScriptedInput`. A Python adapter
 would expose the same shape over a Node↔Python bridge.
 
@@ -85,7 +85,7 @@ misconfiguration is loud and immediate.
 ## Standalone smoke
 
 ```
-node packages/agent/examples/headless.js
+deno run -A packages/agent/examples/headless.ts
 ```
 
 Constructs a minimal **stub adapter** (no real physics — a toy walk

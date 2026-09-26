@@ -1,0 +1,8 @@
+# Starts the Vite dev server (`deno task dev`): the editor is served at http://localhost:5173
+# and reloads as you save. Press Ctrl+C to stop it.
+[session]
+type = "shell"
+
+[session.shell]
+executable = "deno"
+arguments = ["task", "dev"]
