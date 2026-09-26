@@ -23,7 +23,8 @@ of reach its trace is empty and `unreachable` says why.
 | `unreachable` | readonly property | Goals with no path |
 | `isEmpty` | get accessor | No steps? |
 | `stepAtFrame(frame)` | method | The step running at `frame` (the last step after the end) |
-| `longestStepNotIn(blocked)` | method | Edge id of the longest step not already blocked, or null |
+| `stepsToBlock(blocked)` | method | Step ids not already blocked, longest step first — the variations LevelTester tries |
+| `routeKey()` | method | The step ids in order, as one string: equal keys mean the same route |
 | `hasSameRecordingAs(other)` | method | Same key events at the same frames? |
 | `recordingKey()` | method | The recording as one string, for de-duplicating |
 

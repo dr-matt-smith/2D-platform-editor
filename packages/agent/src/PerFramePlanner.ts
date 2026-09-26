@@ -21,6 +21,7 @@ import type { PerFrameEdge, PerFrameStep } from './PerFrameExpander.ts';
 import type { PhysicsAdapter } from './PhysicsAdapter.ts';
 import type { PlanOptions } from './Planner.ts';
 import type { PlayerState } from './PlayerState.ts';
+import type { Cell } from './Cell.ts';
 import type { UnreachableGoal } from './Plan.ts';
 
 /** Tuning for the per-frame search. */
@@ -46,8 +47,9 @@ interface OpenNode {
  * are merged (StateCluster) to keep the search finite.
  *
  * Pickups are visited nearest first (by cell distance), then the exit.
- * Blocked edges are not supported: this planner ignores
- * `options.blocked`, so a replan produces the same plan.
+ * Steps listed in `options.blocked` (ids "fromR,fromC>toR,toC:kind", see
+ * `stepId`) are never taken, which is how LevelTester finds alternative
+ * routes and replans around a step that failed in replay.
  */
 export class PerFramePlanner extends Planner {
   static readonly DEFAULT_NODE_CAP = 100_000;
@@ -64,6 +66,7 @@ export class PerFramePlanner extends Planner {
 
   plan(parsed: ParsedLevel, legend: LegendRecord | null, options: PlanOptions = {}): Plan {
     const tileset = options.tileset ?? null;
+    const blocked = options.blocked ?? new Set<string>();
     const layout = new LevelGrid(parsed, legend).findLayout();
     const { start, pickupCells, exitCells } = layout;
     if (!start || exitCells.length === 0) {
@@ -83,7 +86,7 @@ export class PerFramePlanner extends Planner {
     const unreachable: UnreachableGoal[] = [];
     for (const goal of goals) {
       const { r: gr, c: gc } = CellKey.parse(goal);
-      const path = this.findPath(expander, state, goal);
+      const path = this.findPath(expander, state, goal, blocked);
       const subgoalName = Planner.describeGoal(goal, layout, 'target ');
       if (!path) {
         const isExit = exitCells.some((e) => e.r === gr && e.c === gc);
@@ -103,11 +106,26 @@ export class PerFramePlanner extends Planner {
   }
 
   /**
-   * A* from exactly `fromState` to any state in the cell `goalCellKey`
-   * ("r,c"). Returns the steps (empty if already there), or null if the
-   * goal wasn't reached within the node cap.
+   * The id of a step from cell `from` along `edge`: "fromR,fromC>toR,toC:kind",
+   * the same "from>to:kind" shape as the bucket planner's edge ids. Blocking
+   * an id rules out that kind of move between those two cells.
    */
-  findPath(expander: PerFrameExpander, fromState: PlayerState, goalCellKey: string): PerFrameStep[] | null {
+  static stepId(from: Cell, edge: PerFrameEdge): string {
+    return `${from.r},${from.c}>${edge.toCell.r},${edge.toCell.c}:${edge.kind}`;
+  }
+
+  /**
+   * A* from exactly `fromState` to any state in the cell `goalCellKey`
+   * ("r,c"), never taking a step whose `stepId` is in `blocked`. Returns
+   * the steps (empty if already there), or null if the goal wasn't
+   * reached within the node cap.
+   */
+  findPath(
+    expander: PerFrameExpander,
+    fromState: PlayerState,
+    goalCellKey: string,
+    blocked: ReadonlySet<string> = new Set(),
+  ): PerFrameStep[] | null {
     const tol = this.tol;
     const { r: tr, c: tc } = CellKey.parse(goalCellKey);
     const matchesGoal = (cellR: number, cellC: number) => cellR === tr && cellC === tc;
@@ -139,8 +157,8 @@ export class PerFramePlanner extends Planner {
         const path: PerFrameStep[] = [];
         let ck = curCK!;
         while (cameFrom.has(ck)) {
-          const { from, edge, fromState: legStart } = cameFrom.get(ck)!;
-          path.unshift({ from, edge, fromState: legStart });
+          const { from, edge, fromState: legStart, fromCell } = cameFrom.get(ck)!;
+          path.unshift({ from, edge, fromState: legStart, fromCell });
           ck = from;
         }
         return path;
@@ -151,11 +169,13 @@ export class PerFramePlanner extends Planner {
       edges.sort((a, b) => a.action.sortKey.localeCompare(b.action.sortKey));
 
       const curG = gScore.get(curCK!) ?? Infinity;
+      const curCell = { r: curNode.cellR, c: curNode.cellC };
       for (const edge of edges) {
+        if (blocked.size > 0 && blocked.has(PerFramePlanner.stepId(curCell, edge))) continue;
         const nextCK = StateCluster.keyOf(edge.toState, tol);
         const tentative = curG + edge.cost;
         if (tentative < (gScore.get(nextCK) ?? Infinity)) {
-          cameFrom.set(nextCK, { from: curCK!, edge, fromState: curNode.state });
+          cameFrom.set(nextCK, { from: curCK!, edge, fromState: curNode.state, fromCell: curCell });
           gScore.set(nextCK, tentative);
           fScore.set(nextCK, tentative + PerFramePlanner.heuristic(edge.toCell.r, edge.toCell.c, tr, tc));
           open.set(nextCK, {
@@ -234,8 +254,7 @@ export class PerFramePlanner extends Planner {
         { r: edge.toCell.r, c: edge.toCell.c },
         PerFramePlanner.explain(edge, subgoalName),
         edge.cost,
-        // The same "from>to:kind" shape as the bucket planner's ids.
-        `perframe>${edge.toCell.r},${edge.toCell.c}:${edge.kind}`,
+        PerFramePlanner.stepId(step.fromCell, edge),
       );
       state = { ...edge.endState };
     }

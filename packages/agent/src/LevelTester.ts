@@ -12,6 +12,7 @@ import type { Planner } from './Planner.ts';
 import type { PlannerKind } from './PlannerKind.ts';
 import type { ProgressListener } from './SearchBudget.ts';
 import type { SimResult } from './Simulator.ts';
+import type { Plan } from './Plan.ts';
 
 /** Options for LevelTester.test. */
 export interface LevelTestOptions {
@@ -21,17 +22,20 @@ export interface LevelTestOptions {
   onProgress?: ProgressListener;
   /** Abort the search early. */
   signal?: AbortSignal;
-  /** Most plan-then-replay attempts (default 10). */
+  /** Most plan-then-replay attempts (default 20). */
   replanBudget?: number;
 }
 
 /**
  * Answers "can this level be solved, and how?" — the editor's Test
  * button and `deno task solve`. It plans, replays the plan headless to
- * check it really wins, and then looks for different routes by blocking
- * one step of each solution and planning again, collecting up to five
- * distinct solutions within the time budget. A plan that fails its
- * replay is replanned around the step that failed.
+ * check it really wins, and then searches for different routes: for each
+ * solution it queues one variation per step, each blocking that step on
+ * top of the blocks that produced the solution, and works through the
+ * queue breadth first. It collects up to five solutions that differ in
+ * both route (`Plan.routeKey`) and keys (`Plan.recordingKey`) within the
+ * attempt and time budgets. A plan that fails its replay is replanned around the step
+ * that failed.
  */
 export class LevelTester {
   /** The most distinct solutions a test collects. */
@@ -54,7 +58,7 @@ export class LevelTester {
     options: LevelTestOptions = {},
   ): Promise<LevelTestResult> {
     const budget = new SearchBudget(options.maxRuntimeMs ?? 5000, options.onProgress, options.signal);
-    const replanBudget = options.replanBudget ?? 10;
+    const replanBudget = options.replanBudget ?? 20;
 
     let currentPlan = this.planner.plan(parsed, legend, { tileset });
     if (!(await budget.tick())) {
@@ -77,10 +81,15 @@ export class LevelTester {
     }
 
     const solutions: Solution[] = [];
+    // A solution counts as new only if both its route and its keys are.
+    const seenRoutes = new Set<string>();
     const seenRecordings = new Set<string>();
+    const isNew = (plan: Plan) => !seenRoutes.has(plan.routeKey()) && !seenRecordings.has(plan.recordingKey());
+    const alternatives = new AlternativeQueue();
+    // The steps the current plan was made to avoid.
+    let blocked: ReadonlySet<string> = new Set();
     let lastSim: SimResult | null = null;
     let attempt = 0;
-    const blockedAcrossSolutions = new Set<string>();
 
     while (attempt < replanBudget && solutions.length < LevelTester.MAX_SOLUTIONS) {
       attempt++;
@@ -89,34 +98,39 @@ export class LevelTester {
         maxFrames: LevelTester.SIM_MAX_FRAMES,
       });
       lastSim = sim;
+      if (!(await budget.tick())) break;
+
+      let next: Plan | null = null;
       if (sim.outcome === SimOutcome.Won) {
-        const key = currentPlan.recordingKey();
-        if (!seenRecordings.has(key)) {
-          seenRecordings.add(key);
+        if (isNew(currentPlan)) {
+          seenRoutes.add(currentPlan.routeKey());
+          seenRecordings.add(currentPlan.recordingKey());
           solutions.push(Solution.fromWin(currentPlan, sim, attempt));
+          alternatives.addVariationsOf(currentPlan, blocked);
         }
-        if (solutions.length >= LevelTester.MAX_SOLUTIONS) break;
+      } else {
+        // Replan around the step that was running when the replay failed.
+        const repaired = this.planner.replan(currentPlan, sim, parsed, legend, { tileset, blocked });
+        if (repaired && !repaired.isEmpty && !currentPlan.hasSameRecordingAs(repaired)) {
+          next = repaired;
+          blocked = new Set([...blocked, currentPlan.stepAtFrame(sim.frame)!.edgeId]);
+        }
+      }
+      if (solutions.length >= LevelTester.MAX_SOLUTIONS) break;
+
+      // Otherwise try queued variations until one plans a route not yet seen.
+      while (!next) {
+        const candidate = alternatives.next();
+        if (!candidate) break;
+        const plan = this.planner.plan(parsed, legend, { tileset, blocked: candidate });
         if (!(await budget.tick())) break;
-
-        // Look for a different route: block this solution's longest step
-        // (usually its most distinctive) and plan again.
-        const blockEdge = currentPlan.longestStepNotIn(blockedAcrossSolutions);
-        if (!blockEdge) break;
-        blockedAcrossSolutions.add(blockEdge);
-        const alt = this.planner.plan(parsed, legend, { tileset, blocked: blockedAcrossSolutions });
-        if (!alt || alt.isEmpty) break;
-        if (currentPlan.hasSameRecordingAs(alt)) break;
-        currentPlan = alt;
-        continue;
+        if (!plan.isEmpty && isNew(plan)) {
+          next = plan;
+          blocked = candidate;
+        }
       }
-      if (!(await budget.tick())) break;
-
-      const next = this.planner.replan(currentPlan, sim, parsed, legend, { tileset });
-      if (!next || next.isEmpty || currentPlan.hasSameRecordingAs(next)) {
-        break;
-      }
+      if (!next) break;
       currentPlan = next;
-      if (!(await budget.tick())) break;
     }
 
     if (solutions.length > 0) {
@@ -134,5 +148,31 @@ export class LevelTester {
       lastSim,
       attempts: attempt,
     };
+  }
+}
+
+/**
+ * The block sets still to try when looking for different routes, first
+ * in first out. A set is only queued once, however many solutions lead
+ * to it.
+ */
+class AlternativeQueue {
+  private readonly pending: ReadonlySet<string>[] = [];
+  private readonly queued = new Set<string>();
+
+  /** Queue one variation of `plan` per step: its blocks plus that step. */
+  addVariationsOf(plan: Plan, blocked: ReadonlySet<string>): void {
+    for (const step of plan.stepsToBlock(blocked)) {
+      const candidate = new Set([...blocked, step]);
+      const key = [...candidate].sort().join('|');
+      if (this.queued.has(key)) continue;
+      this.queued.add(key);
+      this.pending.push(candidate);
+    }
+  }
+
+  /** The next block set to try, or undefined when there are none left. */
+  next(): ReadonlySet<string> | undefined {
+    return this.pending.shift();
   }
 }

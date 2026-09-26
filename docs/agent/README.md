@@ -53,7 +53,8 @@ classDiagram
     +PlanStats stats
     +LevelLayout graph
     +stepAtFrame(frame) TraceEntry
-    +longestStepNotIn(blocked) string
+    +stepsToBlock(blocked) string[]
+    +routeKey() string
   }
   class PlanBuilder {
     +holdDirection(dir) void

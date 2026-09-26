@@ -39,11 +39,17 @@ Deno.test('stepAtFrame: the step whose frame range holds the frame; after the en
   assertEquals(Plan.empty(null).stepAtFrame(3), undefined);
 });
 
-Deno.test('longestStepNotIn: the longest unblocked step (first on a tie), or null', () => {
-  const p = planOf([step(1, 6, 'a'), step(6, 48, 'b'), step(48, 90, 'c')]);
-  assertEquals(p.longestStepNotIn(new Set()), 'b');
-  assertEquals(p.longestStepNotIn(new Set(['b'])), 'c');
-  assertEquals(p.longestStepNotIn(new Set(['a', 'b', 'c'])), null);
+Deno.test('stepsToBlock: unblocked steps, longest first (earliest on a tie), no repeats', () => {
+  const p = planOf([step(1, 6, 'a'), step(6, 48, 'b'), step(48, 90, 'c'), step(90, 95, 'a')]);
+  assertEquals(p.stepsToBlock(new Set()), ['b', 'c', 'a']);
+  assertEquals(p.stepsToBlock(new Set(['b'])), ['c', 'a']);
+  assertEquals(p.stepsToBlock(new Set(['a', 'b', 'c'])), []);
+});
+
+Deno.test('routeKey: the step ids in order', () => {
+  const p = planOf([step(1, 6, 'a'), step(6, 48, 'b')]);
+  assertEquals(p.routeKey(), 'a|b');
+  assert(p.routeKey() !== planOf([step(1, 6, 'b'), step(6, 48, 'a')]).routeKey());
 });
 
 Deno.test('hasSameRecordingAs / recordingKey compare key events', () => {

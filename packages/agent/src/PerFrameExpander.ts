@@ -37,6 +37,8 @@ export interface PerFrameStep {
   from: string;
   edge: PerFrameEdge;
   fromState: PlayerState;
+  /** The cell the step starts from (part of its step id). */
+  fromCell: Cell;
 }
 
 /** The targets an expander checks edges against. */

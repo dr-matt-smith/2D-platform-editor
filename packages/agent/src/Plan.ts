@@ -87,25 +87,6 @@ export class Plan implements PlanData {
     return entry ?? this.trace[this.trace.length - 1];
   }
 
-  /**
-   * The edge id of the longest step not already in `blocked` (the first
-   * such step on a tie), or null. The longest step is usually the most
-   * distinctive, so blocking it gives a genuinely different route.
-   */
-  longestStepNotIn(blocked: ReadonlySet<string>): string | null {
-    let best: string | null = null;
-    let bestCost = -1;
-    for (const entry of this.trace) {
-      if (blocked.has(entry.edgeId)) continue;
-      const cost = entry.frameRange[1] - entry.frameRange[0];
-      if (cost > bestCost) {
-        bestCost = cost;
-        best = entry.edgeId;
-      }
-    }
-    return best;
-  }
-
   /** Do both plans press the same keys at the same frames? */
   hasSameRecordingAs(other: Plan): boolean {
     if (this.recording.length !== other.recording.length) return false;
@@ -115,6 +96,32 @@ export class Plan implements PlanData {
       if (ea.frame !== eb.frame || ea.key !== eb.key || ea.down !== eb.down) return false;
     }
     return true;
+  }
+
+  /**
+   * The route as one string: the step ids in order. Two plans with the same
+   * route key take the same moves between the same cells, even if their
+   * key timings differ slightly — they would look identical on the overlay.
+   */
+  routeKey(): string {
+    return this.trace.map((e) => e.edgeId).join('|');
+  }
+
+  /**
+   * The step ids to try blocking, one at a time, to find a different
+   * route: every step not already in `blocked`, longest first (the first
+   * on a tie). The longest step is usually the most distinctive.
+   */
+  stepsToBlock(blocked: ReadonlySet<string>): string[] {
+    const seen = new Set<string>();
+    const steps: { id: string; cost: number; order: number }[] = [];
+    this.trace.forEach((entry, order) => {
+      if (blocked.has(entry.edgeId) || seen.has(entry.edgeId)) return;
+      seen.add(entry.edgeId);
+      steps.push({ id: entry.edgeId, cost: entry.frameRange[1] - entry.frameRange[0], order });
+    });
+    steps.sort((a, b) => b.cost - a.cost || a.order - b.order);
+    return steps.map((s) => s.id);
   }
 
   /** The recording as one string — equal strings mean equal recordings. */

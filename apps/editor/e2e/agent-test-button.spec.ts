@@ -53,6 +53,9 @@ test('agent: path overlay paints when solution is found', async ({ page }) => {
 
   await page.locator('#testBtn').click();
   await page.waitForSelector('.agent-dialog');
+  // The dialog opens while the search is still running; the overlay is
+  // painted once it finishes, which the success badge marks.
+  await expect(page.locator('.badge.ok')).toBeVisible();
 
   // Snapshot AFTER — the overlay should now have the polyline + markers.
   const hashAfter = await page.evaluate(() =>

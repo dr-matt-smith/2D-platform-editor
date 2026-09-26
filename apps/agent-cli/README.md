@@ -37,10 +37,14 @@ glyphs, ...) they are reported and the agent is not run.
 $ deno task solve tutorial
 Level:    tutorial  (content/data/levels/tutorial.txt)
 Tileset:  Dirt_Platformer_Tiles, 24x10
-Solvable: yes, 1 distinct solution found in 59ms (budget 5.0s)
+Solvable: yes, 5 distinct solutions found in 197ms (budget 5.0s)
 
 #  frames  game time  steps  walks  jumps  drops  score  attempt
-1      83      1.38s      8      5      3      0      4        1
+1      82      1.37s      8      5      3      0      4        3
+2      82      1.37s      8      5      3      0      4        4
+3      83      1.38s      8      5      3      0      4        1
+4      86      1.43s     10      8      2      0      4        2
+5     118      1.97s      9      6      3      0      4        5
 ```
 
 The columns are the agent's `SolutionStats`: `frames` is the frame on
@@ -52,13 +56,13 @@ second, giving `game time`), `steps` counts planned actions (`walks`,
 ```
 $ deno task solve --all
 level          result    solutions  best frames  jumps  time
-tutorial       solved            1           83      3  51ms
-below_ground   solved            1          218      4  135ms
-above_ground   solved            1          185      3  39ms
-above_ground2  solved            1          105      2  16ms
-simple         solved            1          106      0  15ms
+tutorial       solved            5           82      3  198ms
+below_ground   solved            5          218      4  2.0s
+above_ground   solved            5          185      3  225ms
+above_ground2  solved            5          105      2  74ms
+simple         solved            5          106      0  69ms
 
-Summary: 5/5 solved in 256ms
+Summary: 5/5 solved in 2.5s
 ```
 
 ## Options

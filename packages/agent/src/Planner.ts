@@ -36,8 +36,8 @@ export abstract class Planner {
 
   /**
    * Plan again after `previous` failed in simulation: block the step that
-   * was running when the replay failed and plan once more. Null when
-   * there is nothing to block.
+   * was running when the replay failed (on top of any `options.blocked`)
+   * and plan once more. Null when there is nothing to block.
    */
   replan(
     previous: Plan | null,
@@ -48,7 +48,7 @@ export abstract class Planner {
   ): Plan | null {
     if (!previous || previous.isEmpty) return null;
     const failing = previous.stepAtFrame(sim.frame)!;
-    const blocked = new Set([failing.edgeId]);
+    const blocked = new Set([...(options.blocked ?? []), failing.edgeId]);
     return this.plan(parsed, legend, { ...options, blocked });
   }
 

@@ -36,11 +36,19 @@ else console.log(result.lastPlan.unreachable);
 
 ## Design notes
 - **The loop.** Plan once. Then, up to `replanBudget` times: replay the
-  plan; if it wins, keep it (unless its recording was seen before), block
-  its longest step and plan again for a different route; if it fails, ask
-  the planner to `replan` around the step that was running when it failed.
-  Stop at five solutions, when a new plan repeats the last recording, or
-  when the budget runs out. Solutions are returned fewest frames first.
+  plan. If it wins and is new — a route (`Plan.routeKey`) *and* keys
+  (`Plan.recordingKey`) not seen before — keep it and queue one variation
+  per step: the blocks that produced it plus that step, longest step
+  first. If the replay fails, `replan` around the step that was running
+  when it failed. Then take variations from the queue, breadth first,
+  until one plans a new route. Stop at five solutions, when the queue is
+  empty, or when the time budget runs out. Solutions are returned fewest
+  frames first.
+- **A breadth-first search over block sets.** Blocking one step of the
+  best route explores its nearest alternatives before combinations of
+  blocks, so the solutions found tend to be the most useful distinct
+  routes rather than small variations of one. The queue (a private
+  `AlternativeQueue`) never tries the same set of blocks twice.
 - **Composition, not inheritance.** The tester *has* a planner and a
   simulator. Swapping the planning strategy is a constructor argument, not
   a subclass.
@@ -50,6 +58,5 @@ else console.log(result.lastPlan.unreachable);
 - **Plain result data.** The result is a discriminated union of
   interfaces (check `ok`), which the editor extends with a focused index
   and the CLI turns into JSON.
-- With the default per-frame planner, blocking a step does not change the
-  plan (that planner ignores blocked edges), so a test usually ends with
-  one solution; the bucket planner can find several.
+- Both planners honour blocked steps, so either finds several solutions;
+  every bundled level yields five.

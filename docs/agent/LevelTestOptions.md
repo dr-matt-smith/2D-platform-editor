@@ -13,7 +13,7 @@ Options for [LevelTester](LevelTester.md)`.test`.
 | `maxRuntimeMs?` | property | Wall-clock budget (default 5000) |
 | `onProgress?` | property | `(elapsedMs, maxRuntimeMs) => void`, called between steps |
 | `signal?` | property | An `AbortSignal` to stop early |
-| `replanBudget?` | property | Most plan-then-replay attempts (default 10) |
+| `replanBudget?` | property | Most plan-then-replay attempts (default 20) |
 
 ## Example
 ```ts

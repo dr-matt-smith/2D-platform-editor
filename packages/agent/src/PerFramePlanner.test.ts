@@ -42,3 +42,21 @@ Deno.test('no spawn or no exit → an empty plan with no layout', () => {
   assertEquals(planner.plan(Level.parse('#####\n#P..#\n#####'), DEFAULT_LEGEND).graph, null);
   assertEquals(planner.plan(Level.parse('#####\n#..E#\n#####'), DEFAULT_LEGEND).graph, null);
 });
+
+Deno.test('blocked steps are never taken, so blocking a step gives a different route', () => {
+  const planner = new PerFramePlanner(jsAdapter);
+  const level = Level.parse(Deno.readTextFileSync('content/data/levels/tutorial.txt'));
+  const first = planner.plan(level, DEFAULT_LEGEND);
+  const blocked = new Set([first.stepsToBlock(new Set())[0]]);
+  const alt = planner.plan(level, DEFAULT_LEGEND, { blocked });
+  assert(!alt.isEmpty);
+  assert(alt.trace.every((step) => !blocked.has(step.edgeId)));
+  assert(alt.routeKey() !== first.routeKey());
+});
+
+Deno.test('step ids name the start cell, target cell and kind: "r,c>r,c:kind"', () => {
+  const p = new PerFramePlanner(jsAdapter).plan(Level.parse('#####\n#P.E#\n#####'), DEFAULT_LEGEND);
+  const step = p.trace[0];
+  // From the spawn cell (1,1) to the exit cell (1,3), then the move's kind.
+  assertEquals(step.edgeId, `1,1>1,3:${step.kind}`);
+});

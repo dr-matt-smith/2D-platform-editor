@@ -18,10 +18,10 @@ Deno.test('PlannerFactory.create makes the planner for each kind', () => {
 Deno.test('default strategy is per-frame', () => {
   assertEquals(PlannerFactory.DEFAULT_KIND, PlannerKind.PerFrame);
   const p = PlannerFactory.create(jsAdapter).plan(Level.parse('#####\n#P.E#\n#####'), DEFAULT_LEGEND);
-  // Per-frame edge ids start with 'perframe'.
+  // Per-frame step ids are "r,c>r,c:kind" (bucket ids also carry vx and x-offset buckets).
   const firstEdgeId = p.trace[0]?.edgeId ?? null;
   assert(firstEdgeId);
-  assert(firstEdgeId.startsWith('perframe'));
+  assert(/^\d+,\d+>\d+,\d+:[a-z_]+$/.test(firstEdgeId), firstEdgeId);
 });
 
 Deno.test('the bucket strategy is still callable for diagnostics', () => {

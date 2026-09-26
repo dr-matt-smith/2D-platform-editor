@@ -107,3 +107,16 @@ Deno.test('test: the bucket strategy can collect several distinct solutions', as
     assert(r.solutions[i - 1].stats.frame <= r.solutions[i].stats.frame);
   }
 });
+
+Deno.test('test: the default strategy collects several distinct solutions on a real level', async () => {
+  const level = Level.parse(Deno.readTextFileSync('content/data/levels/tutorial.txt'));
+  const r = await tester.test(level, DEFAULT_LEGEND, null, { maxRuntimeMs: 60_000 }) as LevelTestSuccess;
+  assertEquals(r.ok, true);
+  assertEquals(r.solutions.length, LevelTester.MAX_SOLUTIONS);
+  // Every solution takes a different route and presses different keys.
+  assertEquals(new Set(r.solutions.map((s) => s.plan.routeKey())).size, r.solutions.length);
+  assertEquals(new Set(r.solutions.map((s) => s.plan.recordingKey())).size, r.solutions.length);
+  for (let i = 1; i < r.solutions.length; i++) {
+    assert(r.solutions[i - 1].stats.frame <= r.solutions[i].stats.frame);
+  }
+});
