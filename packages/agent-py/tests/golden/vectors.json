@@ -7800,5 +7800,837 @@
         }
       ]
     }
+  ],
+  "multiSolutions": [
+    {
+      "name": "multi_tutorial",
+      "grid": [
+        "########################",
+        "#......................#",
+        "#...P.............E....#",
+        "#.............##########",
+        "#.......oooo...........#",
+        "#......######..........#",
+        "#......................#",
+        "#..........^^^.........#",
+        "#......................#",
+        "########################"
+      ],
+      "meta": {
+        "width": 24,
+        "height": 10,
+        "pickupRequired": "all"
+      },
+      "solutions": [
+        {
+          "route": "8,4>8,3:walk|8,3>4,8:jump|4,8>4,9:walk|4,9>4,10:walk|4,10>4,11:walk|4,11>4,12:walk|4,12>2,15:jump|2,15>2,18:jump",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 6,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 7,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 30,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 36,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 56,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 57,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 75,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 76,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 87,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 82
+        },
+        {
+          "route": "8,4>8,3:walk|8,3>4,8:jump|4,8>4,9:walk|4,9>4,10:walk|4,10>4,11:walk|4,11>2,14:jump|2,14>2,15:walk|2,15>2,18:jump",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 6,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 7,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 30,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 36,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 51,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 52,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 75,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 76,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 87,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 82
+        },
+        {
+          "route": "8,4>8,3:walk|8,3>4,8:jump|4,8>4,9:walk|4,9>4,10:walk|4,10>4,11:walk|4,11>2,14:jump|2,14>2,17:jump|2,17>2,18:walk",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 6,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 7,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 30,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 36,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 51,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 52,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 70,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 71,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 82,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 83,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 88,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 83
+        },
+        {
+          "route": "8,4>8,3:walk|8,3>4,7:jump|4,7>4,8:walk|4,8>4,9:walk|4,9>4,10:walk|4,10>4,11:walk|4,11>2,15:jump|2,15>2,16:walk|2,16>2,17:walk|2,17>2,18:walk",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 6,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 6,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 7,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 26,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 36,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 56,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 57,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 90,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 86
+        },
+        {
+          "route": "8,4>8,3:jump|8,3>4,8:jump|4,8>4,9:walk|4,9>4,10:walk|4,10>4,11:walk|4,11>2,15:jump|2,15>2,16:walk|2,16>2,17:walk|2,17>2,18:walk",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 1,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 2,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 5,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 43,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 43,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 44,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 67,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 73,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 88,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 89,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 122,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 118
+        }
+      ]
+    },
+    {
+      "name": "multi_simple",
+      "grid": [
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+        "P.....................E.",
+        "########################",
+        "########################",
+        "########################"
+      ],
+      "meta": {
+        "width": 24,
+        "height": 14,
+        "pickupRequired": "all"
+      },
+      "solutions": [
+        {
+          "route": "10,0>10,1:walk|10,1>10,2:walk|10,2>10,3:walk|10,3>10,4:walk|10,4>10,22:run_off",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 108,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 106
+        },
+        {
+          "route": "10,0>10,8:jump|10,8>10,22:run_off",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 1,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 2,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 41,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 43,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 110,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 108
+        },
+        {
+          "route": "10,0>10,7:jump|10,7>10,22:run_off",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 1,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 2,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 37,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 43,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 113,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 112
+        },
+        {
+          "route": "10,0>10,7:jump|10,7>10,8:walk|10,8>10,22:run_off",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 1,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 2,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 37,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 43,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 114,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 112
+        },
+        {
+          "route": "10,0>10,6:jump|10,6>10,22:run_off",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 1,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 2,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 33,
+              "key": "right",
+              "down": false
+            },
+            {
+              "frame": 43,
+              "key": "right",
+              "down": true
+            },
+            {
+              "frame": 118,
+              "key": "right",
+              "down": false
+            }
+          ],
+          "frame": 116
+        }
+      ]
+    },
+    {
+      "name": "multi_above_ground2",
+      "grid": [
+        ".......................#",
+        ".......................#",
+        ".......................#",
+        ".......................#",
+        "#......................#",
+        "#......................#",
+        "#......................#",
+        "#.......#####..........#",
+        "#E......#####...^.....P#",
+        "########################"
+      ],
+      "meta": {
+        "width": 24,
+        "height": 10,
+        "pickupRequired": "all"
+      },
+      "solutions": [
+        {
+          "route": "8,22>8,14:jump|8,14>8,6:jump|8,6>8,1:drop_release",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 1,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 2,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 41,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 43,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 43,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 44,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 83,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 85,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 107,
+              "key": "left",
+              "down": false
+            }
+          ],
+          "frame": 105
+        },
+        {
+          "route": "8,22>8,21:walk|8,21>8,20:walk|8,20>8,19:walk|8,19>6,12:jump|6,12>8,3:jump|8,3>8,1:drop_release",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 16,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 17,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 52,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 53,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 53,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 54,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 95,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 99,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 108,
+              "key": "left",
+              "down": false
+            }
+          ],
+          "frame": 106
+        },
+        {
+          "route": "8,22>8,21:walk|8,21>8,20:walk|8,20>8,19:walk|8,19>8,18:walk|8,18>6,11:jump|6,11>8,2:jump|8,2>8,1:drop_release",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 21,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 22,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 57,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 58,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 58,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 59,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 100,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 104,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 108,
+              "key": "left",
+              "down": false
+            }
+          ],
+          "frame": 106
+        },
+        {
+          "route": "8,22>8,21:walk|8,21>8,20:walk|8,20>8,19:walk|8,19>6,12:jump|6,12>8,5:drop_release|8,5>8,1:drop_release",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 16,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 17,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 52,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 53,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 85,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 90,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 109,
+              "key": "left",
+              "down": false
+            }
+          ],
+          "frame": 107
+        },
+        {
+          "route": "8,22>8,14:jump|8,14>8,7:jump|8,7>8,1:drop_release",
+          "recording": [
+            {
+              "frame": 1,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 1,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 2,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 41,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 43,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 43,
+              "key": "space",
+              "down": true
+            },
+            {
+              "frame": 44,
+              "key": "space",
+              "down": false
+            },
+            {
+              "frame": 79,
+              "key": "left",
+              "down": false
+            },
+            {
+              "frame": 85,
+              "key": "left",
+              "down": true
+            },
+            {
+              "frame": 111,
+              "key": "left",
+              "down": false
+            }
+          ],
+          "frame": 109
+        }
+      ]
+    }
   ]
 }

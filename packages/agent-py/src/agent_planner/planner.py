@@ -308,7 +308,8 @@ def plan(parsed, legend, adapter=None, tileset=None, blocked=None, planner="perf
 
     backend = planner or "perframe"
     if backend == "perframe":
-        return plan_per_frame(parsed, legend, tileset, adapter=adapter, tol=tol, node_cap=node_cap)
+        return plan_per_frame(parsed, legend, tileset, adapter=adapter, tol=tol, node_cap=node_cap,
+                              blocked=blocked)
 
     graph = build_nav_graph(adapter, parsed, legend, tileset)
     if not graph["start"] or len(graph["exit_cells"]) == 0:
@@ -421,11 +422,12 @@ def _describe_goal(graph, key):
     return f"({c},{r})"
 
 
-def replan(previous, sim, parsed, legend, adapter=None, tileset=None, planner="perframe", tol=None, node_cap=None):
+def replan(previous, sim, parsed, legend, adapter=None, tileset=None, planner="perframe", tol=None, node_cap=None,
+           blocked=None):
     """Replan after a failed simulation. Finds the trace entry whose
-    frame_range brackets the failure frame, marks its edge blocked, and
-    re-runs plan with the augmented block set. Returns a fresh plan or None
-    if no recoverable edge."""
+    frame_range brackets the failure frame, marks its edge blocked (on top
+    of any `blocked`), and re-runs plan with the augmented block set.
+    Returns a fresh plan or None if no recoverable edge."""
     if not previous or not previous["trace"]:
         return None
     fail_entry = next(
@@ -434,6 +436,6 @@ def replan(previous, sim, parsed, legend, adapter=None, tileset=None, planner="p
     )
     if not fail_entry:
         fail_entry = previous["trace"][-1]
-    blocked = {fail_entry["edge_id"]}
+    blocked = set(blocked or ()) | {fail_entry["edge_id"]}
     return plan(parsed, legend, adapter=adapter, tileset=tileset, blocked=blocked,
                 planner=planner, tol=tol, node_cap=node_cap)

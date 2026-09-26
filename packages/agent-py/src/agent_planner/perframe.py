@@ -207,11 +207,21 @@ def _edge_sort_key(edge):
 DEFAULT_NODE_CAP = 100_000
 
 
+def step_id(from_cell, edge):
+    """The id of a step from cell `from_cell` along `edge`:
+    "fromR,fromC>toR,toC:kind" (mirrors PerFramePlanner.stepId). Blocking an
+    id rules out that kind of move between those two cells."""
+    return f"{from_cell['r']},{from_cell['c']}>{edge['to_cell']['r']},{edge['to_cell']['c']}:{edge['kind']}"
+
+
 def a_star_per_frame(parsed, legend, tileset, from_state, goal_cell_key, adapter=None,
-                     exit_cells=(), precision_targets=(), cache=None, tol=None, node_cap=None):
+                     exit_cells=(), precision_targets=(), cache=None, tol=None, node_cap=None,
+                     blocked=None):
     """Per-frame A* from `from_state` to any cell matching `goal_cell_key`
-    ("r,c"). Returns a list of {"from", "edge", "from_state"} steps or None
-    on failure."""
+    ("r,c"), never taking a step whose step_id is in `blocked`. Returns a
+    list of {"from", "edge", "from_state", "from_cell"} steps or None on
+    failure."""
+    blocked = blocked or set()
     cache = cache if cache is not None else make_context_cache()
     tol = tol or DEFAULT_CLUSTER_TOL
     node_cap = node_cap if node_cap is not None else DEFAULT_NODE_CAP
@@ -252,7 +262,8 @@ def a_star_per_frame(parsed, legend, tileset, from_state, goal_cell_key, adapter
             ck = cur_ck
             while ck in came_from:
                 entry = came_from[ck]
-                path.insert(0, {"from": entry["from"], "edge": entry["edge"], "from_state": entry["from_state"]})
+                path.insert(0, {"from": entry["from"], "edge": entry["edge"], "from_state": entry["from_state"],
+                                "from_cell": entry["from_cell"]})
                 ck = entry["from"]
             return path
 
@@ -261,11 +272,15 @@ def a_star_per_frame(parsed, legend, tileset, from_state, goal_cell_key, adapter
         edges.sort(key=_edge_sort_key)
 
         cur_g = g_score.get(cur_ck, math.inf)
+        cur_cell = {"r": cur_node["cell_r"], "c": cur_node["cell_c"]}
         for edge in edges:
+            if blocked and step_id(cur_cell, edge) in blocked:
+                continue
             next_ck = cluster_key(edge["to_state"], tol)
             tentative = cur_g + edge["cost"]
             if tentative < g_score.get(next_ck, math.inf):
-                came_from[next_ck] = {"from": cur_ck, "edge": edge, "from_state": cur_node["state"]}
+                came_from[next_ck] = {"from": cur_ck, "edge": edge, "from_state": cur_node["state"],
+                                      "from_cell": cur_cell}
                 g_score[next_ck] = tentative
                 f_score[next_ck] = tentative + _heuristic(edge["to_cell"]["r"], edge["to_cell"]["c"], tr, tc)
                 open_set[next_ck] = {
@@ -276,10 +291,10 @@ def a_star_per_frame(parsed, legend, tileset, from_state, goal_cell_key, adapter
     return None
 
 
-def plan_per_frame(parsed, legend, tileset, adapter=None, tol=None, node_cap=None):
+def plan_per_frame(parsed, legend, tileset, adapter=None, tol=None, node_cap=None, blocked=None):
     """Top-level per-frame planner. Discovers goals, runs A* per leg,
     threads the action recording. Mirrors planner.plan's contract but does
-    NOT use bucket-aware A*."""
+    NOT use bucket-aware A*. Steps in `blocked` (see step_id) are never taken."""
     goals_info = discover_goals(parsed, legend)
     start = goals_info["start"]
     pickup_cells = goals_info["pickup_cells"]
@@ -343,7 +358,8 @@ def plan_per_frame(parsed, legend, tileset, adapter=None, tol=None, node_cap=Non
         gr, gc = (int(v) for v in goal.split(","))
         path = a_star_per_frame(parsed, legend, tileset, ctx["state"], goal,
                                 adapter=adapter, cache=cache, exit_cells=exit_cells,
-                                precision_targets=ctx["precision_targets"], tol=tol, node_cap=node_cap)
+                                precision_targets=ctx["precision_targets"], tol=tol, node_cap=node_cap,
+                                blocked=blocked)
         subgoal_name = _describe_goal(goal, exit_cells, pickup_cells)
         if path is None:
             is_exit = any(e["r"] == gr and e["c"] == gc for e in exit_cells)
@@ -439,7 +455,7 @@ def _emit_per_frame_leg(steps, subgoal_name, ctx):
             "target": {"r": edge["to_cell"]["r"], "c": edge["to_cell"]["c"]},
             "why": why,
             "frame_range": [start_frame, ctx["frame"]],
-            "edge_id": f"perframe>{edge['to_cell']['r']},{edge['to_cell']['c']}:{edge['kind']}",
+            "edge_id": step_id(step["from_cell"], edge),
         })
         ctx["stats"]["steps"] += 1
         # Update ctx.state to the live end_state — the chain is exact.

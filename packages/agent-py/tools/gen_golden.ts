@@ -16,7 +16,8 @@
 
 import { jsAdapter } from '@2d-platform/engine';
 import { Legend, Level } from '@2d-platform/level-format';
-import { PlannerFactory } from '@2d-platform/agent';
+import { LevelTester, PlannerFactory } from '@2d-platform/agent';
+import type { LevelTestSuccess } from '@2d-platform/agent';
 import type { LevelData, LevelMeta, PickupRequired, Role } from '@2d-platform/level-format';
 import type { RecordingEvent } from '@2d-platform/engine';
 import type { GamePhase } from '@2d-platform/engine';
@@ -176,12 +177,35 @@ for (const file of AGENT_LEVELS) {
   });
 }
 
+// --- multi-solution cases (LevelTester's alternative-route search) -----
+// Every solution the search collects, in order, so the Python runner's
+// port of the search is held to the same routes, keys and finishing
+// frames. A generous budget keeps the result independent of machine
+// speed; the three quickest levels keep the Python test fast.
+const MULTI_LEVELS = ['tutorial.txt', 'simple.txt', 'above_ground2.txt'];
+const tester = LevelTester.create(jsAdapter);
+const multiSolutions = [];
+for (const file of MULTI_LEVELS) {
+  const parsed = Level.parse(Deno.readTextFileSync(`${REPO}/content/data/levels/${file}`));
+  const result = await tester.test(parsed, Legend.DEFAULT.toRecord(), null, { maxRuntimeMs: 600_000 }) as LevelTestSuccess;
+  multiSolutions.push({
+    name: `multi_${file.replace('.txt', '')}`,
+    grid: parsed.grid,
+    meta: trimMeta(parsed.meta),
+    solutions: result.solutions.map((sol) => ({
+      route: sol.plan.routeKey(),
+      recording: sol.recording,
+      frame: sol.stats.frame,
+    })),
+  });
+}
+
 // Emit the role map the JS legend used so the Python side maps glyphs
 // to entities identically (no chance of legend drift).
 const roles: Record<string, Role> = {};
 for (const [ch, entry] of Legend.DEFAULT) roles[ch] = entry.role;
 
-const out = { generatedFrom: 'jsAdapter (src/agent-adapter.js)', dt: DT, roles, cases };
+const out = { generatedFrom: 'jsAdapter (src/agent-adapter.js)', dt: DT, roles, cases, multiSolutions };
 
 const outDir = `${HERE}/../tests/golden`;
 Deno.mkdirSync(outDir, { recursive: true });
@@ -192,4 +216,7 @@ console.log(`Wrote ${cases.length} cases to ${outPath}`);
 for (const c of cases) {
   const last = c.frames[c.frames.length - 1];
   console.log(`  ${c.name.padEnd(28)} ${c.frames.length} frames → ${last.phase} (score ${last.score})`);
+}
+for (const m of multiSolutions) {
+  console.log(`  ${m.name.padEnd(28)} ${m.solutions.length} solutions, frames ${m.solutions.map((s) => s.frame).join(', ')}`);
 }

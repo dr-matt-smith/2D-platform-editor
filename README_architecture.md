@@ -77,7 +77,7 @@ them independent:
 | **Tileset format** (`tile_lookup.json`) | `render` (`Tileset.load`) + `level-format` (`Legend.fromLookup`) | content, editor, player, CLI |
 | **`PhysicsAdapter`** (make a scene, make scripted input, step frames) | `agent` (`PhysicsAdapter`) | agent ↔ engine (`JsPhysicsAdapter`) |
 | **Recording** (`{ frame, key, down }[]`) | `engine` (`ScriptedInput`) / `agent` (`RecordingEvent`) | agent → engine replay, CLI `--json` |
-| **Golden vectors** (`packages/agent-py/tests/golden/vectors.json`) | `deno task gen:golden` | JS engine ↔ Python port: frame-for-frame physics parity |
+| **Golden vectors** (`packages/agent-py/tests/golden/vectors.json`) | `deno task gen:golden` | JS ↔ Python port: frame-for-frame physics, the first plan, and every solution of the alternative-route search |
 
 ## Enforcing the layering
 

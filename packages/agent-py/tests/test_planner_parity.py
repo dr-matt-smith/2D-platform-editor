@@ -19,12 +19,14 @@ import pytest
 from agent_adapter import py_adapter
 from agent_planner import plan, simulate
 from agent_planner import test_level as solve_level  # aliased: pytest collects test_*
+from agent_planner.runner import route_key
 
 GOLDEN = json.loads((Path(__file__).parent / "golden" / "vectors.json").read_text())
 # The JS legend's role map, emitted into the vectors so glyph->role mapping
 # can't drift between the two sides.
 LEGEND = GOLDEN["roles"]
 AGENT_CASES = [c for c in GOLDEN["cases"] if c["kind"] == "agent"]
+MULTI_CASES = GOLDEN["multiSolutions"]
 
 
 @pytest.mark.parametrize("case", AGENT_CASES, ids=[c["name"] for c in AGENT_CASES])
@@ -58,3 +60,19 @@ def test_level_solves_real_levels(case):
         assert result["ok"] is True
         assert len(result["solutions"]) >= 1
         assert result["solution"]["recording"] == result["solutions"][0]["recording"]
+
+
+@pytest.mark.parametrize("case", MULTI_CASES, ids=[c["name"] for c in MULTI_CASES])
+def test_level_finds_the_same_solutions_as_js(case):
+    """The alternative-route search (LevelTester in JS, test_level here)
+    collects the same solutions in the same order: same route, same key
+    recording, same finishing frame. A generous budget, as in gen_golden,
+    so machine speed can't cut the Python search short."""
+    parsed = {"grid": case["grid"], "meta": case["meta"]}
+    result = solve_level(parsed, LEGEND, adapter=py_adapter, max_runtime_ms=600_000)
+    assert result["ok"] is True
+    got = [
+        {"route": route_key(s["plan"]), "recording": s["recording"], "frame": s["stats"]["frame"]}
+        for s in result["solutions"]
+    ]
+    assert got == case["solutions"], f"{case['name']}: Python test_level diverged from JS LevelTester"

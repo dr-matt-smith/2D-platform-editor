@@ -148,3 +148,39 @@ def test_bucket_backend_also_solves_trivial():
 def test_default_cluster_tol_is_a_mapping():
     assert set(DEFAULT_CLUSTER_TOL) == {"x", "y", "vx", "vy"}
     assert math.isclose(DEFAULT_CLUSTER_TOL["x"], 0.5)
+
+
+# --- alternative routes (mirrors Plan / PerFramePlanner tests in JS) -------
+
+def _trace_plan(*steps):
+    return {"trace": [{"edge_id": eid, "frame_range": [a, b]} for a, b, eid in steps]}
+
+
+def test_steps_to_block_longest_first_without_repeats():
+    from agent_planner.runner import steps_to_block
+    p = _trace_plan((1, 6, "a"), (6, 48, "b"), (48, 90, "c"), (90, 95, "a"))
+    assert steps_to_block(p, set()) == ["b", "c", "a"]
+    assert steps_to_block(p, {"b"}) == ["c", "a"]
+    assert steps_to_block(p, {"a", "b", "c"}) == []
+
+
+def test_route_key_is_the_step_ids_in_order():
+    from agent_planner.runner import route_key
+    assert route_key(_trace_plan((1, 6, "a"), (6, 48, "b"))) == "a|b"
+
+
+def test_per_frame_step_ids_name_start_and_target_cells():
+    lvl = _level(["#####", "#P.E#", "#####"], pickupRequired=0)
+    step = plan(lvl, DEFAULT_LEGEND, adapter=py_adapter)["trace"][0]
+    assert step["edge_id"] == f"1,1>1,3:{step['kind']}"
+
+
+def test_blocked_steps_are_never_taken():
+    from agent_planner.runner import route_key, steps_to_block
+    lvl = _level(["..........", "..........", "#P.#....E#", "##########"], pickupRequired=0)
+    first = plan(lvl, DEFAULT_LEGEND, adapter=py_adapter)
+    blocked = {steps_to_block(first, set())[0]}
+    alt = plan(lvl, DEFAULT_LEGEND, adapter=py_adapter, blocked=blocked)
+    assert alt["trace"], "expected another route"
+    assert all(s["edge_id"] not in blocked for s in alt["trace"])
+    assert route_key(alt) != route_key(first)
