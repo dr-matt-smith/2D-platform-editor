@@ -36,4 +36,4 @@ v4_preview/
 # Playwright (diagnostic runs; screenshots regenerated on demand)
 playwright-report/
 test-results/
-tests/screenshots/
+**/e2e/screenshots/

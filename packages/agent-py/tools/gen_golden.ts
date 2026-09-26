@@ -14,12 +14,12 @@
 //   - agent     : the JS agent's own plan() recording on a real level —
 //                 long, multi-feature, the strongest parity signal.
 
-import { jsAdapter } from '../../../src/agent-adapter.ts';
-import { parse, DEFAULT_LEGEND } from '../../../src/level.ts';
-import { plan } from '../../agent/src/index.ts';
-import type { LegendRole, LevelMeta, ParsedLevel, PickupRequired } from '../../../src/level.ts';
-import type { RecordingEvent } from '../../../src/play/scriptedInput.ts';
-import type { PlaytestPhase } from '../../../src/play/playtestScene.ts';
+import { jsAdapter } from '@2d-platform/engine';
+import { parse, DEFAULT_LEGEND } from '@2d-platform/level-format';
+import { plan } from '@2d-platform/agent';
+import type { LegendRole, LevelMeta, ParsedLevel, PickupRequired } from '@2d-platform/level-format';
+import type { RecordingEvent } from '@2d-platform/engine';
+import type { PlaytestPhase } from '@2d-platform/engine';
 
 // One captured engine frame: the player's full state after update(dt).
 interface GoldenFrame {
@@ -159,7 +159,7 @@ for (const c of PRIMITIVES) {
 }
 
 for (const file of AGENT_LEVELS) {
-  const text = Deno.readTextFileSync(`${REPO}/public/data/levels/${file}`);
+  const text = Deno.readTextFileSync(`${REPO}/content/data/levels/${file}`);
   const parsed = parse(text);
   const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
   const maxFrames = 2400;

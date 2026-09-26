@@ -155,22 +155,45 @@ export function parseStateKey(k: string): { r: number; c: number; vxBucket: numb
   return { r: Number(rStr), c: Number(cStr), vxBucket: Number(vxStr), xOffsetBucket: xOff };
 }
 
+// --- glyph roles ------------------------------------------------------
+
+// The classic glyph set (level-format's DEFAULT_LEGEND), used only when
+// no legend is supplied. With a legend, a glyph's role comes from the
+// legend alone — exactly as the engine's toWorld() reads it — so a
+// tileset that remaps glyphs (e.g. '@' for the player) plans correctly.
+const DEFAULT_ROLES: Readonly<Record<string, string>> = {
+  '#': 'terrain',
+  '^': 'hazard',
+  P: 'player',
+  E: 'exit',
+  o: 'pickup',
+};
+
+/** The role of glyph `ch`: from `legend`, or the classic glyphs without one. */
+export function glyphRole(legend: Legend | null | undefined, ch: string): string | null {
+  if (!legend) return DEFAULT_ROLES[ch] ?? null;
+  return legend[ch]?.role ?? null;
+}
+
 function inBounds(grid: readonly string[], r: number, c: number): boolean {
   return r >= 0 && r < grid.length && c >= 0 && c < grid[r].length;
 }
-function isWalkable(grid: readonly string[], r: number, c: number): boolean {
-  return inBounds(grid, r, c) && grid[r][c] !== '#' && grid[r][c] !== '^';
+// Terrain is solid and hazards kill, so neither is a cell the player can occupy.
+function isWalkable(grid: readonly string[], r: number, c: number, legend: Legend | null = null): boolean {
+  if (!inBounds(grid, r, c)) return false;
+  const role = glyphRole(legend, grid[r][c]);
+  return role !== 'terrain' && role !== 'hazard';
 }
-function isGrounded(grid: readonly string[], r: number, c: number): boolean {
-  return inBounds(grid, r + 1, c) && grid[r + 1][c] === '#';
+function isGrounded(grid: readonly string[], r: number, c: number, legend: Legend | null = null): boolean {
+  return inBounds(grid, r + 1, c) && glyphRole(legend, grid[r + 1][c]) === 'terrain';
 }
-function settle(grid: readonly string[], r: number, c: number): Cell | null {
+function settle(grid: readonly string[], r: number, c: number, legend: Legend | null = null): Cell | null {
   let cur = r;
-  while (cur < grid.length && isWalkable(grid, cur, c) && !isGrounded(grid, cur, c)) {
+  while (cur < grid.length && isWalkable(grid, cur, c, legend) && !isGrounded(grid, cur, c, legend)) {
     cur++;
   }
   if (cur >= grid.length) return null;
-  if (!isWalkable(grid, cur, c)) return null;
+  if (!isWalkable(grid, cur, c, legend)) return null;
   return { r: cur, c };
 }
 
@@ -219,30 +242,30 @@ export function buildNavGraph(
   // jump. xOffsetBucket distinguishes L/C/R thirds of a cell.
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
-      if (!isWalkable(grid, r, c)) continue;
-      const ch = grid[r][c];
+      if (!isWalkable(grid, r, c, legend)) continue;
+      const role = glyphRole(legend, grid[r][c]);
       for (const vxBucket of VX_BUCKETS) {
         for (const xOffsetBucket of X_OFFSET_BUCKETS) {
           const k = stateKey(r, c, vxBucket, xOffsetBucket);
           nodes.set(k, {
             r, c, vxBucket, xOffsetBucket,
-            supported: isGrounded(grid, r, c),
+            supported: isGrounded(grid, r, c, legend),
           });
         }
       }
-      if (ch === 'P') pSpawn = { r, c };
-      else if (ch === 'E') exitCells.push({ r, c });
-      else if (legend?.[ch]?.role === 'pickup' || ch === 'o') pickupCells.push({ r, c });
+      if (role === 'player') pSpawn = { r, c };
+      else if (role === 'exit') exitCells.push({ r, c });
+      else if (role === 'pickup') pickupCells.push({ r, c });
     }
   }
 
   // The player spawns mid-air at P and falls to the first grounded
   // cell below. For pathfinding, treat the settled cell as start.
-  const start = pSpawn ? settle(grid, pSpawn.r, pSpawn.c) : null;
+  const start = pSpawn ? settle(grid, pSpawn.r, pSpawn.c, legend) : null;
 
   // Build action-edges. Reuse a single PlaytestScene across all
   // actions to avoid per-action toWorld() overhead.
-  const ctx = canBuildSimContext(parsed)
+  const ctx = canBuildSimContext(parsed, legend)
     ? makeSimContext(adapter, parsed, legend, tileset)
     : null;
 
@@ -257,7 +280,7 @@ export function buildNavGraph(
 
   for (const [k, n] of nodes) {
     edges.set(k, []);
-    if (!isGrounded(grid, n.r, n.c)) continue;
+    if (!isGrounded(grid, n.r, n.c, legend)) continue;
     if (!ctx) continue;
     // v27 M4/M5: only L-bucket sources emit edges; 'C' / 'R'
     // xOffsetBucket nodes exist for the 9-node identity but their
@@ -268,7 +291,7 @@ export function buildNavGraph(
     // crosses bucket boundaries. M5 ships data-model + ALL v25/v26
     // levels still solve + below_ground at v26 baseline (score 8).
     if (n.xOffsetBucket !== 'L') continue;
-    addActionEdges(ctx, parsed, n, edges.get(k)!, exitCells, precisionTargets);
+    addActionEdges(ctx, parsed, legend, n, edges.get(k)!, exitCells, precisionTargets);
   }
 
   return {
@@ -283,12 +306,14 @@ export function buildNavGraph(
 }
 
 /** Can we construct a PlaytestScene for this level? toWorld requires
- *  a player spawn (P). Tests sometimes pass levels without P; for
+ *  a player spawn. Tests sometimes pass levels without one; for
  *  those we return an empty edge map (the graph is still useful for
  *  cell/start/pickup inspection). */
-function canBuildSimContext(parsed: ParsedLevel): boolean {
+function canBuildSimContext(parsed: ParsedLevel, legend: Legend | null): boolean {
   for (const row of parsed.grid) {
-    if (row.includes('P')) return true;
+    for (const ch of row) {
+      if (glyphRole(legend, ch) === 'player') return true;
+    }
   }
   return false;
 }
@@ -296,6 +321,7 @@ function canBuildSimContext(parsed: ParsedLevel): boolean {
 function addActionEdges(
   ctx: SimContext,
   parsed: ParsedLevel,
+  legend: Legend | null,
   cell: NavNode,
   edgesArr: NavEdge[],
   exitCells: Cell[],
@@ -347,12 +373,12 @@ function addActionEdges(
 
     if (result.collided) continue;
     if (!inBounds(parsed.grid, targetR, targetC)) continue;
-    if (!isWalkable(parsed.grid, targetR, targetC)) continue;
+    if (!isWalkable(parsed.grid, targetR, targetC, legend)) continue;
     // For non-win edges, the player must end on a grounded cell (so a
     // subsequent edge can start from a settled state). Win edges end
     // ON the exit — exits aren't required to be grounded for the
     // collision to fire.
-    if (!isWinEdge && !isGrounded(parsed.grid, targetR, targetC)) continue;
+    if (!isWinEdge && !isGrounded(parsed.grid, targetR, targetC, legend)) continue;
     const endVxB = vxBucketOf(result.endState.vx);
     // v27 M4/M5: edge destinations pinned to xOffsetBucket='L' so
     // the chain stays consistent (every leg starts at sub-pixel 0 =

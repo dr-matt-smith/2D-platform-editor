@@ -14,6 +14,11 @@ area = "side"
 open-on-load = true
 
 [[shortcut]]
+resource = "README_architecture.md"
+icon = "bs-diagram-3"
+area = "side"
+
+[[shortcut]]
 resource = "shell.console"
 icon = "bs-terminal"
 area = "bottom"

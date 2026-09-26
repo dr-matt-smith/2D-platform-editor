@@ -1,8 +1,8 @@
 import { assert, assertEquals, assertNotEquals } from '@std/assert';
-import { parse, DEFAULT_LEGEND } from '../../../src/level.ts';
-import { ScriptedInput } from '../../../src/play/scriptedInput.ts';
+import { parse, DEFAULT_LEGEND } from '@2d-platform/level-format';
+import { ScriptedInput } from '@2d-platform/engine';
 import { simulate } from './sim.ts';
-import { jsAdapter } from '../../../src/agent-adapter.ts';
+import { jsAdapter } from '@2d-platform/engine';
 
 // --- ScriptedInput unit cases (the simulator's input source) -------
 

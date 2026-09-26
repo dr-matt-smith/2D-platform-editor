@@ -1,0 +1,189 @@
+/* Player: a slim top bar over a stage that the game canvas fills. */
+
+:root {
+  color-scheme: light dark;
+  --bg: #f6f6f4;
+  --bar: #ffffff;
+  --fg: #1d1d20;
+  --muted: #5d5d66;
+  --line: #d9d9de;
+  --accent: #2f6fdb;
+  --stage: #e9e9ec;
+  --panel: rgb(255 255 255 / 0.92);
+  --error: #b3261e;
+  /* Read by the engine's HUD strip at the top of the canvas. */
+  --hud-bg: #ececec;
+  --hud-fg: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1d20;
+    --bar: #26262b;
+    --fg: #ececf0;
+    --muted: #a3a3ad;
+    --line: #3a3a42;
+    --accent: #7aa7ff;
+    --stage: #121214;
+    --panel: rgb(38 38 43 / 0.92);
+    --error: #ff8c80;
+    --hud-bg: #252526;
+    --hud-fg: #ececec;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* --- Top bar ------------------------------------------------------------ */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 8px 16px;
+  background: var(--bar);
+  border-bottom: 1px solid var(--line);
+}
+
+.bar h1 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.home {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.home:hover {
+  text-decoration: underline;
+}
+
+.level-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.level-pick select {
+  font: inherit;
+  padding: 3px 6px;
+  max-width: 60vw;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.hints {
+  margin: 0 0 0 auto;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+kbd {
+  font: inherit;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Stage -------------------------------------------------------------- */
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0; /* let the flex item shrink below the canvas's own size */
+  background: var(--stage);
+}
+
+/* The canvas box fills the stage; `object-fit: contain` scales its bitmap
+   to fit while keeping the aspect ratio, and re-fits on every resize. */
+#game {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  outline: none;
+}
+
+body[data-state='stopped'] #game {
+  opacity: 0.35;
+}
+
+/* No game to show while loading the first time or when a level fails. */
+body[data-state='loading'] #game,
+body[data-state='invalid'] #game,
+body[data-state='error'] #game {
+  visibility: hidden;
+}
+
+/* --- Message panel ------------------------------------------------------ */
+
+.message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 16px 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+body[data-state='playing'] .message {
+  display: none;
+}
+
+.message h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.message p,
+.message ul {
+  margin: 8px 0 0;
+}
+
+.message ul {
+  padding-left: 20px;
+}
+
+body[data-state='invalid'] .message h2,
+body[data-state='error'] .message h2 {
+  color: var(--error);
+}
+
+@media (max-width: 560px) {
+  .hints {
+    margin-left: 0;
+    width: 100%;
+  }
+}

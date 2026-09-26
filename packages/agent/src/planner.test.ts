@@ -1,8 +1,39 @@
-import { assert, assertEquals, assertThrows } from '@std/assert';
-import { parse, DEFAULT_LEGEND } from '../../../src/level.ts';
+import { assert, assertEquals, assertFalse, assertThrows } from '@std/assert';
+import { parse, DEFAULT_LEGEND } from '@2d-platform/level-format';
 import { plan, aStar } from './planner.ts';
-import { buildNavGraph } from './grid.ts';
-import { jsAdapter } from '../../../src/agent-adapter.ts';
+import { buildNavGraph, glyphRole } from './grid.ts';
+import { simulate } from './sim.ts';
+import { jsAdapter } from '@2d-platform/engine';
+
+// --- glyph roles come from the legend ------------------------------
+
+// A tileset may draw levels with its own glyphs; only the roles matter.
+const REMAPPED = {
+  '.': { role: 'background' },
+  '=': { role: 'terrain' },
+  '~': { role: 'hazard' },
+  '@': { role: 'player' },
+  X: { role: 'exit' },
+  '*': { role: 'pickup' },
+} as const;
+
+Deno.test('glyphRole: legend roles win; the classic glyphs apply only without a legend', () => {
+  assertEquals(glyphRole(REMAPPED, '='), 'terrain');
+  assertEquals(glyphRole(REMAPPED, '@'), 'player');
+  assertEquals(glyphRole(REMAPPED, '#'), null); // not in this legend
+  assertEquals(glyphRole(null, '#'), 'terrain');
+  assertEquals(glyphRole(null, 'P'), 'player');
+});
+
+Deno.test('plan() solves a level drawn with a remapped legend', () => {
+  const parsed = parse('=========\n=@..*..X=\n=========');
+  const p = plan(parsed, REMAPPED, { adapter: jsAdapter });
+  assert(p.recording.length > 0, 'expected a recording');
+  assertEquals(p.unreachable, []);
+  const sim = simulate({ adapter: jsAdapter, parsed, legend: REMAPPED, recording: p.recording });
+  assertEquals(sim.outcome, 'won');
+  assertEquals(sim.score, 1); // collected the '*' pickup on the way
+});
 
 // --- v29 M3: physics-adapter contract ------------------------------
 
@@ -244,4 +275,38 @@ Deno.test('plan: jump trace entry produces a space tap in the recording', () => 
   }
   // If no jump was needed, the test silently passes — the planner found
   // a non-jump route, which is fine.
+});
+
+// --- v26 M4: bucket-aware A* ------------------------------------------
+// (ported from apps/editor/e2e/v26-bucket-graph.spec.ts)
+
+Deno.test('v26 M4: A* finds a path through state-space nodes', () => {
+  // A wider level so the path has multiple edges.
+  const parsed = parse('############\n#P........E#\n############');
+  const g = buildNavGraph(jsAdapter, parsed, DEFAULT_LEGEND);
+  // v26: A* `from` is stateKey, `to` is cellKey. Match any vxBucket
+  // variant of the exit cell. v27 M4: stateKey now 4-part.
+  const path = aStar(g, '1,1,0,L', '1,10');
+  assert(path && path.length > 0);
+});
+
+// --- v28 M4: planner backend selection --------------------------------
+// (ported from apps/editor/e2e/v28-perframe-default.spec.ts)
+
+Deno.test('v28 M4: default backend is now perframe', () => {
+  const parsed = parse('#####\n#P.E#\n#####');
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
+  // Perframe trace entries have edgeId starting with 'perframe'.
+  const firstEdgeId = p.trace[0]?.edgeId ?? null;
+  assert(firstEdgeId);
+  assert(firstEdgeId.startsWith('perframe'));
+});
+
+Deno.test('v28 M4: opts.planner=bucket still callable for diagnostics', () => {
+  const parsed = parse('#####\n#P.E#\n#####');
+  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter, planner: 'bucket' });
+  const firstEdgeId = p.trace[0]?.edgeId ?? null;
+  assert(firstEdgeId);
+  // Bucket edgeIds look like "r,c,vx,xo>r,c,vx,xo:kind".
+  assertFalse(firstEdgeId.startsWith('perframe'));
 });

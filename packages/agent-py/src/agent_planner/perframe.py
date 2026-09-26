@@ -9,7 +9,6 @@ recording it emits replays byte-identically on the live engine.
 
 import math
 
-from agent_adapter.constants import role_of
 
 from .actions import (
     DROP_HOLD_FRAMES_BUDGET,
@@ -21,6 +20,7 @@ from .constants import TILE
 from .grid import (
     cell_key,
     find_overlapping_exit,
+    glyph_role,
     in_bounds,
     is_grounded,
     is_walkable,
@@ -107,9 +107,9 @@ def expand_node(cache, parsed, legend, tileset, state, adapter=None, exit_cells=
             continue
         if not in_bounds(grid, target_r, target_c):
             continue
-        if not is_walkable(grid, target_r, target_c):
+        if not is_walkable(grid, target_r, target_c, legend):
             continue
-        if not is_win_edge and not is_grounded(grid, target_r, target_c):
+        if not is_win_edge and not is_grounded(grid, target_r, target_c, legend):
             continue
 
         edges.append({
@@ -173,16 +173,16 @@ def discover_goals(parsed, legend):
     exit_cells = []
     for r in range(len(grid)):
         for c in range(len(grid[r])):
-            if not is_walkable(grid, r, c):
+            if not is_walkable(grid, r, c, legend):
                 continue
-            ch = grid[r][c]
-            if ch == "P":
+            role = glyph_role(legend, grid[r][c])
+            if role == "player":
                 p_spawn = {"r": r, "c": c}
-            elif ch == "E":
+            elif role == "exit":
                 exit_cells.append({"r": r, "c": c})
-            elif role_of(legend, ch) == "pickup" or ch == "o":
+            elif role == "pickup":
                 pickup_cells.append({"r": r, "c": c})
-    start = settle(grid, p_spawn["r"], p_spawn["c"]) if p_spawn else None
+    start = settle(grid, p_spawn["r"], p_spawn["c"], legend) if p_spawn else None
     return {"start": start, "pickup_cells": pickup_cells, "exit_cells": exit_cells, "p_spawn": p_spawn}
 
 

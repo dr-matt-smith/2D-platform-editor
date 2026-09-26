@@ -69,6 +69,7 @@ import {
   settle,
   findOverlappingExit,
   cellKey,
+  glyphRole,
 } from './grid.ts';
 import type { ActionKind, Dir, MoveAction, Recording } from './actions.ts';
 import type { Cell, PlanGraph } from './grid.ts';
@@ -243,8 +244,8 @@ export function expandNode(
 
     if (result.collided) continue;
     if (!inBounds(parsed.grid, targetR, targetC)) continue;
-    if (!isWalkable(parsed.grid, targetR, targetC)) continue;
-    if (!isWinEdge && !isGrounded(parsed.grid, targetR, targetC)) continue;
+    if (!isWalkable(parsed.grid, targetR, targetC, legend)) continue;
+    if (!isWinEdge && !isGrounded(parsed.grid, targetR, targetC, legend)) continue;
 
     edges.push({
       toCell: { r: targetR, c: targetC },
@@ -314,14 +315,14 @@ export function discoverGoals(parsed: ParsedLevel, legend: Legend | null): Level
   const exitCells: Cell[] = [];
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
-      if (!isWalkable(grid, r, c)) continue;
-      const ch = grid[r][c];
-      if (ch === 'P') pSpawn = { r, c };
-      else if (ch === 'E') exitCells.push({ r, c });
-      else if (legend?.[ch]?.role === 'pickup' || ch === 'o') pickupCells.push({ r, c });
+      if (!isWalkable(grid, r, c, legend)) continue;
+      const role = glyphRole(legend, grid[r][c]);
+      if (role === 'player') pSpawn = { r, c };
+      else if (role === 'exit') exitCells.push({ r, c });
+      else if (role === 'pickup') pickupCells.push({ r, c });
     }
   }
-  const start = pSpawn ? settle(grid, pSpawn.r, pSpawn.c) : null;
+  const start = pSpawn ? settle(grid, pSpawn.r, pSpawn.c, legend) : null;
   return { start, pickupCells, exitCells, pSpawn };
 }
 

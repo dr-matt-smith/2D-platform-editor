@@ -37,11 +37,6 @@ export {
   WALK_FRAMES_PER_CELL,
   DROP_HOLD_FRAMES_BUDGET,
 } from './actions.ts';
-export {
-  renderSolutionOverlay,
-  renderAllSolutionsOverlay,
-  HUE_PALETTE,
-} from './overlay.ts';
 export { TILE } from './constants.ts';
 
 export type {
@@ -117,4 +112,3 @@ export type {
   Solution,
   SolutionStats,
 } from './runner.ts';
-export type { OverlayOptions, OverlaySolution } from './overlay.ts';

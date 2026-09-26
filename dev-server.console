@@ -1,5 +1,5 @@
-# Starts the Vite dev server (`deno task dev`): the editor is served at http://localhost:5173
-# and reloads as you save. Press Ctrl+C to stop it.
+# Starts the Vite dev server (`deno task dev`) at http://localhost:5173 — the editor is at
+# /apps/editor/ and the player at /apps/player/; pages reload as you save. Ctrl+C stops it.
 [session]
 type = "shell"
 

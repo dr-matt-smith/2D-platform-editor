@@ -1,6 +1,8 @@
 # 2D Platform Editor
 
-**Live:** https://dr-matt-smith.github.io/2D-platform-editor/ ·
+**Live:** https://dr-matt-smith.github.io/2D-platform-editor/ (editor at
+[`/apps/editor/`](https://dr-matt-smith.github.io/2D-platform-editor/apps/editor/),
+player at [`/apps/player/`](https://dr-matt-smith.github.io/2D-platform-editor/apps/player/)) ·
 **GitHub:** https://github.com/dr-matt-smith/2D-platform-editor
 
 A text-based level editor for simple 2D platformer / maze games. Author
@@ -14,11 +16,12 @@ Needs [Deno](https://deno.com) 2.x — there is no install step: Deno fetches
 Vite and the other tools on first run.
 
 ```bash
-deno task dev       # editor at http://localhost:5173
-deno task test      # unit tests (Deno.test)
-deno task check     # type check the whole project
-deno task build     # production bundle in dist/
-deno task test:e2e  # Playwright end-to-end tests (starts the dev server itself)
+deno task dev              # http://localhost:5173 — editor at /apps/editor/, player at /apps/player/
+deno task solve tutorial   # run the agent headless on a level (--all sweeps every level)
+deno task test             # unit tests (Deno.test)
+deno task check            # layering check + type check the whole project
+deno task build            # production site (landing page, editor, player) in dist/
+deno task test:e2e         # Playwright end-to-end tests (starts the dev server itself)
 ```
 
 The first `deno task test:e2e` needs Playwright's browser:
@@ -69,16 +72,23 @@ scale-to-fit (no camera).
 
 ## Project layout
 
+The project is split into four library packages and three apps — see
+[README_architecture.md](README_architecture.md) for the diagram, the
+dependency rules and the contracts between the parts.
+
 ```
-src/              editor, in TypeScript (parse, validate, renderer, levels, history, …)
-src/play/         vendored playtest engine + adapter + gate + scene
-                  (CC BY 4.0; LICENSE + sources.md alongside the code)
-public/data/      bundled levels and tilesets (+ generated manifests)
-TDDs/             per-version Design / Implementation / Transcript docs
-packages/agent/   the planning agent (Deno workspace member @2d-platform/agent)
-packages/agent-py/ Python port of the physics adapter + planner (+ MCP server)
-tests/            Playwright end-to-end specs
-scripts/          manifest generators (run before dev/build)
+packages/level-format/  the level text format: parse, legends, validate
+packages/render/        tilesets + canvas renderer
+packages/engine/        the game: physics, entities, playtest (vendored engine,
+                        CC BY 4.0; LICENSE + sources.md alongside the code)
+packages/agent/         the planning agent (A* over simulated physics)
+packages/agent-py/      Python port of the physics + planner (+ MCP server)
+apps/editor/            the level editor (browser)
+apps/player/            standalone player (browser)
+apps/agent-cli/         headless solver: deno task solve
+content/data/           bundled levels and tilesets (+ generated manifests)
+scripts/                manifest generators + the layering check
+TDDs/                   per-version Design / Implementation / Transcript docs
 ```
 
 ## Versioning model
@@ -91,10 +101,10 @@ milestone.
 ## Licence
 
 The editor itself is **MIT**. The vendored playtest
-engine under `src/play/` is **CC BY 4.0** (full text in
-[`src/play/LICENSE`](src/play/LICENSE); attribution in
-[`src/play/sources.md`](src/play/sources.md)). Earlier versions also
+engine under `packages/engine/` is **CC BY 4.0** (full text in
+[`packages/engine/LICENSE`](packages/engine/LICENSE); attribution in
+[`packages/engine/sources.md`](packages/engine/sources.md)). Earlier versions also
 vendored three CC BY 4.0 PNG sprites under `public/play-assets/`;
 v14 made the editor renderer the single source of pixel truth for
-playtest, and v15 removed the sprites + moved the licence text into
-`src/play/` where the engine code lives.
+playtest, and v15 removed the sprites + moved the licence text in beside
+the engine code (then `src/play/`, now `packages/engine/`).

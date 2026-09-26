@@ -1,10 +1,12 @@
 import { defineConfig } from '@playwright/test';
 
-// Diagnostic Playwright runs (visual screenshots, not assertion-only) — see
-// tests/screenshots/. Boots the Vite dev server itself; reuses one already
-// running locally so devs can iterate without thrash.
+// End-to-end specs for the browser apps live beside each app, in
+// apps/<app>/e2e/ (diagnostic screenshots go to apps/<app>/e2e/screenshots/).
+// Boots the Vite dev server itself; reuses one already running locally so
+// devs can iterate without thrash.
 export default defineConfig({
-  testDir: './tests',
+  testDir: './apps',
+  testMatch: '*/e2e/**/*.spec.ts',
   fullyParallel: false,
   reporter: 'list',
   use: {

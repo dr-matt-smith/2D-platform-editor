@@ -1,9 +1,9 @@
 // Build tooling — NOT part of the app bundle.
-// Scans public/data/levels/*.txt and writes manifest.json so the in-app
-// level loader can enumerate levels (public/ is not directory-listable).
+// Scans content/data/levels/*.txt and writes manifest.json so the in-app
+// level loader can enumerate levels (content/ is not directory-listable).
 // Runs as part of `deno task gen`, a dependency of `deno task dev`/`build`,
 // so it cannot go stale.
-const LEVELS_DIR = `${import.meta.dirname}/../public/data/levels`;
+const LEVELS_DIR = `${import.meta.dirname}/../content/data/levels`;
 
 interface Header {
   name: string | null;

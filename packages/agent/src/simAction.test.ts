@@ -1,7 +1,7 @@
-import { assert, assertEquals } from '@std/assert';
-import { parse, DEFAULT_LEGEND } from '../../../src/level.ts';
-import { simulateAction } from './simAction.ts';
-import { jsAdapter } from '../../../src/agent-adapter.ts';
+import { assert, assertAlmostEquals, assertEquals } from '@std/assert';
+import { parse, DEFAULT_LEGEND } from '@2d-platform/level-format';
+import { makeSimContext, simulateAction, simulateActionInContext } from './simAction.ts';
+import { jsAdapter } from '@2d-platform/engine';
 
 // Test level: P at (2, 1) with plenty of overhead room for jumps.
 // 10 cols × 4 rows. Row 0+1 sky (no ceiling), row 2 the play row
@@ -161,4 +161,49 @@ Deno.test('simulateAction: sub-pixel start position is preserved (no quantizatio
   });
   // Walked 5 frames at 4 px/frame = 20 px; new x = 43.5.
   assertEquals(r.endPos.x, 43.5);
+});
+
+// --- v25 M1: endState ------------------------------------------------
+// (ported from apps/editor/e2e/v25-edge-state.spec.ts)
+
+Deno.test('v25 M1: simAction returns endState matching endPos/endVel', () => {
+  const parsed = parse('# size: 6x4\n######\n#P..E#\n######');
+  const ctx = makeSimContext(jsAdapter, parsed, DEFAULT_LEGEND, null);
+  const result = simulateActionInContext(
+    ctx,
+    { x: 20, y: 20, vx: 0, vy: 0, onGround: true },
+    { kind: 'walk', params: { dir: 'right', cells: 1 } },
+  );
+  assert(result.endState, 'expected endState');
+  assertEquals(Object.keys(result.endState).sort(), ['onGround', 'vx', 'vy', 'x', 'y']);
+  // endState.x/y == endPos.x/y (same data, new field — no drift).
+  assertAlmostEquals(result.endState.x, result.endPos.x, 5e-6);
+  assertAlmostEquals(result.endState.y, result.endPos.y, 5e-6);
+});
+
+// --- v25 M4: trajectory collection -----------------------------------
+// (ported from apps/editor/e2e/v25-precision-landing.spec.ts)
+
+Deno.test('v25 M4: simAction returns trajectory when collectTrajectory: true', () => {
+  const parsed = parse('# size: 10x4\n##########\n#P......E#\n##########');
+  const ctx = makeSimContext(jsAdapter, parsed, DEFAULT_LEGEND, null);
+  // Without flag — no trajectory.
+  const a = simulateActionInContext(
+    ctx,
+    { x: 20, y: 20, vx: 0, vy: 0, onGround: true },
+    { kind: 'jump', params: { dir: 'right', holdFrames: 20 } },
+  );
+  // With flag — trajectory populated.
+  const b = simulateActionInContext(
+    ctx,
+    { x: 20, y: 20, vx: 0, vy: 0, onGround: true },
+    { kind: 'jump', params: { dir: 'right', holdFrames: 20 } },
+    { collectTrajectory: true },
+  );
+  assertEquals(a.trajectory, null);
+  assert(Array.isArray(b.trajectory));
+  assert(b.trajectory.length > 0);
+  const sampleFrame = b.trajectory[0];
+  assert('x' in sampleFrame);
+  assert('y' in sampleFrame);
 });

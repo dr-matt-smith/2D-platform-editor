@@ -99,27 +99,38 @@ def in_bounds(grid, r, c):
     return 0 <= r < len(grid) and 0 <= c < len(grid[r])
 
 
-def is_walkable(grid, r, c):
-    return in_bounds(grid, r, c) and grid[r][c] != "#" and grid[r][c] != "^"
+# The classic glyph set (DEFAULT_LEGEND), used only when no legend is
+# supplied. With a legend, a glyph's role comes from the legend alone --
+# as the engine reads it -- so tilesets that remap glyphs plan correctly.
+# Mirrors glyphRole in packages/agent/src/grid.ts.
+_DEFAULT_ROLES = {"#": "terrain", "^": "hazard", "P": "player", "E": "exit", "o": "pickup"}
 
 
-def is_grounded(grid, r, c):
-    return in_bounds(grid, r + 1, c) and grid[r + 1][c] == "#"
+def glyph_role(legend, ch):
+    """The role of glyph `ch`: from `legend`, or the classic glyphs without one."""
+    if not legend:
+        return _DEFAULT_ROLES.get(ch)
+    return role_of(legend, ch)
 
 
-def settle(grid, r, c):
+def is_walkable(grid, r, c, legend=None):
+    """Terrain is solid and hazards kill, so neither can be occupied."""
+    return in_bounds(grid, r, c) and glyph_role(legend, grid[r][c]) not in ("terrain", "hazard")
+
+
+def is_grounded(grid, r, c, legend=None):
+    return in_bounds(grid, r + 1, c) and glyph_role(legend, grid[r + 1][c]) == "terrain"
+
+
+def settle(grid, r, c, legend=None):
     cur = r
-    while cur < len(grid) and is_walkable(grid, cur, c) and not is_grounded(grid, cur, c):
+    while cur < len(grid) and is_walkable(grid, cur, c, legend) and not is_grounded(grid, cur, c, legend):
         cur += 1
     if cur >= len(grid):
         return None
-    if not is_walkable(grid, cur, c):
+    if not is_walkable(grid, cur, c, legend):
         return None
     return {"r": cur, "c": c}
-
-
-def _is_pickup(legend, ch):
-    return role_of(legend, ch) == "pickup" or ch == "o"
 
 
 # --- action-graph builder -------------------------------------------------
@@ -140,43 +151,43 @@ def build_nav_graph(adapter, parsed, legend=None, tileset=None):
     # Each walkable cell expands to 3 x 3 = 9 state_key nodes.
     for r in range(len(grid)):
         for c in range(len(grid[r])):
-            if not is_walkable(grid, r, c):
+            if not is_walkable(grid, r, c, legend):
                 continue
-            ch = grid[r][c]
+            role = glyph_role(legend, grid[r][c])
             for vx_bucket in VX_BUCKETS:
                 for x_offset_bucket in X_OFFSET_BUCKETS:
                     k = state_key(r, c, vx_bucket, x_offset_bucket)
                     nodes[k] = {
                         "r": r, "c": c, "vx_bucket": vx_bucket,
                         "x_offset_bucket": x_offset_bucket,
-                        "supported": is_grounded(grid, r, c),
+                        "supported": is_grounded(grid, r, c, legend),
                     }
-            if ch == "P":
+            if role == "player":
                 p_spawn = {"r": r, "c": c}
-            elif ch == "E":
+            elif role == "exit":
                 exit_cells.append({"r": r, "c": c})
-            elif _is_pickup(legend, ch):
+            elif role == "pickup":
                 pickup_cells.append({"r": r, "c": c})
 
     # The player spawns mid-air at P and falls to the first grounded cell
     # below. For pathfinding, treat the settled cell as start.
-    start = settle(grid, p_spawn["r"], p_spawn["c"]) if p_spawn else None
+    start = settle(grid, p_spawn["r"], p_spawn["c"], legend) if p_spawn else None
 
-    ctx = make_sim_context(adapter, parsed, legend, tileset) if _can_build_sim_context(parsed) else None
+    ctx = make_sim_context(adapter, parsed, legend, tileset) if _can_build_sim_context(parsed, legend) else None
 
     # Precision-landing targets — pickup cells + exit cells.
     precision_targets = [*pickup_cells, *exit_cells]
 
     for k, n in nodes.items():
         edges[k] = []
-        if not is_grounded(grid, n["r"], n["c"]):
+        if not is_grounded(grid, n["r"], n["c"], legend):
             continue
         if ctx is None:
             continue
         # v27 M4/M5: only L-bucket sources emit edges.
         if n["x_offset_bucket"] != "L":
             continue
-        _add_action_edges(ctx, parsed, n, edges[k], exit_cells, precision_targets)
+        _add_action_edges(ctx, parsed, legend, n, edges[k], exit_cells, precision_targets)
 
     return {
         "nodes": nodes,
@@ -189,16 +200,16 @@ def build_nav_graph(adapter, parsed, legend=None, tileset=None):
     }
 
 
-def _can_build_sim_context(parsed):
-    """to_world requires a player spawn (P). Tests sometimes pass levels
-    without P; for those return an empty edge map."""
+def _can_build_sim_context(parsed, legend):
+    """to_world requires a player spawn. Tests sometimes pass levels
+    without one; for those return an empty edge map."""
     for row in parsed["grid"]:
-        if "P" in row:
+        if any(glyph_role(legend, ch) == "player" for ch in row):
             return True
     return False
 
 
-def _add_action_edges(ctx, parsed, cell, edges_arr, exit_cells, precision_targets=()):
+def _add_action_edges(ctx, parsed, legend, cell, edges_arr, exit_cells, precision_targets=()):
     start_vx = cell["vx_bucket"] * SPEED
     start_state = {
         "x": bucket_centre_x(cell["c"], cell["x_offset_bucket"]),
@@ -231,9 +242,9 @@ def _add_action_edges(ctx, parsed, cell, edges_arr, exit_cells, precision_target
             continue
         if not in_bounds(grid, target_r, target_c):
             continue
-        if not is_walkable(grid, target_r, target_c):
+        if not is_walkable(grid, target_r, target_c, legend):
             continue
-        if not is_win_edge and not is_grounded(grid, target_r, target_c):
+        if not is_win_edge and not is_grounded(grid, target_r, target_c, legend):
             continue
         end_vx_b = vx_bucket_of(result["end_state"]["vx"])
         end_xob = "L"

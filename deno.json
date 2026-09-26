@@ -1,5 +1,13 @@
 {
-  "workspace": ["./packages/agent"],
+  "workspace": [
+    "./packages/level-format",
+    "./packages/render",
+    "./packages/engine",
+    "./packages/agent",
+    "./apps/editor",
+    "./apps/player",
+    "./apps/agent-cli"
+  ],
   "tasks": {
     "gen:levels": "deno run --allow-read --allow-write scripts/gen-levels-manifest.ts",
     "gen:tilesets": "deno run --allow-read --allow-write scripts/gen-tilesets-manifest.ts",
@@ -13,12 +21,12 @@
       "command": "deno run --allow-read --allow-write packages/agent-py/tools/gen_golden.ts"
     },
     "dev": {
-      "description": "Editor at http://localhost:5173",
+      "description": "Landing page at http://localhost:5173 — editor at /apps/editor/, player at /apps/player/",
       "command": "deno run -A npm:vite",
       "dependencies": ["gen"]
     },
     "build": {
-      "description": "Production bundle in dist/",
+      "description": "Production site (editor + player) in dist/",
       "command": "deno run -A npm:vite build",
       "dependencies": ["gen"]
     },
@@ -28,7 +36,19 @@
       "dependencies": ["gen"]
     },
     "preview": "deno run -A npm:vite preview",
-    "check": "deno check",
+    "solve": {
+      "description": "Headless agent: solve a level file or id (e.g. deno task solve tutorial), or --all",
+      "command": "deno run --allow-read apps/agent-cli/main.ts"
+    },
+    "check:deps": {
+      "description": "Enforce the package layering (see README_architecture.md)",
+      "command": "deno run --allow-read scripts/check-boundaries.ts"
+    },
+    "check": {
+      "description": "Type check everything, after checking the package layering",
+      "command": "deno check",
+      "dependencies": ["check:deps"]
+    },
     "test": "deno test --allow-read",
     "test:e2e": "deno run -A npm:@playwright/test test"
   },
@@ -48,7 +68,7 @@
     }
   },
   "test": {
-    "exclude": ["tests/"]
+    "exclude": ["**/e2e/"]
   },
   "exclude": ["dist/", "packages/agent-py/.venv/", "v4_preview/", "test-results/", "playwright-report/"]
 }

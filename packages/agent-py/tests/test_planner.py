@@ -17,6 +17,7 @@ from agent_planner import (
     simulate,
 )
 from agent_planner import test_level as solve_level  # aliased: pytest collects test_*
+from agent_planner.grid import glyph_role
 from agent_planner.perframe import _js_round, discover_goals, expand_node
 
 
@@ -84,6 +85,27 @@ def test_discover_goals_finds_spawn_pickups_exit():
     assert goals["start"] is not None
     assert len(goals["pickup_cells"]) == 1
     assert len(goals["exit_cells"]) == 1
+
+
+# A tileset may draw levels with its own glyphs; only the roles matter
+# (mirrors the remapped-legend tests in packages/agent/src/planner.test.ts).
+REMAPPED = {".": "background", "=": "terrain", "~": "hazard", "@": "player", "X": "exit", "*": "pickup"}
+
+
+def test_glyph_role_prefers_the_legend():
+    assert glyph_role(REMAPPED, "=") == "terrain"
+    assert glyph_role(REMAPPED, "#") is None  # not in this legend
+    assert glyph_role(None, "#") == "terrain"  # classic glyphs without a legend
+    assert glyph_role(None, "P") == "player"
+
+
+def test_remapped_legend_level_solves():
+    lvl = _level(["=========", "=@..*..X=", "========="], pickupRequired="all")
+    result = solve_level(lvl, REMAPPED, adapter=py_adapter)
+    assert result["ok"] is True
+    sim = simulate(py_adapter, lvl, REMAPPED, recording=result["solution"]["recording"])
+    assert sim["outcome"] == "won"
+    assert sim["score"] == 1
 
 
 # --- expand_node ----------------------------------------------------------

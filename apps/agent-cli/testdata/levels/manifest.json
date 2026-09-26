@@ -1,0 +1,4 @@
+[
+  { "id": "corridor", "name": "corridor", "file": "corridor.txt" },
+  { "id": "walled_in", "name": "walled in", "file": "walled_in.txt" }
+]

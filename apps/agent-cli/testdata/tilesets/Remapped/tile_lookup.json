@@ -1,0 +1,11 @@
+{
+  "name": "Remapped (test fixture: terrain, spawn, exit, hazard and pickup use non-Dirt glyphs)",
+  "glyphs": {
+    "empty": { "name": "Empty", "char": "." },
+    "filled": { "name": "Filled", "char": "=" },
+    "player": { "name": "Player spawn", "char": "@" },
+    "exit": { "name": "Exit", "char": "X" },
+    "hazard": { "name": "Hazard", "char": "~" },
+    "pickup": { "name": "Pickup", "char": "$" }
+  }
+}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Player · 2D Platform Editor</title>
+  </head>
+  <body data-state="loading">
+    <header class="bar">
+      <a class="home" href="../../" title="Back to the home page">← Home</a>
+      <h1>Player</h1>
+      <label class="level-pick">
+        <span>Level</span>
+        <select id="level" disabled></select>
+      </label>
+      <p class="hints" aria-label="Controls">
+        <kbd>←</kbd>/<kbd>→</kbd> move · <kbd>Space</kbd> jump · <kbd>R</kbd> restart · <kbd>Esc</kbd> levels
+      </p>
+    </header>
+    <main class="stage">
+      <canvas id="game" tabindex="-1" aria-label="Game"></canvas>
+      <section id="message" class="message" role="status" aria-live="polite"></section>
+    </main>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

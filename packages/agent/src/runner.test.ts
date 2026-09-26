@@ -1,8 +1,8 @@
 import { assert, assertEquals } from '@std/assert';
-import { parse, DEFAULT_LEGEND } from '../../../src/level.ts';
+import { parse, DEFAULT_LEGEND } from '@2d-platform/level-format';
 import { testLevel } from './runner.ts';
 import type { TestLevelFailure, TestLevelSuccess } from './runner.ts';
-import { jsAdapter } from '../../../src/agent-adapter.ts';
+import { jsAdapter } from '@2d-platform/engine';
 
 Deno.test('runner: trivial walk-to-exit succeeds in 1 attempt', async () => {
   const parsed = parse('#####\n#P.E#\n#####');
