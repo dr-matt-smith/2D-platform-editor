@@ -4,7 +4,7 @@
 // vxBucket variant of the target cell.
 
 // The node-count, stateKey-helper and A* checks now live in
-// packages/agent/src/grid.test.ts and planner.test.ts; only the Test-button
+// packages/agent/src/NavGraph.test.ts and StateKey.test.ts; only the Test-button
 // flow remains here.
 
 import { test, expect } from '@playwright/test';

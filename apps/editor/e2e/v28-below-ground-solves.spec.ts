@@ -31,7 +31,7 @@ test('v28 M5: below_ground.txt solves via the Test-button flow within the 5s bud
   await page.locator('#testBtn').click();
   // .badge.ok signals the agent dialog's success state.
   await page.waitForSelector('.badge.ok', { timeout: 5000 });
-  // Pickup stat — agentDialog's stat-pill format.
+  // Pickup stat — AgentDialogMarkup's stat-pill format.
   const pills = await page.locator('.stat-pill').allInnerTexts();
   const pickupLine = pills.find((t) => /pickup/i.test(t));
   expect(pickupLine, `expected a pickup stat pill, got: ${pills.join(' | ')}`).toBeTruthy();

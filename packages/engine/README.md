@@ -1,34 +1,64 @@
 # `@2d-platform/engine` — the game engine
 
-The playable game: the loop, input, physics, entities, the playtest scene
-and camera, and `launchPlaytest()` to mount a level on a canvas (used by
-the editor's Play mode and by the player app). `jsAdapter` implements the
-agent's `PhysicsAdapter`, so the planner can simulate this exact engine.
-Public API: [`src/index.ts`](src/index.ts). Architecture:
+How a level *plays*:
+
+- **[`Playtest`](../../docs/engine/Playtest.md)** —
+  `Playtest.launch(level, legend, tileset, canvas, options?)` checks the
+  level ([`PlaytestGate`](../../docs/engine/PlaytestGate.md)), sizes the
+  canvas, and runs it; the returned playtest has `restart()`, `exit()`,
+  `onExit()` and `phase`. One playtest runs at a time. Used by the editor's
+  Play mode and by the player app.
+- **[`PlaytestScene`](../../docs/engine/PlaytestScene.md)** — the rules:
+  collect pickups, reach the exit, avoid hazards; HUD, banner, restart, and
+  a dead-zone [`PlaytestCamera`](../../docs/engine/PlaytestCamera.md) for
+  `# viewport:` levels. Hosted by the [`Game`](../../docs/engine/Game.md)
+  loop in the browser, or run headless.
+- **[`Entity`](../../docs/engine/Entity.md)** and its subclasses
+  [`Player`](../../docs/engine/Player.md) (the physics),
+  [`Platform`](../../docs/engine/Platform.md),
+  [`Coin`](../../docs/engine/Coin.md), [`Spike`](../../docs/engine/Spike.md)
+  and [`Goal`](../../docs/engine/Goal.md), built from a level by
+  [`World.fromLevel`](../../docs/engine/World.md).
+- **[`InputSource`](../../docs/engine/InputSource.md)** — implemented by
+  [`KeyboardInput`](../../docs/engine/KeyboardInput.md) and
+  [`ScriptedInput`](../../docs/engine/ScriptedInput.md) (recorded
+  playback, for Demo mode and the agent).
+- **[`JsPhysicsAdapter`](../../docs/engine/JsPhysicsAdapter.md)** — the
+  engine as the agent's `PhysicsAdapter`; pass the shared `jsAdapter` to
+  the planner so it simulates this exact engine.
+
+Depends on `level-format`, `render`, and the `agent` package's
+`PhysicsAdapter` type (type-only). Public API: [`src/index.ts`](src/index.ts).
+Class diagram and one page per class, interface and enum:
+[docs/engine](../../docs/engine/README.md). See also
 [README_architecture.md](../../README_architecture.md).
 
-## Vendored engine
+## Adapted from simple-platformer-1 (CC BY 4.0)
 
-The core mechanic is **not authored here**. It
-is vendored from
+The core mechanic is **not original to this project**. It was vendored from
 [`dr-matt-smith/simple-platformer-1`](https://github.com/dr-matt-smith/simple-platformer-1)
-at pinned commit **`4c3b936`** ("Rename project to drop kaplay/Bean
-association"), licensed **CC BY 4.0** (see [`./LICENSE`](./LICENSE) and
-[`./sources.md`](./sources.md)). See `TDDs/1_design/version09_design.md`
-for the initial vendor design and `TDDs/1_design/version15_design.md`
-for the v15 cleanup that moved the licence text here from
-`public/play-assets/`.
+at commit **`4c3b936`** ("Rename project to drop kaplay/Bean association"),
+© 2026 Matt Smith, licensed **CC BY 4.0** (full text in [`./LICENSE`](./LICENSE);
+attribution details in [`./sources.md`](./sources.md)).
 
-`src/core/`, `src/entities/{player,platform,coin,spike}.ts` and `src/constants.ts` are
-**byte-identical to upstream@4c3b936** except the four deliberate forks
-below (design §7). Keep it that way so a re-sync is a known small diff.
+The vendored code has since been **adapted and restructured**; it is no
+longer identical to upstream:
 
-| File | Fork vs upstream |
-|------|------------------|
-| `logger.ts` | replaced with a **no-op shim** so vendored files import it unchanged but nothing writes to the author's `localStorage` |
-| `core/game.ts` | `stop()` + a `running` flag (loop teardown); clears the canvas at its real size, not fixed `CANVAS_W/H` (drops that import); `frameDt()` also clamps the time step at 0 — an early first animation-frame timestamp gave a negative `dt` that dropped the player through the floor |
-| `core/input.ts` | `dispose()` removes the `window` key listeners (repeated open/close must not stack handlers); a `blur` listener releases held keys when the window loses focus (their keyup is never seen, so the player would keep running) |
+| Vendored file (before) | Now | What changed |
+|---|---|---|
+| `src/core/game.ts` | `Game.ts` | Private state; `stop()` ends the loop; the canvas is cleared at its real size; `frameDt` (now `Game.frameDt`) never returns a negative step. Implements `SceneHost` |
+| `src/core/scene.ts` | `Scene.ts` | Abstract class; `update` / `draw` are abstract; holds a `SceneHost` rather than a `Game` |
+| `src/core/input.ts` | `KeyboardInput.ts` | Implements `InputSource`; created by `KeyboardInput.attach()`; `dispose()` removes the window listeners; losing focus releases held keys; key names are the `Key` enum |
+| `src/core/aabb.ts` | `Aabb.ts`, `Box.ts`, `Axis.ts` | Static methods on an `Aabb` class; the `Rect` shape is now the `Box` interface |
+| `src/core/assets.ts` | `SoundBank.ts` | Only the synthesised sounds remain (sprite and level loading dropped); `prewarm()` added; sounds are the `Sound` enum |
+| `src/entities/{player,platform,coin,spike}.ts` | `Entity.ts`, `Player.ts`, `Platform.ts`, `Coin.ts`, `Spike.ts` | A shared abstract `Entity` base; the player's update is split into private steps and takes an `UpdateContext`; sprite drawing replaced by simple shapes (the playtest draws through the render package); `PlatformKind` enum |
+| `src/logger.ts` | — | Removed (it had been reduced to a no-op shim) |
+| `src/constants.ts` | `constants.ts` | Values unchanged; a header comment added |
 
-`entities/goal.ts` is **v9-original** (the `E` exit; upstream had no exit).
-`adapter.ts`, `playtestGate.ts`, `playtestScene.ts`, `launcher.ts` are
-v9-original glue (not vendored).
+**The physics arithmetic is unchanged** — the same operations in the same
+order — and the Python port's golden vectors (`deno task gen:golden`) prove
+it frame for frame.
+
+Everything else — `Goal`, `World`, the playtest scene, gate, camera,
+launcher, `ScriptedInput` and `JsPhysicsAdapter` — is original to this
+project.

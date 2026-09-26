@@ -73,8 +73,8 @@ test('v27 M2: click at HUD-band y is no-op (no cell painted)', async ({ page }) 
   await page.mouse.click(rect.x + 80, rect.y + 8);
   await page.waitForTimeout(80);
   const after = await page.locator('#src').inputValue();
-  // Buffer unchanged — click landed in HUD band; main.ts click handler
-  // ignores clicks where cellFromEvent reports inHud=true.
+  // Buffer unchanged — click landed in HUD band; DragFillTool
+  // ignores drags where PreviewGeometry.cellAt reports inHud=true.
   expect(after).toBe(before);
 });
 

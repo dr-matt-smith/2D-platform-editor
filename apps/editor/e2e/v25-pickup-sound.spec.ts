@@ -1,4 +1,4 @@
-// v25 M5: pickup-touch sound timing fix. The AssetLoader's
+// v25 M5: pickup-touch sound timing fix. The SoundBank's
 // AudioContext is now created + resumed on Play / Test entry
 // (inside the user-gesture callstack), so the FIRST pickup sound
 // doesn't pay the ~50ms suspended→running latency. Pokes

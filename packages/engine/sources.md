@@ -1,50 +1,51 @@
-# Vendored playtest engine — attribution
+# Adapted engine code — attribution
 
-The code under `src/play/` powers the editor's **Playtest** mode. It
-was **vendored from**
+Part of this package — the game loop, scene base class, keyboard input,
+AABB collision, the player/platform/coin/spike entities, the tuning
+constants and the coin sound recipe — is **adapted from**
 [`dr-matt-smith/simple-platformer-1`](https://github.com/dr-matt-smith/simple-platformer-1)
-at commit `4c3b936` ("Rename project to drop kaplay/Bean
-association"). The upstream project is **© 2026 Matt Smith
-(dr-matt-smith)** and licensed **CC BY 4.0** — full text in
-[`./LICENSE`](./LICENSE) in this directory and at
-<https://creativecommons.org/licenses/by/4.0/legalcode>.
+at commit `4c3b936` ("Rename project to drop kaplay/Bean association").
+The upstream project is **© 2026 Matt Smith (dr-matt-smith)** and licensed
+**CC BY 4.0** — full text in [`./LICENSE`](./LICENSE) in this directory and
+at <https://creativecommons.org/licenses/by/4.0/legalcode>.
 
-## What's vendored
+## What was adapted, and how
 
-- **`core/` + `entities/` + `constants.ts` + `logger.ts`** — the
-  swept-AABB platformer engine: `Game`/`Scene`/`Input`/`AssetLoader`,
-  `Player` (gravity + single jump + swept-y collision),
-  `Platform`/`Coin`/`Spike` entities, the AABB primitives. Vendored
-  byte-identical to upstream except the four documented forks (see
-  [`README.md`](./README.md) and `TDDs/1_design/version09_design.md`
-  §7). Licensed under the CC BY 4.0 carried in `./LICENSE`.
+The code was first vendored unchanged apart from a few small fixes. It has
+since been **restructured** into one class per file with enums and
+interfaces (see [`README.md`](./README.md) for a file-by-file account):
 
-- **`AssetLoader.synth('coin')` recipe** — the Web-Audio oscillator
-  envelope used for the coin pickup sound. Original to the upstream
-  project, vendored verbatim in `core/assets.ts`. No audio file is
-  bundled (the recipe is the asset).
+- `src/Game.ts`, `src/Scene.ts`, `src/KeyboardInput.ts`, `src/Aabb.ts`
+  (with `Box.ts` and `Axis.ts`), `src/SoundBank.ts`, `src/Entity.ts`,
+  `src/Player.ts`, `src/Platform.ts`, `src/Coin.ts`, `src/Spike.ts` and
+  `src/constants.ts` derive from upstream's `core/`, `entities/` and
+  constants modules, and their header comments say so.
+- The upstream logger was removed.
+- The physics arithmetic (movement, gravity, collision, time step) is
+  unchanged, operation for operation.
+- **`SoundBank`'s coin recipe** — the Web Audio oscillator envelope played
+  on a pickup — is the upstream recipe. No audio file is bundled (the
+  recipe is the asset).
 
-## What's *not* vendored (anymore)
+Changes are licensed under the same CC BY 4.0 terms.
 
-v9 vendored three PNG sprites (`player.png`, `coin.png`, `spike.png`)
-under `public/play-assets/` so the playtest could draw the player +
-entities. **v14** made the editor renderer the single source of pixel
-truth for both editor preview and playtest. **v15** removed the
-sprites + the launcher's loading machinery; they hadn't been drawn
-since v14 merged.
+## What is not from upstream
 
-If a future version reintroduces a default sprite pack for tilesets
-that don't authorise entity art, it will reintroduce its own
-attribution path; the CC BY 4.0 licence in this directory applies to
-the engine code regardless.
+`Goal`, `World`, `PlaytestScene`, `PlaytestGate`, `PlaytestCamera`,
+`Playtest`, `ScriptedInput`, `JsPhysicsAdapter` and the enums and
+interfaces they use are original to this project.
+
+No artwork is vendored: the playtest draws with the level's tileset through
+the render package (earlier versions carried three upstream PNG sprites;
+they were removed once the shared renderer took over).
 
 ## Attribution checklist for re-distribution
 
-If you redistribute `src/play/` (or any subset), the CC BY 4.0
-conditions are satisfied by carrying:
+If you redistribute this package (or any subset of the adapted files), the
+CC BY 4.0 conditions are satisfied by carrying:
 
-- this `sources.md` (or equivalent attribution + licence reference);
-- the neighbouring `LICENSE` (CC BY 4.0 full text + copyright
-  notice);
-- the in-product credit line shown by the playtest overlay
-  (*"Mechanic: simple-platformer-1 @4c3b936 · CC BY 4.0"*).
+- this `sources.md` (or equivalent attribution, with a note that the code
+  was modified, and a licence reference);
+- the neighbouring `LICENSE` (CC BY 4.0 full text + copyright notice).
+
+The project's root `README.md` also credits simple-platformer-1.

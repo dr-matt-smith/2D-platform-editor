@@ -1,7 +1,8 @@
 // End-to-end through run(): argv in, exit code and output out. Uses the
 // small fixture content folder so each case stays fast.
 import { assert, assertEquals, assertStringIncludes } from '@std/assert';
-import { EXIT_FAILED, EXIT_SOLVED, EXIT_USAGE, run } from './main.ts';
+import { run } from './main.ts';
+import { ExitCode } from './src/ExitCode.ts';
 
 const HERE = import.meta.dirname ?? '.';
 const FIXTURES = `${HERE}/testdata`;
@@ -15,38 +16,38 @@ async function runCli(...argv: string[]) {
 
 Deno.test('--help prints usage and succeeds', async () => {
   const { code, stdout } = await runCli('--help');
-  assertEquals(code, EXIT_SOLVED);
+  assertEquals(code, ExitCode.Solved);
   assertStringIncludes(stdout, 'Usage: deno task solve');
 });
 
 Deno.test('a bad flag is a usage error on stderr', async () => {
   const { code, stdout, stderr } = await runCli('--nope');
-  assertEquals(code, EXIT_USAGE);
+  assertEquals(code, ExitCode.Usage);
   assertEquals(stdout, '');
   assertStringIncludes(stderr, "error: unknown option '--nope'");
 });
 
 Deno.test('a missing file is an input error', async () => {
   const { code, stderr } = await runCli('missing.txt', '--content', FIXTURES);
-  assertEquals(code, EXIT_USAGE);
+  assertEquals(code, ExitCode.Usage);
   assertEquals(stderr, 'error: level file not found: missing.txt');
 });
 
 Deno.test('a solvable level exits 0', async () => {
   const { code, stdout } = await runCli('corridor', '--content', FIXTURES);
-  assertEquals(code, EXIT_SOLVED);
+  assertEquals(code, ExitCode.Solved);
   assertStringIncludes(stdout, 'Solvable: yes');
 });
 
 Deno.test('an unsolvable level exits 1', async () => {
   const { code, stdout } = await runCli('walled_in', '--content', FIXTURES);
-  assertEquals(code, EXIT_FAILED);
+  assertEquals(code, ExitCode.Failed);
   assertStringIncludes(stdout, 'is unreachable from the spawn');
 });
 
 Deno.test('--json prints one parseable object', async () => {
   const { code, stdout } = await runCli('corridor', '--json', '--content', FIXTURES);
-  assertEquals(code, EXIT_SOLVED);
+  assertEquals(code, ExitCode.Solved);
   const report = JSON.parse(stdout);
   assertEquals(report.status, 'solved');
   assert(report.solutions[0].recording.length > 0);
@@ -54,7 +55,7 @@ Deno.test('--json prints one parseable object', async () => {
 
 Deno.test('--all sweeps the manifest and fails if any level fails', async () => {
   const { code, stdout } = await runCli('--all', '--content', FIXTURES);
-  assertEquals(code, EXIT_FAILED);
+  assertEquals(code, ExitCode.Failed);
   const lines = stdout.split('\n');
   assert(lines[0].startsWith('level'));
   assert(lines[1].startsWith('corridor   solved'));

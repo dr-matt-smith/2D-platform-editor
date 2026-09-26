@@ -5,8 +5,8 @@ A headless command-line front end for the planning agent
 **Test level** button, "can the agent finish this level?", without a
 browser, so levels can be checked from a terminal, a script or CI.
 
-It reads levels and tilesets straight from disk, runs `testLevel` with the
-engine's `jsAdapter`, and needs only `--allow-read`.
+It reads levels and tilesets straight from disk, runs the agent's `LevelTester` with
+the engine's `jsAdapter`, and needs only `--allow-read`.
 
 ## Usage
 
@@ -52,10 +52,13 @@ second, giving `game time`), `steps` counts planned actions (`walks`,
 ```
 $ deno task solve --all
 level          result    solutions  best frames  jumps  time
-tutorial       solved            1           83      3  59ms
-...
+tutorial       solved            1           83      3  51ms
+below_ground   solved            1          218      4  135ms
+above_ground   solved            1          185      3  39ms
+above_ground2  solved            1          105      2  16ms
+simple         solved            1          106      0  15ms
 
-Summary: 5/6 solved, 1 unsolved in 312ms (failed: fred)
+Summary: 5/5 solved in 256ms
 ```
 
 ## Options
@@ -81,7 +84,7 @@ Errors go to stderr; reports go to stdout.
 ## JSON shape
 
 One level (`deno task solve <level> --json`) prints a `LevelReport`
-(defined in `solve.ts`). `status` says which fields are present:
+(defined in `src/LevelReport.ts`). `status` says which fields are present:
 
 ```ts
 {
@@ -120,13 +123,24 @@ of the reports above and `summary` is
 
 ## Code layout
 
-| File | Role |
+`main.ts` is the entry point and composition root: it builds the real
+console and file system and runs `AgentCli`. The classes are in `src/`, one
+per file, named after the class.
+
+| Class | Role |
 |---|---|
-| `main.ts` | Entry point: wires the pieces together and picks the exit code |
-| `args.ts` | Parses argv into a typed `Command` (pure) |
-| `levelSource.ts` | Resolves a level id or path, and loads the tileset legend, from disk |
-| `solve.ts` | Validates, runs the agent and builds a `LevelReport` (no I/O) |
-| `format.ts` | Turns reports into text or JSON (pure) |
+| `AgentCli` | Parses argv, executes the command, maps expected errors to exit code 2 |
+| `ArgParser` | Parses argv into a `Command` object (pure); owns the usage text |
+| `Command`, `AgentCommand` | The command interface, and the abstract base of the commands that run the agent |
+| `SolveCommand`, `SolveAllCommand`, `HelpCommand` | `solve <level>`, `solve --all`, `--help` |
+| `ContentStore` | Resolves a level id or path, and loads the tileset legend, through a `FileReader` |
+| `LevelSolver` | Validates, runs the agent and builds a `LevelReport` (no I/O) |
+| `ReportFormatter`, `TextFormatter`, `JsonFormatter` | Turn reports into text or JSON |
+| `SweepSummary` | Totals for `--all` |
+| `Output`, `FileReader` (+ `ConsoleOutput`, `DenoFileReader`) | The injected I/O, and its real implementations |
+| `ExitCode`, `ReportStatus` | Enums: 0/1/2; `solved`/`unsolved`/`invalid` |
 | `testdata/` | A tiny content folder used by the unit tests |
 
-Tests sit beside each module (`*.test.ts`) and run with `deno task test`.
+Tests sit beside each class (`*.test.ts`) and run with `deno task test`.
+Class-by-class documentation, with a class diagram, is in
+[docs/agent-cli](../../docs/agent-cli/README.md).

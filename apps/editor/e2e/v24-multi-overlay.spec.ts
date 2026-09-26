@@ -16,8 +16,8 @@ test('v24 M3: HUE_PALETTE has 5 distinct hues', async ({ page }) => {
   await page.goto('/apps/editor/');
   await page.waitForSelector('#preview');
   const palette = await page.evaluate(async () => {
-    const m = await import('/apps/editor/src/overlay.ts');
-    return m.HUE_PALETTE;
+    const { SolutionOverlay } = await import('/apps/editor/src/SolutionOverlay.ts');
+    return SolutionOverlay.HUE_PALETTE;
   });
   expect(palette).toHaveLength(5);
   expect(new Set(palette).size).toBe(5);
@@ -31,7 +31,7 @@ test('v24 M3: renderAllSolutionsOverlay paints non-focused dimmed + focused soli
   await page.goto('/apps/editor/');
   await page.waitForSelector('#preview');
   const result = await page.evaluate(async () => {
-    const { renderAllSolutionsOverlay } = await import('/apps/editor/src/overlay.ts');
+    const { SolutionOverlay } = await import('/apps/editor/src/SolutionOverlay.ts');
     const canvas = document.createElement('canvas');
     canvas.width = 240; canvas.height = 80;
     const ctx = canvas.getContext('2d')!;
@@ -44,7 +44,7 @@ test('v24 M3: renderAllSolutionsOverlay paints non-focused dimmed + focused soli
     });
     // Two solutions on separate rows (so their pixels don't overlap).
     const solutions = [mkSol(2, 8), mkSol(2, 10)];
-    renderAllSolutionsOverlay(ctx, solutions, 0, 20);
+    new SolutionOverlay(ctx, 20).paintAll(solutions, 0);
     // Sample a pixel ALONG solution 0's path (focused → solid, full alpha).
     const s0 = ctx.getImageData(80, 50, 1, 1).data; // midway along (2,2)→(2,8)
     // Sample a pixel ALONG solution 1's path (non-focused → dimmed).

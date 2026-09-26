@@ -17,7 +17,7 @@ const md5 = (path: string) =>
 
 // Wait for the editor's whole startup chain — and crucially, for the
 // active tileset to have finished loading (window.__activeTileset is
-// set by main.ts's syncTileset). The legend-has-glyphs check alone
+// set by ActiveTileset.sync). The legend-has-glyphs check alone
 // races the async tileset fetch and can fire Ctrl+Enter while the
 // tileset is still null, which paints the playtest with fallback
 // shapes rather than the tileset's art.

@@ -1,3 +1,5 @@
+// The engine's tuning numbers and colours, in world pixels and seconds.
+// From simple-platformer-1 (CC BY 4.0) — see ../LICENSE; values unchanged.
 export const CANVAS_W   = 640;
 export const CANVAS_H   = 400;
 

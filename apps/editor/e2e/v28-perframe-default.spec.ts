@@ -4,7 +4,7 @@
 // callable for diagnostics.
 
 // The default-backend / bucket-backend checks now live in
-// packages/agent/src/planner.test.ts; only the Test-button sweep remains here.
+// packages/agent/src/PlannerFactory.test.ts; only the Test-button sweep remains here.
 
 import { test, expect } from '@playwright/test';
 

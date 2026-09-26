@@ -1,31 +1,33 @@
-// v29 M5: package smoke. After the move to packages/agent/, the public
-// index must export the agent's API, and testLevel() driven by the
-// engine's jsAdapter must still solve a trivial level end-to-end.
-// (ported from apps/editor/e2e/v29-package-smoke.spec.ts)
+// Package smoke: the public index exports the agent's API, and a
+// LevelTester driven by the engine's jsAdapter solves a trivial level.
 import { assert, assertEquals } from '@std/assert';
-import { parse, DEFAULT_LEGEND } from '@2d-platform/level-format';
+import { Legend, Level } from '@2d-platform/level-format';
 import { jsAdapter } from '@2d-platform/engine';
 import * as agent from './index.ts';
 
-Deno.test('v29 M5: @2d-platform/agent index exports the public API', () => {
+// The agent takes legends as plain records.
+const DEFAULT_LEGEND = Legend.DEFAULT.toRecord();
+
+Deno.test('@2d-platform/agent index exports the public API', () => {
   const m: Record<string, unknown> = { ...agent };
-  assertEquals(typeof m.testLevel, 'function');
-  assertEquals(typeof m.plan, 'function');
-  assertEquals(typeof m.simulate, 'function');
-  assertEquals(typeof m.buildNavGraph, 'function');
-  assertEquals(typeof m.planPerFrame, 'function');
-  // Painting paths is editor UI, so the overlay lives in apps/editor now
-  // and the agent package no longer exports it.
+  for (const name of [
+    'LevelTester', 'Solution', 'Planner', 'PlannerFactory', 'PerFramePlanner', 'BucketPlanner',
+    'Plan', 'PlanBuilder', 'PerFrameExpander', 'NavGraph', 'PickupTour', 'LevelGrid', 'StateKey',
+    'Action', 'MoveAction', 'ActionCatalog', 'Simulator', 'ActionSimulator', 'AdapterGuard',
+  ]) {
+    assertEquals(typeof m[name], 'function', name);
+  }
+  assertEquals(agent.PlannerKind.PerFrame, 'perframe');
+  assertEquals(agent.ActionKind.DropRelease, 'drop_release');
+  // Painting paths is editor UI, so the overlay lives in apps/editor.
   assertEquals(typeof m.renderSolutionOverlay, 'undefined');
   assertEquals(typeof m.renderAllSolutionsOverlay, 'undefined');
-  assertEquals(typeof m.assertAdapter, 'function');
   assertEquals(m.TILE, 20);
 });
 
-Deno.test('v29 M5: testLevel via the package + jsAdapter solves a trivial level', async () => {
-  const parsed = parse('#####\n#P.E#\n#####');
-  const result = await agent.testLevel(parsed, DEFAULT_LEGEND, null, {
-    adapter: jsAdapter,
+Deno.test('LevelTester via the package + jsAdapter solves a trivial level', async () => {
+  const parsed = Level.parse('#####\n#P.E#\n#####');
+  const result = await agent.LevelTester.create(jsAdapter).test(parsed, DEFAULT_LEGEND, null, {
     maxRuntimeMs: 4000,
   });
   assert(result.ok);

@@ -11,15 +11,15 @@
 // Two kinds of case:
 //   - primitive : a hand-authored recording exercising one mechanic
 //                 (walk, jump arc, head-bump, pit death, spike, coin).
-//   - agent     : the JS agent's own plan() recording on a real level —
+//   - agent     : the JS agent's own Planner.plan() recording on a real level —
 //                 long, multi-feature, the strongest parity signal.
 
 import { jsAdapter } from '@2d-platform/engine';
-import { parse, DEFAULT_LEGEND } from '@2d-platform/level-format';
-import { plan } from '@2d-platform/agent';
-import type { LegendRole, LevelMeta, ParsedLevel, PickupRequired } from '@2d-platform/level-format';
+import { Legend, Level } from '@2d-platform/level-format';
+import { PlannerFactory } from '@2d-platform/agent';
+import type { LevelData, LevelMeta, PickupRequired, Role } from '@2d-platform/level-format';
 import type { RecordingEvent } from '@2d-platform/engine';
-import type { PlaytestPhase } from '@2d-platform/engine';
+import type { GamePhase } from '@2d-platform/engine';
 
 // One captured engine frame: the player's full state after update(dt).
 interface GoldenFrame {
@@ -28,7 +28,7 @@ interface GoldenFrame {
   vx: number;
   vy: number;
   onGround: boolean;
-  phase: PlaytestPhase;
+  phase: GamePhase;
   score: number;
 }
 
@@ -42,7 +42,7 @@ interface GoldenMeta {
 interface GoldenCase {
   name: string;
   kind: 'primitive' | 'agent';
-  grid: string[];
+  grid: readonly string[];
   meta: GoldenMeta;
   recording: readonly RecordingEvent[];
   maxFrames: number;
@@ -61,12 +61,12 @@ const HERE = import.meta.dirname!;
 const REPO = `${HERE}/../../..`;
 const DT = 1 / 60;
 
-// Drive the JS engine exactly as sim.ts does — advance(f) then
+// Drive the JS engine exactly as the agent's Simulator does — advance(f) then
 // update(dt) — capturing the full player state each frame. Stops on a
 // terminal phase so the vectors don't trail dead air.
-function drive(parsed: ParsedLevel, recording: readonly RecordingEvent[], maxFrames: number): GoldenFrame[] {
+function drive(parsed: LevelData, recording: readonly RecordingEvent[], maxFrames: number): GoldenFrame[] {
   const input = jsAdapter.makeScriptedInput(recording);
-  const scene = jsAdapter.makeScene(parsed, DEFAULT_LEGEND, null);
+  const scene = jsAdapter.makeScene(parsed, Legend.DEFAULT.toRecord(), null);
   scene.game.input = input;
   const frames: GoldenFrame[] = [];
   for (let f = 0; f < maxFrames; f++) {
@@ -146,7 +146,7 @@ const AGENT_LEVELS = ['tutorial.txt', 'simple.txt', 'above_ground.txt', 'below_g
 const cases: GoldenCase[] = [];
 
 for (const c of PRIMITIVES) {
-  const parsed = parse(c.level);
+  const parsed = Level.parse(c.level);
   cases.push({
     name: c.name,
     kind: 'primitive',
@@ -158,10 +158,12 @@ for (const c of PRIMITIVES) {
   });
 }
 
+// The default (per-frame) planner, as the editor's Test button uses.
+const planner = PlannerFactory.create(jsAdapter);
 for (const file of AGENT_LEVELS) {
   const text = Deno.readTextFileSync(`${REPO}/content/data/levels/${file}`);
-  const parsed = parse(text);
-  const p = plan(parsed, DEFAULT_LEGEND, { adapter: jsAdapter });
+  const parsed = Level.parse(text);
+  const p = planner.plan(parsed, Legend.DEFAULT.toRecord());
   const maxFrames = 2400;
   cases.push({
     name: `agent_plan_${file.replace('.txt', '')}`,
@@ -176,8 +178,8 @@ for (const file of AGENT_LEVELS) {
 
 // Emit the role map the JS legend used so the Python side maps glyphs
 // to entities identically (no chance of legend drift).
-const roles: Record<string, LegendRole> = {};
-for (const [ch, entry] of Object.entries(DEFAULT_LEGEND)) roles[ch] = entry.role;
+const roles: Record<string, Role> = {};
+for (const [ch, entry] of Legend.DEFAULT) roles[ch] = entry.role;
 
 const out = { generatedFrom: 'jsAdapter (src/agent-adapter.js)', dt: DT, roles, cases };
 

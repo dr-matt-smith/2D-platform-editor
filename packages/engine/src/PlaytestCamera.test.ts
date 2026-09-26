@@ -1,0 +1,172 @@
+import { assert, assertEquals } from '@std/assert';
+import { PlaytestCamera } from './PlaytestCamera.ts';
+import type { CameraOrigin, DeadZone } from './PlaytestCamera.ts';
+import type { Point } from './Point.ts';
+import type { Size } from './Size.ts';
+
+// All values in world pixels. A "20x12 viewport at 20px/cell" is 400x240.
+const VP = { w: 400, h: 240 };
+// 40x16 cells world = 800x320 (twice as wide as the viewport, slightly
+// taller). Tests use this unless otherwise stated.
+const WORLD = { w: 800, h: 320 };
+
+// A camera centred on `player`; returns where it ends up.
+function centred(player: Point, viewport: Size, world: Size): CameraOrigin {
+  const camera = new PlaytestCamera(viewport, world);
+  camera.centreOn(player);
+  return camera.origin;
+}
+
+// A camera at `prev` following `player` for one frame; returns where it
+// ends up.
+function followed(
+  player: Point,
+  prev: CameraOrigin,
+  viewport: Size,
+  world: Size,
+  deadZone: Partial<DeadZone> = {},
+): CameraOrigin {
+  const camera = new PlaytestCamera(viewport, world, deadZone);
+  camera.moveTo(prev);
+  camera.follow(player);
+  return camera.origin;
+}
+
+// --- centreOn ----------------------------------------------------
+
+Deno.test('centreOn: player at world centre sits at viewport centre', () => {
+  // Player center at (400, 160) (= world/2). Camera should be at
+  // (400 - vw/2, 160 - vh/2) = (200, 40).
+  const c = centred({ x: 400, y: 160 }, VP, WORLD);
+  assertEquals(c, { camX: 200, camY: 40 });
+});
+
+Deno.test('centreOn: player near left world edge clamps camera to 0', () => {
+  const c = centred({ x: 50, y: 160 }, VP, WORLD);
+  assertEquals(c.camX, 0);
+});
+
+Deno.test('centreOn: player near right world edge clamps to world-viewport', () => {
+  const c = centred({ x: 780, y: 160 }, VP, WORLD);
+  assertEquals(c.camX, WORLD.w - VP.w); // 800 - 400 = 400
+});
+
+Deno.test('centreOn: world smaller than viewport pins both axes to 0', () => {
+  const small = { w: 200, h: 120 };
+  const c = centred({ x: 100, y: 60 }, VP, small);
+  assertEquals(c, { camX: 0, camY: 0 });
+});
+
+// --- follow: dead-zone follow --------------------------------
+
+Deno.test('follow: player inside dead-zone leaves camera unchanged', () => {
+  // 40% × 33% dead-zone centred → half-margin = 120 px wide, 80.4 px tall.
+  // Player slightly off centre but still inside the dead-zone.
+  const prev = { camX: 200, camY: 40 };
+  const c = followed({ x: 410, y: 165 }, prev, VP, WORLD);
+  assertEquals(c, prev);
+});
+
+Deno.test('follow: player crosses LEFT dead-zone edge → camera shifts left by overshoot', () => {
+  // half-margin = (400 - 160)/2 = 120. With prev camX=200, the left
+  // edge of the dead-zone is at world-x = 200 + 120 = 320. Put the
+  // player at x=300 (20 past the edge); camera should move left by 20.
+  const prev = { camX: 200, camY: 40 };
+  const c = followed({ x: 300, y: 160 }, prev, VP, WORLD);
+  assertEquals(c.camX, 180);
+});
+
+Deno.test('follow: player crosses RIGHT dead-zone edge → camera shifts right', () => {
+  // Right edge of dead-zone at prev.camX + viewport - half-margin =
+  // 200 + 400 - 120 = 480. Player at 500 is 20 past; camera moves
+  // right to 220.
+  const prev = { camX: 200, camY: 40 };
+  const c = followed({ x: 500, y: 160 }, prev, VP, WORLD);
+  assertEquals(c.camX, 220);
+});
+
+Deno.test('follow: player crosses TOP dead-zone edge → camera shifts up', () => {
+  // half-margin H = (240 - 79.2)/2 = 80.4. Top edge at prev.camY +
+  // half-margin = 40 + 80.4 = 120.4. Player at y=100 is past the
+  // top edge; camera moves up by 20.4.
+  const prev = { camX: 200, camY: 40 };
+  const c = followed({ x: 400, y: 100 }, prev, VP, WORLD);
+  assert(Math.abs(c.camY - 19.6) < 1e-6);
+});
+
+Deno.test('follow: player crosses BOTTOM dead-zone edge → camera shifts down', () => {
+  // Bottom edge at prev.camY + vh - half-margin H = 40 + 240 - 80.4 =
+  // 199.6. Player at y=240 is 40.4 past; world clamps to (world.h -
+  // viewport.h) = 320 - 240 = 80; expected min(40 + 40.4, 80) = 80.
+  const prev = { camX: 200, camY: 40 };
+  const c = followed({ x: 400, y: 240 }, prev, VP, WORLD);
+  assertEquals(c.camY, 80);
+});
+
+Deno.test('follow: world-clamp prevents camX going negative', () => {
+  // Player at x=0 with prev camX at left edge → would compute camX
+  // = 0 - 120 = -120 → clamp to 0.
+  const c = followed({ x: 0, y: 160 }, { camX: 100, camY: 40 }, VP, WORLD);
+  assertEquals(c.camX, 0);
+});
+
+Deno.test('follow: world-clamp prevents camX going past world-viewport', () => {
+  // Player at far right edge of world; would push camera past world
+  // width − viewport. Expected clamp to 400.
+  const c = followed({ x: 800, y: 160 }, { camX: 380, camY: 40 }, VP, WORLD);
+  assertEquals(c.camX, WORLD.w - VP.w);
+});
+
+Deno.test('follow: world smaller than viewport pins both axes to 0', () => {
+  // 12×8 cell world = 240×96, smaller than the 400×240 viewport.
+  // Any player position → camera (0, 0).
+  const small = { w: 240, h: 96 };
+  const c = followed({ x: 100, y: 50 }, { camX: 0, camY: 0 }, VP, small);
+  assertEquals(c, { camX: 0, camY: 0 });
+});
+
+Deno.test('follow: custom dead-zone fractions affect threshold', () => {
+  // 20% × 20% dead-zone → half-margin = (400 − 80)/2 = 160 on x. Left
+  // edge of dead-zone at 200 + 160 = 360. Player at 340 (20 past)
+  // moves camera to 340 − 160 = 180.
+  const prev = { camX: 200, camY: 40 };
+  const c = followed({ x: 340, y: 160 }, prev, VP, WORLD, { w: 0.2, h: 0.2 });
+  assertEquals(c.camX, 180);
+});
+
+Deno.test('follow: never mutates inputs', () => {
+  const prev = Object.freeze({ camX: 200, camY: 40 });
+  const player = Object.freeze({ x: 300, y: 100 });
+  const vp = Object.freeze({ ...VP });
+  const w = Object.freeze({ ...WORLD });
+  // The freezes would throw on any mutation attempt, failing the test —
+  // completing the calls is the assertion of purity here.
+  const camera = new PlaytestCamera(vp, w);
+  camera.moveTo(prev);
+  camera.follow(player);
+  camera.centreOn(player);
+});
+
+// --- accessors -------------------------------------------------------
+
+Deno.test('a new camera starts at the world origin', () => {
+  const camera = new PlaytestCamera(VP, WORLD);
+  assertEquals(camera.origin, { camX: 0, camY: 0 });
+  assertEquals([camera.x, camera.y], [0, 0]);
+});
+
+Deno.test('moveTo clamps to the world', () => {
+  const camera = new PlaytestCamera(VP, WORLD);
+  camera.moveTo({ camX: -50, camY: 1000 });
+  assertEquals(camera.origin, { camX: 0, camY: WORLD.h - VP.h });
+});
+
+Deno.test('view is the renderer\'s camera window', () => {
+  const camera = new PlaytestCamera(VP, WORLD);
+  camera.moveTo({ camX: 120, camY: 30 });
+  assertEquals(camera.view, { camX: 120, camY: 30, viewW: 400, viewH: 240 });
+});
+
+Deno.test('DEFAULT_DEAD_ZONE is 40% by 33% of the viewport', () => {
+  assertEquals(PlaytestCamera.DEFAULT_DEAD_ZONE, { w: 0.4, h: 0.33 });
+});

@@ -6,7 +6,7 @@
 // expected stateKey shape.
 
 // The node-count and xOffsetBucket/stateKey/bucketCentreX helper checks now
-// live in packages/agent/src/grid.test.ts; only the Test-button flow remains here.
+// live in packages/agent/src/NavGraph.test.ts and StateKey.test.ts; only the Test-button flow remains here.
 
 import { test, expect } from '@playwright/test';
 

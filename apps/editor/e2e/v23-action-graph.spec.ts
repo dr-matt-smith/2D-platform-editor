@@ -17,8 +17,8 @@
 // a level-design carry-over; v24 candidate to add a row-3 or row-2
 // stepping stone (or introduce double-jump / wall-jump).
 
-// The enumerateActions count / drop_release / run_off checks are covered by
-// packages/agent/src/actions.test.ts; only the Test-button flows remain here.
+// The ActionCatalog count / drop_release / run_off checks are covered by
+// packages/agent/src/ActionCatalog.test.ts; only the Test-button flows remain here.
 
 import { test, expect, type Page } from '@playwright/test';
 

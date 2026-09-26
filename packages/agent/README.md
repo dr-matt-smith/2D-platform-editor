@@ -1,86 +1,83 @@
 # @2d-platform/agent
 
-The 2D level-designer's planning agent. Carved out of the editor in
-v29 so alternate implementations (a Python solver, an MCP-callable
-service) can drive it through a thin **physics-adapter** API instead of
-importing the editor's vendored engine directly.
+The level editor's planning agent: it finds a key recording that solves a
+level, by A* over simulated physics. It never imports a game engine — it
+drives one through the `PhysicsAdapter` interface it defines, so the same
+planner runs on the JS engine (`jsAdapter` from `@2d-platform/engine`), on
+the Python port, or on a test stub.
 
-In-repo only — `private: true`, not published to npm (a v30+ candidate).
+In-repo only — not published.
+
+Class-by-class documentation, with a class diagram and a walk-through of
+how planning works: [docs/agent](../../docs/agent/README.md).
 
 ## What it does
 
 Given a parsed level, the agent searches for an input recording that
-solves it (collect required pickups, reach the exit) and returns up to
-five distinct solutions, each with an explainable trace. The default
-backend is the v28 **per-frame trajectory planner**: A* nodes carry the
-full continuous-physics state and edges are produced on the fly by
-simulating actions, so the recording it emits replays byte-identically
-on the live engine.
+solves it (collect the required pickups, reach the exit) and returns up to
+five distinct solutions, each with an explained trace. The default strategy
+is the **per-frame planner**: A* nodes carry the full continuous-physics
+state and edges are produced on the fly by simulating actions, so the
+recording it emits replays exactly on the live engine.
 
 ## Usage
 
-```js
-import { testLevel } from '@2d-platform/agent';
-import { jsAdapter } from '../../src/agent-adapter.ts'; // the editor's JS adapter
-import { parse, DEFAULT_LEGEND } from '../../src/level.ts';
+```ts
+import { LevelTester, PlannerFactory, Simulator } from '@2d-platform/agent';
+import { jsAdapter } from '@2d-platform/engine';
+import { Legend, Level } from '@2d-platform/level-format';
 
-const parsed = parse('#####\n#P.E#\n#####');
-const result = await testLevel(parsed, DEFAULT_LEGEND, null, {
-  adapter: jsAdapter,   // REQUIRED (v29)
+const level = Level.parse('#####\n#P.E#\n#####');
+const legend = Legend.DEFAULT.toRecord(); // the agent takes a plain record
+
+// Plan, check by replaying, and collect alternative routes.
+const result = await LevelTester.create(jsAdapter).test(level, legend, null, {
   maxRuntimeMs: 5000,
 });
 // result.ok === true
-// result.solution.recording — the winning ScriptedInput events
-// result.solutions — up to 5 distinct solutions, shortest first
+// result.solution.recording — the winning key events
+// result.solutions — up to 5 distinct solutions, fewest frames first
+
+// Lower level: one plan, no replay.
+const plan = PlannerFactory.create(jsAdapter).plan(level, legend);
+// Replay any recording headless.
+const sim = new Simulator(jsAdapter).run(level, legend, plan.recording);
 ```
 
-`plan(parsed, legend, { adapter })` is the lower-level entry (one plan,
-no replan loop); `simulate({ adapter, parsed, legend, recording })`
-runs a recording headlessly.
+`PlannerFactory.create(adapter, PlannerKind.Bucket)` selects the older
+bucket-graph planner, kept for diagnostics.
 
-## Physics-adapter contract
+## The physics-adapter contract
 
-The agent's ONLY engine dependency is the adapter object passed via
-`opts.adapter` (or the leading argument to `buildNavGraph`). It must
-expose:
+The agent's only engine dependency is the adapter it is given:
 
-```js
-const adapter = {
-  // Engine tile size in px. Verified against the agent's own TILE at
-  // plan()/testLevel() entry — a mismatch throws immediately.
-  TILE: 20,
-
-  // Build a fresh, already-entered scene from a parsed level. Returns a
-  // handle the agent reads/steps:
-  //   .game       mutable { input, assets } — the agent swaps game.input
-  //   .player     AABB pose + velocity + onGround
-  //   .coins      pickup entities (collected flag)
-  //   .phase      'play' | 'won' | 'dead'
-  //   .score, .simFrame, .simTime
-  //   .enter()             builds entities, phase='play'
-  //   .update(dt)          steps physics one tick
-  //   .setPlayerState({ x, y, vx, vy, onGround })  forces the player pose
-  makeScene(parsed, legend, tileset) { /* ... */ },
-
-  // Build a scripted input source from a recording. Returns a handle
-  // with .advance(frame), .isDown(key), .wasPressed(key), .endFrame().
-  makeScriptedInput(recording) { /* ... */ },
-};
+```ts
+interface PhysicsAdapter {
+  // Engine tile size in px; must equal the agent's TILE (20).
+  readonly TILE: number;
+  // A fresh, already-entered scene of the level.
+  makeScene(parsed: ParsedLevel, legend: LegendRecord | null, tileset: unknown): SceneHandle;
+  // A scripted input source that replays a recording.
+  makeScriptedInput(recording: Recording): ScriptedInputHandle;
+}
 ```
 
-`src/agent-adapter.ts` in the editor is the reference JS adapter — it
-wraps the vendored `PlaytestScene` + `ScriptedInput`. A Python adapter
-would expose the same shape over a Node↔Python bridge.
+A `SceneHandle` exposes what the agent reads and writes: `game.input` (the
+agent swaps it per simulation), `player` (position, velocity, size,
+`onGround`), `coins`, `phase` (`'play' | 'won' | 'dead'`), `score`, the
+`simFrame` / `simTime` clocks, `update(dt)` and `setPlayerState(state)`.
+The engine's `JsPhysicsAdapter` (`packages/engine/src/JsPhysicsAdapter.ts`)
+is the reference implementation; the Python port in `packages/agent-py`
+has its own.
 
 ### Why the TILE check
 
-The agent discretises levels into a cell grid at `TILE` px. If an
-adapter wraps an engine with a different tile size (e.g. a Python
-adapter that accidentally shipped the editor's display TILE=24 instead
-of the engine's physics TILE=20), every edge the agent simulates would
-land on the wrong cell and the plan would silently fail to reproduce on
-the live engine. `assertAdapter()` throws at the public boundary so the
-misconfiguration is loud and immediate.
+The agent cuts levels into cells at `TILE` px. If an adapter wraps an
+engine with a different tile size (say a port that shipped a display tile
+size of 24 instead of the physics tile size of 20), every simulated edge
+lands on the wrong cell and plans silently fail on the live engine.
+`AdapterGuard` checks the adapter when a planner or tester is created, so
+the misconfiguration is loud and immediate.
 
 ## Standalone smoke
 
@@ -88,6 +85,6 @@ misconfiguration is loud and immediate.
 deno run -A packages/agent/examples/headless.ts
 ```
 
-Constructs a minimal **stub adapter** (no real physics — a toy walk
-model) and runs `plan()` on a trivial level, demonstrating that the
-agent's only engine coupling is the adapter object.
+Implements `PhysicsAdapter` with a minimal **stub** (no real physics — a
+toy walk model) and asks a planner to plan a trivial level, showing that
+the adapter is the agent's only engine coupling.

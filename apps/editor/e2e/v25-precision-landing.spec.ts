@@ -5,7 +5,7 @@
 // 1-tile pickups that the cell-resolved edge model misses.
 
 // The trajectory + precision-edge checks now live in
-// packages/agent/src/simAction.test.ts and grid.test.ts; only the Test-button
+// packages/agent/src/ActionSimulator.test.ts and NavGraph.test.ts; only the Test-button
 // flow remains here.
 
 import { test } from '@playwright/test';

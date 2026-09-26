@@ -4,7 +4,7 @@
 //   1. [Test] opens a dialog showing a solution for a solvable level,
 //      with stats, a Demo button, and the trace list.
 //   2. The path-overlay canvas paints (hash differs from cleared
-//      baseline) — proves renderSolutionOverlay ran.
+//      baseline) — proves SolutionOverlay.paint ran.
 //   3. Demo button enters demomode, runs the recording, and auto-exits
 //      back to edit mode within a reasonable window.
 //   4. An unreachable level surfaces a failure dialog with the
@@ -114,7 +114,7 @@ test('agent: unreachable level → failure dialog with red badge', async ({ page
 // simulate-loop result. Playwright's polling interval (≥ 100 ms)
 // reliably misses it. The user-visible UX is unchanged (the badge
 // still appears, just briefly). Skipped pending a deliberate
-// minimum-render-duration hook in agentDialog.
+// minimum-render-duration hook in AgentDialog.
 test.skip('v21: searching state shows live countdown + cancel button', async ({ page }) => {
   await page.goto('/apps/editor/');
   await page.waitForSelector('#preview');
@@ -122,7 +122,7 @@ test.skip('v21: searching state shows live countdown + cancel button', async ({ 
   // resolves in <500 ms (was ~1.5s in v27). The searching badge is
   // visible for that window — race-y on slow CI. Use the slowest
   // shipped level and rely on the dialog's IMMEDIATE searching
-  // render (line 123 of agentDialog.ts: render before await).
+  // render (AgentDialog.search: render before await).
   const text = await page.evaluate(async () => {
     const r = await fetch('/data/levels/below_ground.txt');
     return await r.text();

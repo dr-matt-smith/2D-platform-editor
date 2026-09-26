@@ -3,13 +3,13 @@
 //   deno run -A packages/agent/examples/headless.ts
 //
 // Demonstrates that the agent's ONLY engine coupling is the physics
-// adapter: this file constructs a minimal STUB adapter (a toy flat-
-// world walk model — no real gravity, no collision) with zero
-// dependency on the editor's src/play/* engine, hand-builds a parsed
-// level, and runs plan(). A non-empty trace proves the agent planned
-// purely against the injected adapter.
+// adapter: this file implements PhysicsAdapter with a minimal STUB (a toy
+// flat-world walk model — no real gravity, no collision) and no
+// dependency on the engine package, hand-builds a parsed level, and asks
+// a Planner for a plan. A non-empty trace proves the agent planned purely
+// against the injected adapter.
 
-import { plan } from '../src/index.ts';
+import { PlannerFactory } from '../src/index.ts';
 import type {
   Cell,
   ParsedLevel,
@@ -23,7 +23,7 @@ import type {
 
 const TILE = 20;
 
-// --- stub ScriptedInput ------------------------------------------------
+// --- stub scripted input ----------------------------------------------
 // Minimal { advance, isDown, wasPressed, endFrame } over a recording of
 // { frame, key, down } events.
 function makeStubInput(recording: Recording = []): ScriptedInputHandle {
@@ -50,8 +50,8 @@ function makeStubInput(recording: Recording = []): ScriptedInputHandle {
 
 // --- stub scene --------------------------------------------------------
 // A flat world: the player only moves horizontally at walk speed; it is
-// always grounded; touching the exit cell wins. Enough surface for the
-// agent's walk edges to chain to the exit.
+// always grounded; touching the exit cell wins. Enough for the planner's
+// walk edges to chain to the exit.
 function makeStubScene(parsed: ParsedLevel): SceneHandle {
   const exitCells: Cell[] = [];
   for (let r = 0; r < parsed.grid.length; r++) {
@@ -107,7 +107,8 @@ const stubAdapter: PhysicsAdapter = {
 };
 
 // --- run ---------------------------------------------------------------
-// A flat corridor: P at col 1, exit at col 6, solid floor below.
+// A flat corridor: P at col 1, exit at col 6, solid floor below. The
+// legend is null, so the classic glyphs (P, E, #) give the roles.
 const parsed = {
   grid: [
     '########',
@@ -117,9 +118,9 @@ const parsed = {
   meta: { width: 8, pickupRequired: 0 },
 };
 
-const result = plan(parsed, {}, { adapter: stubAdapter });
+const result = PlannerFactory.create(stubAdapter).plan(parsed, null);
 
-console.log('plan() via STUB adapter:');
+console.log('Planner.plan() via STUB adapter:');
 console.log('  trace steps :', result.trace.length);
 console.log('  recording   :', result.recording.length, 'events');
 console.log('  goals       :', result.goals.join(' → '));
@@ -128,4 +129,4 @@ if (result.trace.length === 0) {
   console.error('FAIL: empty trace — the agent did not plan against the stub.');
   Deno.exit(1);
 }
-console.log('OK: agent planned in isolation (no src/play/* engine).');
+console.log('OK: agent planned in isolation (no engine package).');

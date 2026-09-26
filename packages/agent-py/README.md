@@ -5,7 +5,7 @@ end-to-end in pure Python:
 
 | Package | Mirrors | Role |
 |---------|---------|------|
-| `agent_adapter` | `src/play/*` + `src/agent-adapter.js` | **physics adapter** — a faithful port of the JS engine, exposed through `{ TILE, make_scene, make_scripted_input }` |
+| `agent_adapter` | `packages/engine/src/*` (incl. `JsPhysicsAdapter.ts`) | **physics adapter** — a faithful port of the JS engine, exposed through `{ TILE, make_scene, make_scripted_input }` |
 | `agent_planner` | `packages/agent/src/*` | **planning agent** — A* search that emits a solving input recording |
 
 `agent_planner` depends on **only** the adapter object (passed via
@@ -17,15 +17,17 @@ guaranteed by golden-vector + recording parity against the real JS code.
 
 ## agent_adapter — the physics adapter
 
-A faithful, standalone port of the JS engine (`src/play/*`) exposed
-through the same contract the JS agent consumes:
-`{ TILE, make_scene, make_scripted_input }` (the mirror of
-`src/agent-adapter.js`'s `jsAdapter`).
+A faithful, standalone port of the JS engine (`packages/engine/src/*`)
+exposed through the same contract the JS agent consumes, its
+`PhysicsAdapter` interface: `{ TILE, make_scene, make_scripted_input }`
+(the mirror of the engine's `JsPhysicsAdapter`, shared instance
+`jsAdapter`).
 
 ## Why a port, not a bridge
 
 The JS agent runs **millions** of per-frame simulation steps per plan
-(`expandNode` simulates ~46 actions per A* node, over up to 100k nodes).
+(`PerFrameExpander.expand` simulates ~46 actions per A* node, over up to
+100k nodes).
 A live Node↔Python bridge at that granularity would be unusably slow.
 So the Python side reimplements the physics natively; correctness is
 guaranteed not by sharing code but by **golden-vector parity** against
@@ -37,13 +39,13 @@ Line-for-line from the vendored engine:
 
 | Python | JS source |
 |--------|-----------|
-| `constants.py` | `src/play/constants.js` (+ `DEFAULT_LEGEND` roles from `src/level.js`) |
-| `aabb.py` | `src/play/core/aabb.js` (`rects_overlap`, `resolve_axis`) |
-| `scripted_input.py` | `src/play/scriptedInput.js` |
-| `entities.py` | `src/play/entities/*` + `toWorld` (`src/play/adapter.js`) |
-| `scene.py` | `src/play/playtestScene.js` (restart, spawn-fall settle, update, set_player_state) |
-| `play_settings.py` | `meetsPickupRequirement` (`src/playSettings.js`) |
-| `adapter.py` | `src/agent-adapter.js` (`jsAdapter` → `py_adapter`) |
+| `constants.py` | `packages/engine/src/constants.ts` (+ the `Legend.DEFAULT` roles from `packages/level-format/src/Legend.ts`) |
+| `aabb.py` | `packages/engine/src/Aabb.ts` (`Aabb.overlaps` → `rects_overlap`, `Aabb.resolveAxis` → `resolve_axis`) |
+| `scripted_input.py` | `packages/engine/src/ScriptedInput.ts` |
+| `entities.py` | `packages/engine/src/{Player,Platform,Coin,Spike,Goal}.ts` + `World.fromLevel` (`World.ts`) |
+| `scene.py` | `packages/engine/src/PlaytestScene.ts` (restart, spawn-fall settle, update, set_player_state) |
+| `play_settings.py` | `PickupRequirement.isMetBy` (`packages/level-format/src/PickupRequirement.ts`) |
+| `adapter.py` | `packages/engine/src/JsPhysicsAdapter.ts` (`jsAdapter` → `py_adapter`) |
 
 The `Player.update` integration is the crux: gravity → x-move + resolve
 → **swept-Y** crossing test (speed-independent landing/head-bump),
@@ -81,7 +83,7 @@ python3 packages/agent-py/examples/simulate.py
 The golden vectors in `tests/golden/vectors.json` are produced by
 driving the **real JS engine** over a set of cases — six hand-authored
 primitives (walk, jump arc, head-bump, pit death, spike death, coin
-pickup) plus three cases driven by the **JS agent's own `plan()`
+pickup) plus three cases driven by the **JS agent's own `Planner.plan()`
 recordings** on real levels (`tutorial`, `simple`, `above_ground`). The
 pytest suite replays each case through the Python adapter and asserts
 every per-frame `(x, y, vx, vy, onGround, phase, score)` matches within
@@ -96,14 +98,15 @@ cd packages/agent-py && python3 -m pytest
 ```
 
 If a parity test fails after an engine change, regenerate the vectors
-and review the diff — a real physics change in `src/play/*` must be
+and review the diff — a real physics change in `packages/engine` must be
 mirrored here (and the agent's `TILE` contract still applies).
 
 ---
 
 ## agent_planner — the planning agent
 
-A faithful port of the JS agent (`packages/agent/src/*`). Given a parsed
+A faithful port of the JS agent (`packages/agent/src/*`; its classes are
+documented in `docs/agent/`). Given a parsed
 level, it searches for an input recording that solves it (collect
 required pickups, reach the exit) and returns up to five distinct
 solutions, each with an explainable trace. The default backend is the
@@ -147,7 +150,7 @@ python3 packages/agent-py/examples/solve.py
 
 ### Planner parity
 
-The golden vectors include the **JS agent's own `plan()` recordings** on
+The golden vectors include the **JS agent's own `Planner.plan()` recordings** on
 three real levels (`tutorial`, `simple`, `above_ground`), generated by
 driving the real JS planner (`tools/gen_golden.ts`). The pytest suite
 runs the Python planner over the same parsed levels and asserts the
