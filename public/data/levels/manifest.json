@@ -15,6 +15,16 @@
     "file": "above_ground.txt"
   },
   {
+    "id": "above_ground2",
+    "name": "above ground v2",
+    "file": "above_ground2.txt"
+  },
+  {
+    "id": "fred",
+    "name": "above ground v2",
+    "file": "fred.txt"
+  },
+  {
     "id": "simple",
     "name": "simple",
     "file": "simple.txt"
