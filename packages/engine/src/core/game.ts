@@ -64,15 +64,15 @@ export class Game<S extends Scene = Scene> {
   }
 
   /**
-   * Begin the requestAnimationFrame loop. `dt` is clamped to 1/30s so
-   * physics doesn't tunnel after a tab-blur stall.
+   * Begin the requestAnimationFrame loop; each frame advances physics by
+   * `frameDt()` seconds.
    */
   start(): void {
     this.running = true; // v9 fork
     let last = performance.now();
     const tick = (now: number) => {
       if (!this.running) return; // v9 fork: stop() ends the loop
-      const dt = Math.min((now - last) / 1000, 1 / 30);
+      const dt = frameDt(now, last);
       last = now;
       this.scene!.update(dt);
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // v9 fork
@@ -85,4 +85,16 @@ export class Game<S extends Scene = Scene> {
 
   /** v9 fork: stop the rAF loop (editor playtest teardown, TDD v9 §7). */
   stop(): void { this.running = false; }
+}
+
+/**
+ * Seconds of physics to simulate for one animation frame. At most 1/30s,
+ * so physics doesn't tunnel after a tab-blur stall; and never negative —
+ * the first requestAnimationFrame timestamp can be earlier than the
+ * `performance.now()` read in `start()`, and even a few milliseconds of
+ * negative time step pushes the player through the floor (fork: upstream
+ * only clamped the upper bound).
+ */
+export function frameDt(now: number, last: number): number {
+  return Math.min(Math.max((now - last) / 1000, 0), 1 / 30);
 }

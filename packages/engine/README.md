@@ -26,7 +26,7 @@ below (design §7). Keep it that way so a re-sync is a known small diff.
 | File | Fork vs upstream |
 |------|------------------|
 | `logger.ts` | replaced with a **no-op shim** so vendored files import it unchanged but nothing writes to the author's `localStorage` |
-| `core/game.ts` | `stop()` + a `running` flag (loop teardown); clears the canvas at its real size, not fixed `CANVAS_W/H` (drops that import) |
+| `core/game.ts` | `stop()` + a `running` flag (loop teardown); clears the canvas at its real size, not fixed `CANVAS_W/H` (drops that import); `frameDt()` also clamps the time step at 0 — an early first animation-frame timestamp gave a negative `dt` that dropped the player through the floor |
 | `core/input.ts` | `dispose()` removes the `window` key listeners (repeated open/close must not stack handlers); a `blur` listener releases held keys when the window loses focus (their keyup is never seen, so the player would keep running) |
 
 `entities/goal.ts` is **v9-original** (the `E` exit; upstream had no exit).
